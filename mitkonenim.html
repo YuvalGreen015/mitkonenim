@@ -321,6 +321,148 @@ function savedCard(){
  const fd=id=>new Date(id).toLocaleDateString('he-IL',{day:'numeric',month:'numeric'})+' '+new Date(id).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
  return `<div class="card"><p style="font-weight:600;margin-top:0">📂 מבחנים שמורים (עובדים גם בלי אינטרנט)</p>${l.map(t=>`<div class="item"><span>${fd(t.id)} · ${t.qs.length} שאלות</span><span><button class="btn" style="width:auto;padding:6px 14px" data-play="${t.id}">תרגל</button> <button data-del="${t.id}">✕</button></span></div>`).join('')}</div>`;
 }
+const STOP=new Set('של את על עם אל כי גם או אם זה זו הוא היא הם הן אני לא כל מן יש אין היה להיות כך אבל רק עוד כמו בין לפי אחרי לפני תוך אשר שלא שהוא שהיא מאוד'.split(' '));
+const GEN=new Set('מספר מספרים דוגמה דוגמאות תרגיל תרגילים נושא פרק שאלה שאלות חומר צריך יכול אפשר בעל בעלי'.split(' '));
+const META=/(המבחן|הבוחן|יארך|יכלול|יתקיים|ייערך|תלמידים והורים|תלמידים יקרים|הורים יקרים|בהצלחה|הנושאים הבאים|הוראות|המורה|מורה|מועד|תאריך|מקצוע|כיתה)/;
+const strip=w=>w.replace(/[.,;:()\[\]"'״׳?!]/g,'');
+const stem=w=>strip(w).replace(/^[והבכלמש]{1,2}(?=.{3,})/,'').slice(0,4);
+function sentencesOf(text,relax){
+ const clean=text.replace(/\*\*|__|#+/g,'').replace(/^\s*[-*•]\s+/gm,'').replace(/^\s*\d+[.)]\s*/gm,'');
+ const minW=relax?2:5,minC=relax?6:25,out=[],seen=new Set();
+ clean.split(/(?<=[.!?:;])\s+|\n+/).forEach(x=>{x=x.trim();if(relax)x=x.replace(/[.:;]+$/,'');const w=x.split(/\s+/).length;
+  if(w<minW||x.length<minC||x.length>220||(!relax&&/:$/.test(x))||META.test(x)||seen.has(x))return;seen.add(x);out.push(x)});
+ return out;
+}
+function keysOf(s,freq){
+ freq=freq||{};
+ const nums=(s.match(/\d+(?:[.,]\d+)?/g)||[]).map(v=>({kind:'num',val:v}));
+ const c=[...new Set(s.split(/\s+/).map(strip).filter(w=>w.length>=4&&!STOP.has(w)&&!/\d/.test(w)))];
+ const sc=w=>(freq[stem(w)]>=2?2:0)+(GEN.has(w)?-3:0)+Math.min(w.length,9)/5;
+ c.sort((a,b)=>sc(b)-sc(a));
+ const sh=[...new Set(s.split(/\s+/).map(strip).filter(w=>w.length==3&&!STOP.has(w)&&!/\d/.test(w)))];
+ return nums.concat(c.map(v=>({kind:'word',val:v})),sh.map(v=>({kind:'word',val:v})));
+}
+const keyOf=s=>keysOf(s)[0]||null;
+function defOf(s){
+ let m2=s.match(/^כדי\s+(.{6,70}?)\s+(?:צריך|יש|כדאי|חייבים|נהוג)\s+(.{8,})$/);
+ if(m2)return{q:'מה צריך לעשות כדי '+m2[1].replace(/[,:]+$/,'')+'?',a:m2[2].replace(/[.!]+$/,'').trim()};
+ m2=s.match(/^(.{3,40}?)\s+[-–:]\s+(.{10,})$/);
+ if(m2&&m2[1].split(/\s+/).length<=4&&!/[\d]/.test(m2[1]))return{q:'מהו '+m2[1].trim()+'?',a:m2[2].replace(/[.!]+$/,'').trim()};
+ const m=s.match(/^(.{3,45}?)\s+(הוא|היא|הם|הן)\s+(.{12,})$/);
+ if(!m)return null;
+ const subj=m[1].trim();
+ if(subj.split(/\s+/).length>4||/^(אם|כאשר|כדי|לכן|כי|גם|אך|אבל|ככל|בכל|כל|אז|וכן)(\s|$)/.test(subj)||/[\d,]/.test(subj))return null;
+ const wh={'הוא':'מהו','היא':'מהי','הם':'מהם','הן':'מהן'}[m[2]];
+ return{q:wh+' '+subj+'?',a:m[3].replace(/[.!]+$/,'').trim()};
+}
+function blank(s,k){let done=false;return s.split(' ').map(t=>{if(!done&&(k.kind=='num'?t.includes(k.val):strip(t)==k.val)){done=true;return t.replace(k.val,'_____')}return t}).join(' ')}
+function defMc(d,si,D,s){
+ const others=D.filter((x,j)=>x&&j!==si&&x.a!==d.a&&x.a.length<=90);
+ if(d.a.length>90||others.length<3)return null;
+ others.sort((x,y)=>Math.abs(x.a.length-d.a.length)-Math.abs(y.a.length-d.a.length));
+ const o=shuffle([d.a,...shuffle(others.slice(0,5)).slice(0,3).map(x=>x.a)]);
+ return{type:'mc',q:d.q,options:o,answer:o.indexOf(d.a),why:'התשובה: '+s};
+}
+function mcOf(s,k,pool,allW){
+ let d=[];
+ if(k.kind=='num'){
+  d=shuffle([...new Set(pool.filter(p=>p.kind=='num'&&p.val!==k.val).map(p=>p.val))]).slice(0,3);
+  const x=parseFloat(k.val.replace(',','.')),dec=/[.,]/.test(k.val);
+  [x+1,x-1,x*2,x+10,Math.round(x/2),x+5].forEach(y=>{const t=dec?String(+y.toFixed(1)):String(Math.round(y));
+   if(d.length<3&&y>0&&t!==k.val&&!d.includes(t))d.push(t)});
+ }else{
+  const kp=k.val[0]=='ה',ks=k.val.slice(-2),k4=stem(k.val);
+  const c=[...new Set(pool.filter(p=>p.kind=='word').map(p=>p.val).concat(allW))].filter(w=>w!==k.val&&stem(w)!==k4);
+  const sc=w=>((w[0]=='ה')==kp?2:0)+(w.slice(-2)==ks?2:0)-Math.abs(w.length-k.val.length)/2;
+  c.sort((a,b)=>sc(b)-sc(a));
+  d=shuffle(c.slice(0,6)).slice(0,3);
+ }
+ if(d.length<3)return null;
+ const o=shuffle([k.val,...d]);
+ return{type:'mc',q:'השלם את המשפט: '+blank(s,k),options:o,answer:o.indexOf(k.val),why:'המשפט המלא: '+s};
+}
+function openFill(s){
+ const w=s.split(' ');
+ if(w.length<5)return{type:'open',q:'כתוב מה אתה יודע על: '+w.slice(0,3).join(' '),model:s};
+ return{type:'open',q:'השלם את המשפט: '+w.slice(0,Math.max(3,Math.ceil(w.length*.45))).join(' ')+' ...',model:s};
+}
+
+/* ---- מחולל מבחן מקומי (בלי AI): תרגילים והגדרות מהחומר ---- */
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const fr=(n,d)=>{const g=gcd(n,d);n/=g;d/=g;return d==1?String(n):n+'/'+d};
+const dc=x=>String(+x.toFixed(2));
+function exGens(text,sub){
+ const has=w=>text.includes(w),g=[];
+ const math=sub=='מתמטיקה'||/שבר|עשרוני|כפל|חילוק|אחוז|חיבור|חיסור/.test(text);
+ if(!math)return g;
+ const F=has('שבר'),D=has('עשרוני');
+ const dn=[2,3,4,5,6,8,10,12];
+ if(F){
+  g.push(()=>{let d1=dn[rnd(0,7)],d2=dn[rnd(0,7)];while(d2==d1)d2=dn[rnd(0,7)];const n1=rnd(1,d1-1),n2=rnd(1,d2-1);
+   const num=n1*d2+n2*d1,den=d1*d2;
+   return{q:`חשב: ${n1}/${d1} + ${n2}/${d2} = ?`,a:fr(num,den),wrong:[`${n1+n2}/${d1+d2}`,fr(num+1,den),`${n1+n2}/${Math.max(d1,d2)}`,fr(num,den+1)]}});
+  g.push(()=>{let d1=dn[rnd(0,7)],d2=dn[rnd(0,7)];while(d2==d1)d2=dn[rnd(0,7)];let n1=rnd(1,d1-1),n2=rnd(1,d2-1);
+   if(n1*d2<n2*d1){[n1,n2]=[n2,n1];[d1,d2]=[d2,d1]}
+   const num=n1*d2-n2*d1,den=d1*d2;if(num<=0)return null;
+   return{q:`חשב: ${n1}/${d1} - ${n2}/${d2} = ?`,a:fr(num,den),wrong:[`${Math.max(1,n1-n2)}/${Math.abs(d1-d2)||1}`,fr(num+1,den),`${Math.max(1,n1-n2)}/${d1*d2}`,fr(num,den+1)]}});
+  if(/צמצ/.test(text))g.push(()=>{const b=dn[rnd(1,7)],a=rnd(1,b-1);if(gcd(a,b)!=1)return null;const k=rnd(2,6);
+   return{q:`צמצם את השבר ${a*k}/${b*k} (כתוב שבר מצומצם)`,a:fr(a,b),wrong:[`${a*k}/${b*k}`,`${a}/${b+1}`,`${a+1}/${b}`,`${a*k}/${b}`]}});
+  if(/מעורב/.test(text))g.push(()=>{const w=rnd(1,4),d=dn[rnd(0,5)],n=rnd(1,d-1);if(gcd(n,d)!=1)return null;
+   return{q:`הפוך את המספר המעורב ${w} ${n}/${d} לשבר`,a:`${w*d+n}/${d}`,wrong:[`${w+n}/${d}`,`${w*d}/${d}`,`${w*d+n}/${w+d}`,`${w*d+n}/${w}`]}});
+ }
+ if(D){
+  g.push(()=>{const a=rnd(11,990)/10,b=rnd(11,990)/100,s=a+b;return{q:`חשב: ${dc(a)} + ${dc(b)} = ?`,a:dc(s),wrong:[dc(s+.1),dc(s-.1),dc(s*10),dc(s/10)]}});
+  g.push(()=>{const a=rnd(200,990)/10,b=rnd(11,190)/100,s=a-b;return{q:`חשב: ${dc(a)} - ${dc(b)} = ?`,a:dc(s),wrong:[dc(s+.1),dc(s-.1),dc(s/10),dc(s*10)]}});
+  if(/כפל/.test(text))g.push(()=>{const a=rnd(11,99)/10,m=[10,100][rnd(0,1)];return{q:`חשב: ${dc(a)} × ${m} = ?`,a:dc(a*m),wrong:[dc(a*m*10),dc(a*m/10),dc(a+m),dc(a*m+1)]}});
+ }
+ if(has('כפל')||(!F&&!D))g.push(()=>{const a=rnd(6,19),b=rnd(3,9);return{q:`חשב: ${a} × ${b} = ?`,a:String(a*b),wrong:[String(a*b+a),String(a*b-b),String(a+b),String(a*b+10)]}});
+ if(has('חילוק')||(!F&&!D&&has('כפל')))g.push(()=>{const b=rnd(3,9),c=rnd(6,19);return{q:`חשב: ${b*c} ÷ ${b} = ?`,a:String(c),wrong:[String(c+1),String(c-1),String(b),String(c+2)]}});
+ if(!F&&!D&&/חיבור|חיסור/.test(text)){
+  g.push(()=>{const a=rnd(120,890),b=rnd(120,890);return{q:`חשב: ${a} + ${b} = ?`,a:String(a+b),wrong:[String(a+b+10),String(a+b-10),String(a+b+100),String(a+b-100)]}});
+  g.push(()=>{const a=rnd(500,990),b=rnd(120,490);return{q:`חשב: ${a} - ${b} = ?`,a:String(a-b),wrong:[String(a-b+10),String(a-b-10),String(a-b+100),String(a-b-100)]}});
+ }
+ if(has('אחוז'))g.push(()=>{const p=[10,20,25,50][rnd(0,3)],n=rnd(1,10)*20;return{q:`כמה הם ${p}% מ-${n}?`,a:String(n*p/100),wrong:[String(n*p/100+5),String(n/p),String(p+n),String(n*p/100*2)]}});
+ return g;
+}
+function mkEx(gens,used){
+ for(let t=0;t<40;t++){const x=gens[rnd(0,gens.length-1)]();if(x&&!used.has(x.q)){used.add(x.q);return x}}
+ return null;
+}
+function exMc(x){
+ const w=[...new Set(x.wrong.filter(v=>v&&v!==x.a&&!/\/1$/.test(v)))];
+ while(w.length<3){const n=parseFloat(x.a);w.push(isNaN(n)?x.a+w.length:dc(n+w.length+1))}
+ const o=shuffle([x.a,...w.slice(0,3)]);
+ return{type:'mc',q:x.q,options:o,answer:o.indexOf(x.a),why:'התשובה: '+x.a};
+}
+function localTest(text,n,no){
+ const total=n+no,gens=exGens(text,SUBJ),used=new Set();
+ let L=sentencesOf(text);if(L.length<3){const r=sentencesOf(text,true);if(r.length>L.length)L=r}
+ const freq={};text.split(/\s+/).map(strip).filter(w=>w.length>=3).forEach(w=>{const k=stem(w);freq[k]=(freq[k]||0)+1});
+ const K=L.map(s=>keysOf(s,freq)),D=L.map(defOf),defs=D.map((d,i)=>d?i:-1).filter(i=>i>=0);
+ const pool=K.map(k=>k[0]).filter(Boolean),allW=[...new Set(text.split(/\s+/).map(strip).filter(w=>w.length>=3&&!STOP.has(w)&&!/\d/.test(w)))];
+ let di=0;const takeDef=mc=>{while(di<defs.length){const si=defs[di++],d=D[si];if(mc){const q=defMc(d,si,D,L[si]);if(q)return q}else return{type:'open',q:d.q,model:L[si]}}return null};
+ const out=[];
+ for(let i=0;i<total;i++){
+  const isOpen=Math.floor((i+1)*no/total)>Math.floor(i*no/total);
+  let q=null;
+  if(gens.length){
+   if(defs.length&&i%3==2)q=takeDef(!isOpen);
+   if(!q){const x=mkEx(gens,used);if(x)q=isOpen?{type:'open',q:x.q,model:x.a,num:true}:exMc(x)}
+  }else{
+   q=takeDef(!isOpen);
+   if(!q&&L.length){const si=Math.min(L.length-1,Math.floor((i+.5)*L.length/Math.max(1,total))),s=L[si],key=(K[si]||[])[0];
+    if(!isOpen&&key)q=mcOf(s,key,pool,allW);
+    if(!q)q=openFill(s)}
+  }
+  if(q&&!out.some(z=>z.q==q.q))out.push(q);
+ }
+ return out;
+}
+function localCheck(ans,model){
+ const v=x=>{x=String(x).replace(/\s/g,'').replace(',','.');const m=x.match(/^(-?\d+(?:\.\d+)?)\/(\d+)$/);return m?+m[1]/+m[2]:parseFloat(x)};
+ const a=v(ans),b=v(model);if(isNaN(a)||isNaN(b))return null;
+ return Math.abs(a-b)<1e-9?{score:1,text:'נכון!'}:{score:0,text:'לא נכון.'};
+}
 async function gen(){
  const text=$('mat').value.trim(),n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
  S.mats[SUBJ]=text;T.n=n;T.no=no;save();
@@ -332,7 +474,11 @@ async function gen(){
   const a=(Array.isArray(r)?r:r.questions||[]).filter(x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1));
   if(!a.length)throw new Error('empty');
   T.qs=a.slice(0,n+no);saveTest(T.qs);T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;
- }catch(e){T.err=aiErr(e)}
+ }catch(e){
+  const lr=localTest(text,n,no);
+  if(lr.length){T.qs=lr;saveTest(lr);T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast('נוצר מבחן בלי AI (תרגילים והגדרות מהחומר). למבחן חכם יותר, הוסף מפתח בהגדרות ⚙️')}
+  else T.err=aiErr(e)
+ }
  T.loading=false;render();
 }
 const THEMES=[['סגול-ורוד','linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2777 100%)','linear-gradient(135deg,#2a6df4,#6b9bff)'],['ים','linear-gradient(160deg,#0f4c81 0%,#0891b2 60%,#34d399 100%)','linear-gradient(135deg,#0891b2,#38bdf8)'],['ירוק','linear-gradient(160deg,#064e3b 0%,#10a37f 60%,#a3e635 100%)','linear-gradient(135deg,#10a37f,#34d399)'],['שקיעה','linear-gradient(160deg,#9a3412 0%,#f97316 55%,#fbbf24 100%)','linear-gradient(135deg,#ea580c,#fb923c)'],['לילה','linear-gradient(160deg,#0b1020 0%,#1e1b4b 60%,#312e81 100%)','linear-gradient(135deg,#4338ca,#818cf8)']];
@@ -368,6 +514,7 @@ async function gradeOpen(q){
  T.ans=ans;T.way=way;
  const fc=fracCheck(ans,q.model);
  if(fc){T.fb=fc;T.score+=fc.score;render();if(fc.score==1)confetti();return}
+ if(q.num){const lc=localCheck(ans,q.model);if(lc){T.fb=lc;T.score+=lc.score;render();if(lc.score==1)confetti();return}}
  T.busy=true;$('gr').disabled=true;$('gr').textContent='בודק…';
  try{const r=await aiJson(`בדוק תשובת תלמיד לשאלה פתוחה במקצוע ${SUBJ}.\nשאלה: ${q.q}\nתשובה מצופה: ${q.model}\nתשובת התלמיד: ${ans}${way?'\nדרך הפתרון שהתלמיד כתב: '+way:''}\nהציון נקבע לפי התשובה הסופית. דרך הפתרון אופציונלית: אם היא קיימת, התייחס אליה במשוב. במתמטיקה, שבר שאפשר לצמצם ולא צומצם הוא שגוי.\nהחזר JSON בלבד: {"score":0 או 0.5 או 1,"feedback":"משוב קצר בעברית: מה נכון ומה חסר"}`);
   const sc=[0,0.5,1].includes(+r.score)?+r.score:0;
@@ -392,7 +539,7 @@ function testView(){
   const next=()=>{T.i++;T.pick=null;T.ans='';T.way='';T.fb=null;render()};
   const tag=`שאלה ${T.i+1}/${T.qs.length}`;
   if(q.type=='open'){
-   const f=T.fb,math=SUBJ=='מתמטיקה',dis=f?'disabled':'';
+   const f=T.fb,math=SUBJ=='מתמטיקה'&&/^[\d\s.,\/\-]+$/.test(String(q.model).trim()),dis=f?'disabled':'';
    let fbh='';
    if(f&&f.shown){fbh=`<div class="tmsg tneu" style="text-align:right"><b>תשובה מצופה:</b> ${esc(String(q.model))}</div><p style="font-weight:700;margin:12px 0 0">איך הלך לך?</p><div class="trow"><button class="tbtn r" data-s="0">לא ידעתי</button><button class="tbtn y" data-s="0.5">חלקית</button><button class="tbtn" data-s="1">ידעתי</button></div>`}
    else if(f){const c=f.score==1?'tok':f.score==0?'tbad':'tneu';fbh=`<div class="tmsg ${c}">${f.unchecked?'':f.score==1?'נכון! ✓ ':f.score==.5?'נכון חלקית ':(/^כמעט/.test(f.text)?'':'לא נכון ')}${esc(f.text)}</div><p class="mute" style="color:#5d6b85"><b>תשובה מצופה:</b> ${esc(String(q.model))}</p><div class="trow"><button class="tbtn" id="nx">${last}</button></div>`}
@@ -589,34 +736,48 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.55';
-function navDraw(){
+const VER='1.59';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
  $('nb').onclick=()=>{if(showSet){showSet=false}else if(tab==3){tab=4;T.qs=[]}else if(tab==6&&P.cur){podStop();P.cur=null}else if(tab==5&&GS){GS=''}else{podStop();tab=0;mode='list'}render()};
 }
 /* ---- פודקאסט ---- */
-let P={sub:'',len:5,loading:false,err:'',cur:null,i:0,playing:false,rate:1,tok:0};
+let P={sub:'',len:5,loading:false,err:'',cur:null,i:0,playing:false,rate:1,tok:0,msg:''};
 const POD_LINES={2:14,5:34,10:70};
 function podStop(){P.playing=false;P.tok++;try{speechSynthesis.cancel()}catch(e){}}
+function podErr(c){
+ if(c=='not-supported')return 'הדפדפן הזה לא תומך בהקראה. פתח את האפליקציה בכרום.';
+ if(c=='language-unavailable'||c=='voice-unavailable')return 'אין קול בעברית במכשיר. בהגדרות הטלפון: ניהול כללי ← המרת טקסט לדיבור ← הורד עברית.';
+ return 'ההקראה לא התחילה ('+c+'). בדוק שהווליום של המדיה לא על אפס ושיש קול בעברית (הגדרות ← ניהול כללי ← המרת טקסט לדיבור). אם פתחת מתוך אפליקציית Claude, פתח בכרום.';
+}
 function podSay(){
  const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
+ if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance=='undefined'){P.playing=false;P.msg=podErr('not-supported');render();return}
  const ln=c.lines[P.i],u=new SpeechSynthesisUtterance(ln.t),tok=++P.tok;
  const g=ln.w=='b'?'male':'female',gv=pickVoice('he-IL',g),v=gv||pickVoice('he-IL','');
- u.lang='he-IL';u.rate=Math.min(2,.95*P.rate);if(v)u.voice=v;if(!gv)u.pitch=g=='female'?1.5:.6;
+ u.lang='he-IL';u.rate=Math.min(2,.95*P.rate);u.volume=1;if(v)u.voice=v;if(!gv)u.pitch=g=='female'?1.5:.6;
+ let started=false;
+ u.onstart=()=>{started=true;if(P.msg){P.msg='';render()}};
  u.onend=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)podSay()};
- u.onerror=e=>{if(tok!==P.tok)return;if(e.error&&e.error!='canceled'&&e.error!='interrupted'){P.playing=false;toast('ההקראה נכשלה: '+e.error);render()}};
- try{speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){P.playing=false;toast('הדפדפן הזה לא תומך בהקראה')}
+ u.onerror=e=>{if(tok!==P.tok)return;if(e.error=='canceled'||e.error=='interrupted')return;P.playing=false;P.msg=podErr(e.error||'error');render()};
+ try{
+  speechSynthesis.cancel();
+  setTimeout(()=>{
+   if(tok!==P.tok)return;
+   try{speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){P.playing=false;P.msg=podErr('error');render();return}
+   setTimeout(()=>{if(tok===P.tok&&P.playing&&!started&&!speechSynthesis.speaking){P.playing=false;P.msg=podErr('silent');render()}},3500);
+  },120);
+ }catch(e){P.playing=false;P.msg=podErr('error');render()}
 }
 async function podGen(){
  const ta=$('pm'),text=(ta?ta.value:'').trim();if(P.sub){S.mats[P.sub]=text;save()}
  if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
- if(text.length<20){P.err='כתוב חומר ללימוד (לפחות כמה משפטים).';render();return}
+ if(text.length<3){P.err='כתוב נושא או חומר ללימוד.';render();return}
  P.loading=true;P.err='';render();
  try{
   const n=POD_LINES[P.len]||34;
-  const r=await aiJson(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);
+  const r=await aiJson(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);
   const lines=(r.lines||[]).filter(x=>x&&x.t&&String(x.t).trim()).map(x=>({w:x.w=='b'?'b':'a',t:String(x.t).trim()}));
   if(lines.length<4)throw new Error('empty');
   const pod={id:Date.now(),sub:P.sub,title:String(r.title||P.sub),lines};
@@ -634,16 +795,17 @@ function podView(){
   v.innerHTML=`<div class="pl"><div class="cover">🎧</div><div class="pt">${esc(c.title)}</div><div class="ps">${esc(c.sub)} · נועה ודני</div>
   <div class="wave ${P.playing?'go':''}">${'<i></i>'.repeat(10)}</div><div class="pbar"><i style="width:${pct}%"></i></div><div class="ptm">${Math.min(P.i+1,n)}/${n}</div>
   <div class="pctl"><button id="pprev" aria-label="הקודם">⏮</button><button class="pp" id="pplay" aria-label="הפעל או עצור">${P.playing?'⏸':'▶'}</button><button id="pnext" aria-label="הבא">⏭</button></div>
+  ${P.msg?`<div style="margin:12px 0 0;padding:10px;border-radius:14px;background:rgba(251,191,36,.18);color:#fde68a;font-size:14px;line-height:1.5">⚠️ ${esc(P.msg)}</div>`:''}
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(l.t)}</div></div>`).join('')}</div></div>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
   const go=()=>{if(P.playing)podSay();render()};
-  $('pplay').onclick=()=>{if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
+  $('pplay').onclick=()=>{P.msg='';if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
   $('pnext').onclick=()=>{P.i=Math.min(n-1,P.i+1);go()};
   v.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{P.rate=+b.dataset.r;go()});
   v.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{P.i=+b.dataset.l;go()});
-  $('pback').onclick=()=>{podStop();P.cur=null;render()};
+  $('pback').onclick=()=>{podStop();P.cur=null;P.msg='';render()};
   const bx=$('chat'),el=bx.querySelector('.on');if(el)bx.scrollTop=el.offsetTop-bx.clientHeight/2+el.clientHeight/2;
   return}
  if(!P.sub||!S.subjects.includes(P.sub))P.sub=S.subjects[0]||'';
@@ -651,7 +813,7 @@ function podView(){
  v.innerHTML=`<div class="tcard"><div class="thd" style="background:linear-gradient(135deg,#a855f7,#ec4899,#f97316)"><div class="ic">🎧</div><div><small>מקשיבים לחומר כמו לשיחה</small><b>פודקאסט</b></div></div><div class="tbd">
   <label>מקצוע</label><div class="pchs">${S.subjects.map(n=>`<button class="pch ${n==P.sub?'on':''}" data-sb="${esc(n)}">${esc(n)}</button>`).join('')||'<span class="mute">אין מקצועות עדיין. הוסף במסך המבחנים.</span>'}</div>
   <label>כמה זמן?</label><div class="pchs">${[[2,'קצר','2 דקות'],[5,'בינוני','5 דקות'],[10,'ארוך','10 דקות']].map(([l,a,b])=>`<button class="pch ${P.len==l?'on':''}" data-ln="${l}">${a}<small>${b}</small></button>`).join('')}</div>
-  <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק או כתוב את החומר"></textarea>
+  <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק חומר, או כתוב רק נושא (למשל: אתונה נגד ספרטה)"></textarea>
   <div class="msg" style="color:var(--bad)">${esc(P.err)}</div><button class="tbtn" id="pg" style="width:100%">צור פודקאסט ✨</button></div></div>
   ${pods.length?`<div class="card" style="margin-top:14px"><p style="font-weight:600;margin-top:0">📂 פודקאסטים שמורים (עובדים גם בלי אינטרנט)</p>${pods.map(p=>`<div class="item"><span>${esc(p.title)}<br><small class="mute">${esc(p.sub)} · ${p.lines.length} תורות</small></span><span><button class="btn" style="width:auto;padding:6px 14px" data-pl="${p.id}">האזן</button> <button data-pd="${p.id}">✕</button></span></div>`).join('')}</div>`:''}`;
  $('pm').value=S.mats[P.sub]||'';addUpload('pm');
