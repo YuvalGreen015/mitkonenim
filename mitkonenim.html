@@ -167,6 +167,16 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 #upov .o:active{background:#eef1f7}
 #upov .o i{display:flex;width:68px;height:68px;margin:0 auto 6px;border-radius:50%;align-items:center;justify-content:center;font-size:32px;font-style:normal;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 #upov .n{font-size:13px;color:#5d6b85;margin-top:14px;text-align:center}
+.tbg #v>p,.tbg #v>.mute{color:#fff}
+.tbg #v>.mute{opacity:.9}
+#v .card>.btn{margin-top:12px}#v .card>.btn.sec{margin-top:12px}
+#v>.btn{margin-top:14px}#v>.btn.sec{margin-top:14px}
+.dpb{height:10px;background:rgba(255,255,255,.3);border-radius:10px;overflow:hidden;margin:0 0 14px}.dpb i{display:block;height:100%;background:#fbbf24;border-radius:10px;transition:width .4s}
+.spk{display:flex;align-items:center;justify-content:center;width:120px;height:120px;margin:10px auto 14px;border-radius:50%;border:0;background:linear-gradient(135deg,#2a6df4,#8b5cf6);color:#fff;font-size:54px;box-shadow:0 10px 24px rgba(42,109,244,.45)}
+.spk:active{transform:scale(.95)}
+.dword{font-size:34px;font-weight:800;text-align:center;margin:10px 0 14px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#eef4ff,#f6ecff);color:#14213d}
+#ans{font-size:22px;font-weight:700;text-align:center;padding:14px;border-radius:16px}
+.tbg #v>.btn.sec{background:#fff;color:#6d28d9;border-color:#d9c9f7}
 </style>
 </head>
 <body>
@@ -194,7 +204,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function render(){
- document.body.classList.remove('tbg');
+ document.body.classList.add('tbg');
  navDraw();
  if(showSet){settingsView();kbSync();return}
  tab==0?homeView():tab==5?gradesView():tab==4?subjectsView():tab==3?testView():tab==6?podView():tab==1?cardsView():wordsView();
@@ -253,8 +263,9 @@ function wordsView(){
  if(mode=='quiz'){
   if(!queue.length){if(!stat.saved){stat.saved=1;rec('dict',stat.ok,stat.ok+stat.bad)}v.innerHTML=`<div class="card"><div class="big">סיימת הכתבה! 🎉</div><div class="msg">נכון: ${stat.ok} · טעויות: ${stat.bad}</div><div class="bar"><i style="width:${Math.round(100*stat.ok/Math.max(1,stat.ok+stat.bad))}%"></i></div><button class="btn" id="back">חזרה</button></div>`;$('back').onclick=()=>{mode='list';render()};return}
   cur=queue[0];
-  v.innerHTML=`<div class="card"><div class="mute">נשארו ${queue.length} מילים</div><div class="big">${done?esc(cur):'🔊'}</div>
-  <button class="btn sec" id="rep">שמע שוב</button><div style="height:8px"></div>
+  const tot=Math.max(1,S.words.length),doneN=Math.min(tot,tot-queue.length);
+  v.innerHTML=`<div class="dpb"><i style="width:${Math.round(100*doneN/tot)}%"></i></div><div class="card"><div class="mute" style="text-align:center">נשארו ${queue.length} מילים</div>${done?`<div class="dword">${esc(cur)}</div>`:`<button class="spk" id="rep" aria-label="שמע שוב">🔊</button>`}
+  ${done?'<button class="btn sec" id="rep">שמע שוב</button>':''}<div style="height:8px"></div>
   <input id="ans" dir="${isEn(cur)?'ltr':'rtl'}" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="כתוב את המילה"><div class="msg" id="m"></div>
   <button class="btn" id="chk">בדוק</button></div>
   <button class="btn sec" id="back">סיום</button>`;
@@ -263,7 +274,7 @@ function wordsView(){
    if(done){done=false;queue.shift();render();return}
    const a=$('ans').value.trim();
    if(nz(a)===nz(cur)){stat.ok++;$('m').style.color='var(--ok)';$('m').textContent='נכון! ✓';done=false;queue.shift();setTimeout(render,700)}
-   else{stat.bad++;done=true;$('m').style.color='var(--bad)';$('m').textContent='לא מדויק. כך כותבים:';$('chk').textContent='הבנתי, הבא';v.querySelector('.big').textContent=cur}
+   else{stat.bad++;done=true;$('m').style.color='var(--bad)';$('m').textContent='לא מדויק. כך כותבים:';$('chk').textContent='הבנתי, הבא';{const sp=$('rep');if(sp&&sp.classList.contains('spk')){const dw=document.createElement('div');dw.className='dword';dw.textContent=cur;sp.insertAdjacentElement('beforebegin',dw)}}}
   };
   $('chk').onclick=check;$('ans').onkeydown=e=>{if(e.key=='Enter')check()};
   if(!done)setTimeout(()=>speak(cur),50);
@@ -523,7 +534,7 @@ async function gradeOpen(q){
  T.busy=false;render();if(T.fb&&T.fb.score==1)confetti();
 }
 function testView(){
- const v=$('v');document.body.classList.remove('tbg');
+ const v=$('v');document.body.classList.add('tbg');
  if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div></div>';return}
  if(T.qs.length){document.body.classList.add('tbg');
   const sk=T.skipped||0,tot=Math.max(0,T.qs.length-sk);
@@ -736,7 +747,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.59';function navDraw(){
+const VER='1.60';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
