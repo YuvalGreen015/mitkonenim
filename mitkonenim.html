@@ -317,8 +317,24 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 const AI_MODELS=['gemini-2.5-flash','gemini-2.0-flash'];
 const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
+async function pollJson(prompt){
+ const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),45000);
+ try{
+  const res=await fetch('https://text.pollinations.ai/openai?referrer=mitkonenim',{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
+   body:JSON.stringify({model:'openai',messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:prompt}],temperature:.7})});
+  if(res.status==429)throw new Error('limit');
+  if(!res.ok)throw new Error('http'+res.status);
+  const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
+  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+ }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
+ finally{clearTimeout(tm)}
+}
 async function aiJson(prompt,files){
- const key=getKey();if(!key)throw new Error('nokey');
+ try{return await aiGem(prompt,files)}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){return pollJson(prompt)}throw e}
+}
+async function aiGem(prompt,files){
+ const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return pollJson(prompt)}
  let last='http';
  for(const model of AI_MODELS){
   let res;
@@ -354,25 +370,33 @@ function savedCard(){
  return `<div class="card"><p style="font-weight:600;margin-top:0">📂 מבחנים שמורים (עובדים גם בלי אינטרנט)</p>${l.map(t=>`<div class="item"><span>${fd(t.id)} · ${t.qs.length} שאלות</span><span><button class="btn" style="width:auto;padding:6px 14px" data-play="${t.id}">תרגל</button> <button data-del="${t.id}">✕</button></span></div>`).join('')}</div>`;
 }
 const STOP=new Set('של את על עם אל כי גם או אם זה זו הוא היא הם הן אני לא כל מן יש אין היה להיות כך אבל רק עוד כמו בין לפי אחרי לפני תוך אשר שלא שהוא שהיא מאוד'.split(' '));
-const GEN=new Set('מספר מספרים דוגמה דוגמאות תרגיל תרגילים נושא פרק שאלה שאלות חומר צריך יכול אפשר בעל בעלי'.split(' '));
+const GEN=new Set('מספר מספרים דוגמה דוגמאות תרגיל תרגילים נושא פרק שאלה שאלות חומר צריך יכול אפשר בעל בעלי התלמידים התלמיד להבין להכיר לדעת מבנה סוגי בעזרת יחידה טקסט כתיבה הבנה עליהם שונים שונות מסוגים'.split(' '));
+const META2=/^\s*(יש\s+(ל|צורך)|עליהם|עליהן|על\s+ה?(תלמידים|ילדים|תלמיד)|יהיה|יהיו|תהיה|תהיינה|אין\s+צורך|רק\s|נא\s|בנוסף|הנושאים|נושאי|נושא\s|דוגמ[אה]|כתיבת|הבנת|מיומנויות|יעדים|מטרות|החומר|יכיר|יידע|ידע\s)|להכיר את|ללמוד בעל פה|אוצר המילים של היחידה|שאלות הבנת/;
 const META=/(המבחן|הבוחן|יארך|יכלול|יתקיים|ייערך|תלמידים והורים|תלמידים יקרים|הורים יקרים|בהצלחה|הנושאים הבאים|הוראות|המורה|מורה|מועד|תאריך|מקצוע|כיתה)/;
+const isLat=x=>{const l=(x.match(/[A-Za-z]/g)||[]).length,h=(x.match(/[\u0590-\u05FF]/g)||[]).length;return l>h};
+const FAM=[['am','is','are','was','were','be','been','being'],['have','has','had'],['do','does','did'],['a','an','the'],['I','you','he','she','it','we','they'],['this','that','these','those'],['my','your','his','her','its','our','their'],['can','could','will','would','should','may','might','must'],['in','on','at','under','over','between']];
+const ENSTOP=new Set('and or but of to for with from by as so if then than also very not no yes'.split(' '));
+const famOf=w=>FAM.find(f=>f.some(x=>x.toLowerCase()==w.toLowerCase()));
 const strip=w=>w.replace(/[.,;:()\[\]"'״׳?!]/g,'');
 const stem=w=>strip(w).replace(/^[והבכלמש]{1,2}(?=.{3,})/,'').slice(0,4);
 function sentencesOf(text,relax){
  const clean=text.replace(/\*\*|__|#+/g,'').replace(/^\s*[-*•]\s+/gm,'').replace(/^\s*\d+[.)]\s*/gm,'');
  const minW=relax?2:5,minC=relax?6:25,out=[],seen=new Set();
- clean.split(/(?<=[.!?:;])\s+|\n+/).forEach(x=>{x=x.trim();if(relax)x=x.replace(/[.:;]+$/,'');const w=x.split(/\s+/).length;
-  if(w<minW||x.length<minC||x.length>220||(!relax&&/:$/.test(x))||META.test(x)||seen.has(x))return;seen.add(x);out.push(x)});
+ clean.split(/(?<=[.!?:;])\s+|\n+/).forEach(x=>{x=x.trim();if(relax)x=x.replace(/[.:;]+$/,'');const w=x.split(/\s+/).length,lw=isLat(x);
+  if(w<(lw?3:minW)||x.length<(lw?9:minC)||x.length>220||(!relax&&/:$/.test(x))||META.test(x)||META2.test(x)||seen.has(x))return;seen.add(x);out.push(x)});
  return out;
 }
 function keysOf(s,freq){
  freq=freq||{};
+ const lat=[...new Set((s.match(/[A-Za-z]+(?:'[a-z]+)?/g)||[]).filter(w=>(w.length>=2||famOf(w)||w=='I'||w=='a')&&!ENSTOP.has(w.toLowerCase())))];
+ lat.sort((a,b)=>(famOf(b)?1:0)-(famOf(a)?1:0)||b.length-a.length);
+ const latK=lat.map(v=>({kind:'word',val:v}));
  const nums=(s.match(/\d+(?:[.,]\d+)?/g)||[]).map(v=>({kind:'num',val:v}));
  const c=[...new Set(s.split(/\s+/).map(strip).filter(w=>w.length>=4&&!STOP.has(w)&&!/\d/.test(w)))];
  const sc=w=>(freq[stem(w)]>=2?2:0)+(GEN.has(w)?-3:0)+Math.min(w.length,9)/5;
  c.sort((a,b)=>sc(b)-sc(a));
  const sh=[...new Set(s.split(/\s+/).map(strip).filter(w=>w.length==3&&!STOP.has(w)&&!/\d/.test(w)))];
- return nums.concat(c.map(v=>({kind:'word',val:v})),sh.map(v=>({kind:'word',val:v})));
+ return latK.concat(nums,c.map(v=>({kind:'word',val:v})),sh.map(v=>({kind:'word',val:v})));
 }
 const keyOf=s=>keysOf(s)[0]||null;
 function defOf(s){
@@ -402,6 +426,14 @@ function mcOf(s,k,pool,allW){
   const x=parseFloat(k.val.replace(',','.')),dec=/[.,]/.test(k.val);
   [x+1,x-1,x*2,x+10,Math.round(x/2),x+5].forEach(y=>{const t=dec?String(+y.toFixed(1)):String(Math.round(y));
    if(d.length<3&&y>0&&t!==k.val&&!d.includes(t))d.push(t)});
+ }else if(/^[A-Za-z']+$/.test(k.val)){
+  const kl=k.val.toLowerCase(),fam=famOf(k.val);
+  const inS=new Set((s.match(/[A-Za-z']+/g)||[]).map(w=>w.toLowerCase()));
+  const lp=[...new Set(pool.map(p=>p.val).concat(allW).filter(w=>/^[A-Za-z']+$/.test(w)&&w.toLowerCase()!=kl))];
+  d=shuffle((fam||[]).filter(x=>x.toLowerCase()!=kl&&!inS.has(x.toLowerCase()))).slice(0,3);
+  shuffle(lp).forEach(w=>{if(d.length<3&&!inS.has(w.toLowerCase())&&!d.some(x=>x.toLowerCase()==w.toLowerCase()))d.push(w)});
+  ['is','are','am','was','were','the','have','can','in'].forEach(w=>{if(d.length<3&&w!=kl&&!inS.has(w)&&!d.includes(w))d.push(w)});
+  if(/^[A-Z]/.test(k.val)&&k.val!='I')d=d.map(w=>w=='I'?w:w[0].toUpperCase()+w.slice(1));else d=d.map(w=>w=='I'?w:w);
  }else{
   const kp=k.val[0]=='ה',ks=k.val.slice(-2),k4=stem(k.val);
   const c=[...new Set(pool.filter(p=>p.kind=='word').map(p=>p.val).concat(allW))].filter(w=>w!==k.val&&stem(w)!==k4);
@@ -415,7 +447,7 @@ function mcOf(s,k,pool,allW){
 }
 function openFill(s){
  const w=s.split(' ');
- if(w.length<5)return{type:'open',q:'כתוב מה אתה יודע על: '+w.slice(0,3).join(' '),model:s};
+ if(w.length<5)return null;
  return{type:'open',q:'השלם את המשפט: '+w.slice(0,Math.max(3,Math.ceil(w.length*.45))).join(' ')+' ...',model:s};
 }
 
@@ -423,6 +455,28 @@ function openFill(s){
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const fr=(n,d)=>{const g=gcd(n,d);n/=g;d/=g;return d==1?String(n):n+'/'+d};
 const dc=x=>String(+x.toFixed(2));
+function enGens(text){
+ const g=[],cap=x=>x[0].toUpperCase()+x.slice(1);
+ const lines=text.split(/\n+/).flatMap(l=>l.split(/(?<=[.?!])\s+(?=[A-Z])/)).map(x=>x.trim().replace(/^[\d.)\-•*\s]+(?=[A-Z])/,'')).filter(x=>x&&!/[\u0590-\u05FF]/.test(x)&&!/\?$/.test(x)&&/^[A-Za-z]/.test(x)&&x.split(/\s+/).length>=3&&x.split(/\s+/).length<=14);
+ const RE=/^(I|You|He|She|It|We|They|[A-Z][a-z]+(?: and [A-Z][a-z]+)?)\s+(am|is|are|has|have)\s+(not\s+)?(.+?)[.!]?$/;
+ const P=[],N=[];
+ lines.forEach(x=>{const m=x.match(RE);if(!m)return;const o={sub:m[1],verb:m[2],rest:m[4],sl:m[1]=='I'?'I':(/^(You|He|She|It|We|They)$/.test(m[1])?m[1].toLowerCase():m[1])};(m[3]?N:P).push(o)});
+ if(!P.length&&!N.length)return g;
+ const full=o=>`${o.sub} ${o.verb} ${o.rest}.`,isBe=o=>/^(am|is|are)$/.test(o.verb);
+ const W=(text.match(/\b(Why|What|Where|Who|How)\b/)||[])[1]||(/מילת שאלה/.test(text)?'Why':null);
+ const ch=(o)=>{const fam=isBe(o)?['am','is','are']:['have','has'];return{q:`בחר את הצורה הנכונה: ${o.sub} ___ ${o.rest}.`,a:o.verb,wrong:fam.filter(v=>v!=o.verb).concat(isBe(o)?['be','being']:['having','had']),en:1}};
+ P.forEach(o=>{
+  g.push(()=>ch(o));
+  if(isBe(o))g.push(()=>({q:`הפוך למשפט שלילי: ${full(o)}`,a:`${o.sub} ${o.verb} not ${o.rest}.`,wrong:[`${o.sub} not ${o.verb} ${o.rest}.`,`${o.sub} ${o.verb} no ${o.rest}.`,`${o.sub} don't ${o.verb} ${o.rest}.`,`${o.sub} ${o.verb} ${o.rest} not.`],en:1}));
+  if(isBe(o)){
+   g.push(()=>({q:`הפוך לשאלת כן/לא: ${full(o)}`,a:`${cap(o.verb)} ${o.sl} ${o.rest}?`,wrong:[`${o.sub} ${o.verb} ${o.rest}?`,`Do ${o.sl} ${o.verb} ${o.rest}?`,`${cap(o.verb)} ${o.rest} ${o.sl}?`,`${cap(o.sl)} ${o.verb} ${o.rest}?`],en:1}));
+   if(W)g.push(()=>({q:`כתוב שאלה עם ${W} מהמשפט: ${full(o)}`,a:`${W} ${o.verb} ${o.sl} ${o.rest}?`,wrong:[`${W} ${o.sl} ${o.verb} ${o.rest}?`,`${W} do ${o.sl} ${o.verb} ${o.rest}?`,`${o.sl} ${o.verb} ${W} ${o.rest}?`,`${W} ${o.verb} ${o.rest} ${o.sl}?`],en:1}));
+  }
+ });
+ N.filter(isBe).forEach(o=>g.push(()=>({q:`הפוך למשפט חיובי: ${o.sub} ${o.verb} not ${o.rest}.`,a:full(o),wrong:[`${o.sub} ${o.verb} no ${o.rest}.`,`${o.sub} ${o.verb} ${o.rest} not.`,`${o.sub} don't ${o.verb} ${o.rest}.`,`${o.sub} not ${o.verb} ${o.rest}.`],en:1})));
+ [["isn't","is not"],["aren't","are not"],["hasn't","has not"],["haven't","have not"]].forEach(([c,f])=>{if(text.includes(c)){const all=['is not','are not','am not','has not','have not'];g.push(()=>({q:`מה פירוש הקיצור ${c} ?`,a:f,wrong:all.filter(x=>x!=f),en:1}))}});
+ return g;
+}
 function exGens(text,sub){
  const has=w=>text.includes(w),g=[];
  const math=sub=='מתמטיקה'||/שבר|עשרוני|כפל|חילוק|אחוז|חיבור|חיסור/.test(text);
@@ -467,10 +521,10 @@ function exMc(x){
  return{type:'mc',q:x.q,options:o,answer:o.indexOf(x.a),why:'התשובה: '+x.a};
 }
 function localTest(text,n,no){
- const total=n+no,gens=exGens(text,SUBJ),used=new Set();
+ const eg=enGens(text),total=n+no,gens=eg.length?eg:exGens(text,SUBJ),used=new Set();
  let L=sentencesOf(text);if(L.length<3){const r=sentencesOf(text,true);if(r.length>L.length)L=r}
  const freq={};text.split(/\s+/).map(strip).filter(w=>w.length>=3).forEach(w=>{const k=stem(w);freq[k]=(freq[k]||0)+1});
- const K=L.map(s=>keysOf(s,freq)),D=L.map(defOf),defs=D.map((d,i)=>d?i:-1).filter(i=>i>=0);
+ const K=L.map(s=>keysOf(s,freq)),D=L.map(defOf),defs=eg.length?[]:D.map((d,i)=>d?i:-1).filter(i=>i>=0);
  const pool=K.map(k=>k[0]).filter(Boolean),allW=[...new Set(text.split(/\s+/).map(strip).filter(w=>w.length>=3&&!STOP.has(w)&&!/\d/.test(w)))];
  let di=0;const takeDef=mc=>{while(di<defs.length){const si=defs[di++],d=D[si];if(mc){const q=defMc(d,si,D,L[si]);if(q)return q}else return{type:'open',q:d.q,model:L[si]}}return null};
  const out=[];
@@ -479,7 +533,7 @@ function localTest(text,n,no){
   let q=null;
   if(gens.length){
    if(defs.length&&i%3==2)q=takeDef(!isOpen);
-   if(!q){const x=mkEx(gens,used);if(x)q=isOpen?{type:'open',q:x.q,model:x.a,num:true}:exMc(x)}
+   if(!q){const x=mkEx(gens,used);if(x)q=isOpen?{type:'open',q:x.q,model:x.a,num:!x.en,exact:!!x.en}:exMc(x)}
   }else{
    q=takeDef(!isOpen);
    if(!q&&L.length){const si=Math.min(L.length-1,Math.floor((i+.5)*L.length/Math.max(1,total))),s=L[si],key=(K[si]||[])[0];
@@ -509,7 +563,7 @@ async function gen(){
  }catch(e){
   const lr=localTest(text,n,no);
   if(lr.length){T.qs=lr;saveTest(lr);T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast('נוצר מבחן בלי AI (תרגילים והגדרות מהחומר). למבחן חכם יותר, הוסף מפתח בהגדרות ⚙️')}
-  else T.err=aiErr(e)
+  else T.err=!getKey()?'לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), או הדבק מפתח בהגדרות ⚙️':aiErr(e)
  }
  T.loading=false;render();
 }
@@ -541,17 +595,28 @@ function fracCheck(ans,model){
  if(k>1)return{score:0,text:'כמעט! אפשר לצמצם: '+(a[0]/k)+'/'+(a[1]/k)+'. תשובה שלא צומצמה לא נחשבת נכונה.'};
  return{score:1,text:'נכון, וגם צומצם.'};
 }
+function localGrade(ans,model){
+ const ks=t=>[...new Set(String(t).split(/\s+/).map(strip).filter(w=>w.length>=3&&!STOP.has(w)&&!GEN.has(w)).map(w=>/\d/.test(w)?w:stem(w)))].filter(Boolean);
+ const m=ks(model),a=new Set(ks(ans));
+ if(m.length<2)return null;
+ const hit=m.filter(x=>a.has(x)),miss=String(model).split(/\s+/).map(strip).filter(w=>w.length>=3&&!STOP.has(w)&&!GEN.has(w)&&!a.has(/\d/.test(w)?w:stem(w)));
+ const r=hit.length/m.length,sc=r>=0.7?1:r>=0.35?0.5:0;
+ const note=sc==1?'התשובה כוללת את רוב הנקודות החשובות.':'חסרות נקודות שמופיעות בתשובה המצופה: '+[...new Set(miss)].slice(0,4).join(', ')+'.';
+ return{score:sc,text:note+' (בדיקה אוטומטית בלי AI, ייתכן שאינה מדויקת)'};
+}
 async function gradeOpen(q){
  const ans=$('oa').value.trim(),way=$('ow')?$('ow').value.trim():'';if(!ans||T.busy)return;
  T.ans=ans;T.way=way;
+ if(q.exact){const nm=t=>nz(String(t).replace(/(\w+)n't/gi,'$1 not'));const ok=nm(ans)===nm(q.model);T.fb={score:ok?1:0,text:ok?'נכון!':'התשובה הנכונה: '+q.model};T.score+=T.fb.score;render();if(ok)confetti();return}
  const fc=fracCheck(ans,q.model);
  if(fc){T.fb=fc;T.score+=fc.score;render();if(fc.score==1)confetti();return}
  if(q.num){const lc=localCheck(ans,q.model);if(lc){T.fb=lc;T.score+=lc.score;render();if(lc.score==1)confetti();return}}
+ if(!getKey()){const lg=localGrade(ans,q.model);if(lg){T.fb=lg;T.score+=lg.score;render();if(lg.score==1)confetti();return}}
  T.busy=true;$('gr').disabled=true;$('gr').textContent='בודק…';
  try{const r=await aiJson(`בדוק תשובת תלמיד לשאלה פתוחה במקצוע ${SUBJ}.\nשאלה: ${q.q}\nתשובה מצופה: ${q.model}\nתשובת התלמיד: ${ans}${way?'\nדרך הפתרון שהתלמיד כתב: '+way:''}\nהציון נקבע לפי התשובה הסופית. דרך הפתרון אופציונלית: אם היא קיימת, התייחס אליה במשוב. במתמטיקה, שבר שאפשר לצמצם ולא צומצם הוא שגוי.\nהחזר JSON בלבד: {"score":0 או 0.5 או 1,"feedback":"משוב קצר בעברית: מה נכון ומה חסר"}`);
   const sc=[0,0.5,1].includes(+r.score)?+r.score:0;
   T.fb={score:sc,text:String(r.feedback||'')};T.score+=sc;
- }catch(e){T.fb={shown:1}}
+ }catch(e){const lg=localGrade(ans,q.model);if(lg){T.fb=lg;T.score+=lg.score}else T.fb={shown:1}}
  T.busy=false;render();if(T.fb&&T.fb.score==1)confetti();
 }
 function testView(){
@@ -755,6 +820,7 @@ function settingsView(){
  <div class="kfield"><input id="akey" type="password" dir="ltr" placeholder="AIza..." value="${esc(getKey())}" autocomplete="off"></div>
  <div class="krow"><button class="kb p" id="aks">שמור</button><button class="kb g" id="akd">מחק</button></div>
  <a class="klnk" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">✨ צור מפתח חינמי ב-Google</a>
+ <div class="ks" style="margin-top:12px;text-align:center;opacity:.85">בלי מפתח: שירות AI חינמי של Pollinations (החומר נשלח אליהם)</div>
  <div class="kmsg" id="akm">${getKey()?'מפתח שמור ✓':''}</div></div>
 ${themeCard()}${voiceCard()}
  <button class="btn sec" id="sb">חזרה</button>`;
@@ -770,7 +836,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.64';function navDraw(){
+const VER='1.63';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -804,6 +870,29 @@ function podSay(){
   },120);
  }catch(e){P.playing=false;P.msg=podErr('error');render()}
 }
+function localPod(text,sub,n){
+ let ss=sentencesOf(text);if(ss.length<3)ss=sentencesOf(text,true);
+ if(ss.length<3)return null;
+ const L=[],a=t=>L.push({w:'a',t}),b=t=>L.push({w:'b',t});
+ const ask=['ספר לי עוד, מה עוד חשוב לדעת?','ומה לגבי ההמשך?','וואו, ואיך זה ממשיך?','יופי, ומה אחר כך?','זה מעניין, תוסיף עוד קצת.','ומה עוד כדאי שנזכור?'];
+ const link=['תשמע, ','בקיצור, ','והנה העיקר: ','חשוב לדעת ש','כדאי לזכור ש','מה שחשוב כאן: '];
+ const cl=x=>x.replace(/[.!?:;]+$/,'');
+ a('היי, אני נועה, ברוכים הבאים לפודקאסט הלימוד.');b('ואני דני. היום נלמד יחד על '+sub+'.');
+ a('מצוין, בוא נתחיל. מה הדבר הראשון שצריך לדעת?');
+ let i=0,k=0;const room=Math.max(2,n-6);
+ for(const x of ss){
+  if(L.length>=room)break;
+  const d=defOf(x);
+  if(d){a(d.q);b(cl(d.a)+'.')}
+  else{b(k%3==0&&i>0?link[k%link.length]+cl(x.replace(/^(ש|ה)(?=\S)/,'$1'))+'.':cl(x)+'.');if(L.length<room)a(ask[k%ask.length]);k++}
+  i++;
+ }
+ if(L[L.length-1].w=='a')L.pop();
+ a('בואו נסכם: איזה דבר אחד הכי כדאי לזכור?');
+ b('הנקודה המרכזית: '+cl(ss[0])+'. כדאי לחזור על זה שוב.');
+ a('תודה שהקשבתם, ובהצלחה בלימודים!');b('ביי ביי.');
+ return{title:sub,lines:L};
+}
 async function podGen(){
  const ta=$('pm'),text=(ta?ta.value:'').trim();if(P.sub){S.mats[P.sub]=text;save()}
  if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
@@ -811,7 +900,7 @@ async function podGen(){
  P.loading=true;P.err='';render();
  try{
   const n=POD_LINES[P.len]||34;
-  const r=await aiJson(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);
+  let r;try{r=await aiJson(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);}catch(e0){r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), או הדבק מפתח בהגדרות ⚙️';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
   const lines=(r.lines||[]).filter(x=>x&&x.t&&String(x.t).trim()).map(x=>({w:x.w=='b'?'b':'a',t:String(x.t).trim()}));
   if(lines.length<4)throw new Error('empty');
   const pod={id:Date.now(),sub:P.sub,title:String(r.title||P.sub),lines};
@@ -847,7 +936,7 @@ function podView(){
  v.innerHTML=`<div class="tcard"><div class="thd" style="background:linear-gradient(135deg,#a855f7,#ec4899,#f97316)"><div class="ic">🎧</div><div><small>מקשיבים לחומר כמו לשיחה</small><b>פודקאסט</b></div></div><div class="tbd">
   <label>מקצוע</label><div class="pchs">${S.subjects.map(n=>`<button class="pch ${n==P.sub?'on':''}" data-sb="${esc(n)}">${esc(n)}</button>`).join('')||'<span class="mute">אין מקצועות עדיין. הוסף במסך המבחנים.</span>'}</div>
   <label>כמה זמן?</label><div class="pchs">${[[2,'קצר','2 דקות'],[5,'בינוני','5 דקות'],[10,'ארוך','10 דקות']].map(([l,a,b])=>`<button class="pch ${P.len==l?'on':''}" data-ln="${l}">${a}<small>${b}</small></button>`).join('')}</div>
-  <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק חומר, או כתוב רק נושא (למשל: אתונה נגד ספרטה)"></textarea>
+  <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק חומר ללימוד (כמה משפטים). עם מפתח AI אפשר גם רק נושא קצר"></textarea>
   <div class="msg" style="color:var(--bad)">${esc(P.err)}</div><button class="tbtn" id="pg" style="width:100%">צור פודקאסט ✨</button></div></div>
   ${pods.length?`<div class="card" style="margin-top:14px"><p style="font-weight:600;margin-top:0">📂 פודקאסטים שמורים (עובדים גם בלי אינטרנט)</p>${pods.map(p=>`<div class="item"><span>${esc(p.title)}<br><small class="mute">${esc(p.sub)} · ${p.lines.length} תורות</small></span><span><button class="btn" style="width:auto;padding:6px 14px" data-pl="${p.id}">האזן</button> <button data-pd="${p.id}">✕</button></span></div>`).join('')}</div>`:''}`;
  $('pm').value=S.mats[P.sub]||'';addUpload('pm');
