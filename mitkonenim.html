@@ -198,7 +198,7 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 .kc .kmsg{margin-top:12px;font-weight:800;font-size:14px;text-align:center;min-height:18px;text-shadow:0 1px 0 rgba(0,0,0,.25);color:#fff}
 #gear{width:42px;height:42px;padding:0;border:0;border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.22);line-height:0}#gear svg{width:30px;height:34px;display:block}#gear:active{transform:scale(.94)}
 </style>
-<script src="images.js"></script>
+<script src="01_images.js"></script>
 <script>window.IMG=window.IMG||{};document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('[data-img]').forEach(function(e){var u=IMG[e.getAttribute('data-img')];if(u){e.tagName=='LINK'?e.setAttribute('href',u):e.setAttribute('src',u)}})});</script>
 </head>
 <body>
@@ -357,10 +357,12 @@ async function aiGem(prompt,files){
  for(const model of AI_MODELS){
   let res;
   const U='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent';
-  const BODY=JSON.stringify({contents:[{role:'user',parts:[...(files||[]).map(f=>({inlineData:{mimeType:f.mime,data:f.data}})),{text:prompt}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:16000,temperature:.7}});
+  const mkBody=th=>JSON.stringify({contents:[{role:'user',parts:[...(files||[]).map(f=>({inlineData:{mimeType:f.mime,data:f.data}})),{text:prompt}]}],generationConfig:Object.assign({responseMimeType:'application/json',maxOutputTokens:16000,temperature:.7},th?{thinkingConfig:{thinkingBudget:0}}:{})});
+  const th0=/2\.5/.test(model);let BODY=mkBody(th0);
   try{res=await fetch(U,{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:BODY});
    if(res.status==401||res.status==403){try{const r2=await fetch(U+'?key='+encodeURIComponent(key),{method:'POST',headers:{'content-type':'application/json'},body:BODY});if(r2.ok||r2.status==429)res=r2}catch(e2){}}}
   catch(e){const x=new Error('net');x.detail=String(e&&e.message||e);throw x}
+  if(res.status==400&&th0){try{BODY=mkBody(false);res=await fetch(U,{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:BODY})}catch(e){}}
   if(res.status==404){last='http404';continue}
   if(res.status==429)throw new Error('limit');
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,220)}catch(e){}const x=new Error(res.status==401||res.status==403?'badkey':'http'+res.status);x.detail=m;throw x}
@@ -634,8 +636,14 @@ async function gen(){
    T.loading=false;render();return;
   }
   const all=topics.map((x,i)=>i);
-  const r=await aiQs(text,topics,all,n,no);
-  let a=(Array.isArray(r)?r:r.questions||[]).filter(okQ);
+  const CH=8,groups=[];for(let i=0;i<all.length;i+=CH)groups.push(all.slice(i,i+CH));
+  let extra=total-all.length;
+  const plan=groups.map((g,gi)=>{const e=Math.floor(extra/groups.length)+(gi<extra%groups.length?1:0);return{g,t:g.length+e}});
+  let noLeft=no;
+  plan.forEach((pl,gi)=>{pl.no=gi==plan.length-1?noLeft:Math.min(noLeft,Math.round(pl.t*no/total));noLeft-=pl.no;pl.mc=pl.t-pl.no});
+  const rs=await Promise.allSettled(plan.map(pl=>aiQs(text,topics,pl.g,pl.mc,pl.no)));
+  if(rs.every(x=>x.status=='rejected'))throw rs[0].reason;
+  let a=[];rs.forEach(x=>{if(x.status=='fulfilled'){const r=x.value;a=a.concat((Array.isArray(r)?r:r.questions||[]).filter(okQ))}});
   const cov=()=>new Set(a.map(x=>+x.t));
   let miss=all.filter(i=>!cov().has(i));
   for(let tries=0;miss.length&&tries<2;tries++){
@@ -942,7 +950,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.66';function navDraw(){
+const VER='1.68';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1176,7 +1184,7 @@ function gradesView(){
  v.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{S.grades[n].splice(+b.dataset.gd,1);save();render()});
 }
 render();
-try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('02_sw.js').catch(()=>{})}catch(e){}
 </script>
 </body>
 </html>

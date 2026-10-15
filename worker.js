@@ -31,7 +31,7 @@ export default {
           headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 16000, temperature: 0.7 },
+            generationConfig: Object.assign({ responseMimeType: 'application/json', maxOutputTokens: 16000, temperature: 0.7 }, /2\.5/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
           }),
         }
       );
