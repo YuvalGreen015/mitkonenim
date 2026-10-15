@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 1.70 -->
+<!-- מתכוננים | index.html | גרסה 1.71 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -983,7 +983,7 @@ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמח
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.70';function navDraw(){
+const VER='1.71';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1165,7 +1165,7 @@ async function upRun(id,files){
 }
 function homeView(){
  const tile=(k,ic,t)=>`<button class="tile ex" aria-label="${t}" data-go="${k}" style="background-image:url(${ic})"></button>`;
- $('v').innerHTML=`<p class="mute" style="margin:0 0 12px;font-size:16px">במה נתאמן היום? 💪</p>`
+ $('v').innerHTML=`<p class="mute" style="margin:0 0 12px;font-size:16px">במה נתאמן היום? 🚀</p>`
  +tile(4,IMG['tile-4.jpg'],'מבחנים','בחר מקצוע ותתאמן',S.subjects.length+' מקצועות','linear-gradient(135deg,#2a6df4,#5b8cff)')
  +tile(1,IMG['tile-1.jpg'],'פתקיות','שאלה בצד אחד, תשובה בצד השני',S.cards.length+' פתקיות','linear-gradient(135deg,#8b5cf6,#b794f6)')
  +tile(2,IMG['tile-2.jpg'],'הכתבות','שמע, כתוב ותרגם',S.words.length+' מילים','linear-gradient(135deg,#10a37f,#34d399)')
