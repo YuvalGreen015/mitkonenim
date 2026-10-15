@@ -200,7 +200,37 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 #gear{width:42px;height:42px;padding:0;border:0;border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.22);line-height:0}#gear svg{width:30px;height:34px;display:block}#gear:active{transform:scale(.94)}
 </style>
 <script src="01_images.js"></script>
-<script>window.IMG=window.IMG||{};document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('[data-img]').forEach(function(e){var u=IMG[e.getAttribute('data-img')];if(u){e.tagName=='LINK'?e.setAttribute('href',u):e.setAttribute('src',u)}})});</script>
+<script>window.IMG=window.IMG||{};
+try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.getRegistrations().then(function(rs){var old=rs.filter(function(r){var u=(r.active||r.waiting||r.installing||{}).scriptURL||'';return u&&!/02_sw\.js$/.test(u)});if(!old.length)return;Promise.all(old.map(function(r){return r.unregister()})).then(function(){return window.caches?caches.keys():[]}).then(function(ks){return Promise.all(ks.filter(function(k){return k!=='mitkonenim-v1'}).map(function(k){return caches.delete(k)}))}).then(function(){try{if(!sessionStorage.getItem('swclean')){sessionStorage.setItem('swclean','1');location.reload()}}catch(e){}})}).catch(function(){})}}catch(e){}
+window.imgDiag=async function(){var o=[];o.push('כתובת: '+location.href);o.push('תמונות שנטענו בזיכרון: '+Object.keys(window.IMG||{}).length+' מתוך 20');
+ for(var n of ['01_images.js','images.js']){try{var r=await fetch(n+'?t='+Date.now(),{cache:'no-store'});var t=await r.text();o.push(n+' → '+r.status+(r.ok?' ('+Math.round(t.length/1024)+' KB'+(/window\.IMG/.test(t)?', תקין':', לא נראה כמו קובץ תמונות')+')':' (לא נמצא)'))}catch(e){o.push(n+' → שגיאה: '+e.message)}}
+ try{var rs=await navigator.serviceWorker.getRegistrations();o.push('Service worker: '+(rs.length?rs.map(function(r){return((r.active||{}).scriptURL||'?').split('/').pop()}).join(', '):'אין')+(navigator.serviceWorker.controller?' (שולט בדף)':''))}catch(e){}
+ return o.join('\n')};
+window.imgFix=async function(){try{var rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(function(r){return r.unregister()}))}catch(e){}try{var ks=await caches.keys();await Promise.all(ks.map(function(k){return caches.delete(k)}))}catch(e){}location.reload()};
+function fillImg(){document.querySelectorAll('[data-img]').forEach(function(e){var u=IMG[e.getAttribute('data-img')];if(u){e.tagName=='LINK'?e.setAttribute('href',u):e.setAttribute('src',u)}})}
+document.addEventListener('DOMContentLoaded',function(){
+ fillImg();
+ var KEY='mitkonenim-imgcache',bar=null;
+ function say(msg,bad){if(!bar){bar=document.createElement('div');document.body.appendChild(bar)}bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;color:#fff;padding:10px;text-align:center;font:600 14px sans-serif;background:'+(bad?'#b91c1c':'#1d4ed8');bar.textContent=msg}
+ function hide(){if(bar){bar.remove();bar=null}}
+ function has(){return Object.keys(window.IMG||{}).length>0}
+ function apply(t){try{(0,eval)(t)}catch(e){return false}return has()}
+ function done(){fillImg();try{render()}catch(e){}hide()}
+ function save(t){try{localStorage.setItem(KEY,t)}catch(e){}}
+ if(has()){ if(!(function(){try{return localStorage.getItem(KEY)}catch(e){return 1}})()){fetch('01_images.js').then(function(r){return r.ok?r.text():''}).then(function(t){if(t)save(t)}).catch(function(){})} return }
+ try{var c=localStorage.getItem(KEY);if(c&&apply(c)){done();return}}catch(e){}
+ var names=['01_images.js','images.js','assets/images.js'],tries=0,MAX=45,last='';
+ (function attempt(){
+  tries++;var p=Promise.resolve(false);
+  names.forEach(function(n){p=p.then(function(ok){if(ok)return true;return fetch(n+'?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok){if(n==names[0])last='הקובץ '+n+' לא נמצא באתר (שגיאה '+r.status+')';return false}return r.text().then(function(t){if(apply(t)){save(t);return true}last='הקובץ '+n+' נמצא אבל לא תקין';return false})}).catch(function(e){last='אין חיבור לאינטרנט';return false})})});
+  p.then(function(ok){
+   if(ok){done();return}
+   if(tries>=MAX){say('⚠️ התמונות לא נטענו. '+last+'. ודא ש-01_images.js נמצא באותה תיקייה של index.html ב-GitHub, ואז רענן.',true);return}
+   say('טוען תמונות... ניסיון '+tries+' מתוך '+MAX+(last?' | '+last:''),false);
+   setTimeout(attempt,4000);
+  });
+ })();
+});</script>
 </head>
 <body>
 <div id="splash"><div class="logo"><img class="l" data-img="logo.jpg" alt=""><img class="r" data-img="logo.jpg" alt=""></div><b>מתכוננים</b><span>הדרך להצלחה במבחן</span></div>
@@ -935,6 +965,7 @@ function settingsView(){
  <div class="ks" style="margin-top:12px;text-align:center;opacity:.85">בלי מפתח: שירות AI חינמי של Pollinations (החומר נשלח אליהם)</div>
  <div class="kmsg" id="akm">${getKey()?'מפתח שמור ✓':''}</div></div>
 ${themeCard()}${voiceCard()}
+<div class="card"><p style="font-weight:600;margin-top:0">🛠 בדיקת תמונות</p><p class="mute" style="margin-top:-6px">אם התמונות לא מופיעות</p><button class="btn sec" id="imgdiag">בדוק למה אין תמונות</button><button class="btn sec" id="imgfix" style="margin-top:8px">נקה מטמון ורענן</button><pre id="imgrep" dir="auto" style="white-space:pre-wrap;font-size:13px;margin:10px 0 0"></pre></div>
  <button class="btn sec" id="sb">חזרה</button>`;
  v.querySelectorAll('[data-vn]').forEach(sel=>sel.onchange=()=>{S.vn=S.vn||{};S.vn[sel.dataset.vn]=sel.value||undefined;save();speak(sel.dataset.vn=='he'?(S.words.find(w=>!isEn(w))||'שלום'):'Hello')});
  v.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.voice=b.dataset.v;save();render()});
@@ -945,7 +976,8 @@ ${themeCard()}${voiceCard()}
   $('akm').textContent='בודק את המפתח...';
   try{const r=await aiGem('החזר JSON בלבד: {"ok":true}');$('akm').textContent='✅ המפתח עובד!'}
   catch(e){$('akm').textContent='❌ '+aiErr(e)}};
- $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמחק';ks()};
+ $('imgdiag').onclick=async()=>{$('imgrep').textContent='בודק...';$('imgrep').textContent=await window.imgDiag()};$('imgfix').onclick=()=>window.imgFix();
+$('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמחק';ks()};
  $('demo').onclick=()=>speak(S.words[0]||'Hello');
  $('sb').onclick=()=>{showSet=false;render()};
  bindTheme(v);
