@@ -1,4 +1,4 @@
-// Cloudflare Worker - שרת AI קטן שמסתיר את המפתח שלך.
+// Cloudflare Worker v2 - שרת AI קטן שמסתיר את המפתח שלך.
 // Settings > Variables and Secrets: GEMINI_KEY (Secret) = המפתח מ-aistudio.google.com/apikey
 // אופציונלי: ALLOWED_ORIGIN = https://YOURNAME.github.io  (כך רק האתר שלך יוכל להשתמש בשרת)
 const MODELS = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];

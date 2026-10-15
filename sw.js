@@ -1,5 +1,5 @@
-/* Service worker: שומר את האפליקציה והתמונות לשימוש בלי אינטרנט */
-const V = 'mitkonenim-v1';
+/* Service worker v2: שומר את האפליקציה והתמונות לשימוש בלי אינטרנט */
+const V = 'mitkonenim-v2';
 const CORE = ['./', 'index.html'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
