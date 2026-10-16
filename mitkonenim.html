@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 1.71 -->
+<!-- מתכוננים | index.html | גרסה 1.75 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -260,7 +260,7 @@ function render(){
  document.body.classList.add('tbg');
  navDraw();
  if(showSet){settingsView();kbSync();return}
- tab==0?homeView():tab==5?gradesView():tab==4?subjectsView():tab==3?testView():tab==6?podView():tab==1?cardsView():wordsView();
+ tab==0?homeView():tab==7?examsView():tab==5?gradesView():tab==4?subjectsView():tab==3?testView():tab==6?podView():tab==1?cardsView():wordsView();
  kbSync();
 }
 /* ---- מבחנים ---- */
@@ -983,11 +983,89 @@ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמח
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.71';function navDraw(){
+const VER='1.75';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
  $('nb').onclick=()=>{if(showSet){showSet=false}else if(tab==3){tab=4;T.qs=[]}else if(tab==6&&P.cur){podStop();P.cur=null}else if(tab==5&&GS){GS=''}else{podStop();tab=0;mode='list'}render()};
+}
+/* ---- לוח מבחנים ---- */
+S.exams=S.exams||[];
+const EX_MSG='יש לך מבחן חשוב להתכונן אליו';
+const exDays=d=>{const a=new Date(d+'T00:00:00'),n=new Date();n.setHours(0,0,0,0);return Math.round((a-n)/864e5)};
+const exLabel=n=>n<0?'עבר':n==0?'היום!':n==1?'מחר':'בעוד '+n+' ימים';
+const exDate=d=>new Date(d+'T00:00:00').toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
+const exDue=()=>S.exams.filter(e=>{const n=exDays(e.date);return n>=0&&n<=2}).sort((a,b)=>a.date.localeCompare(b.date));
+/* תמונות נשמרות ב-IndexedDB (לא ב-localStorage הקטן) */
+const exDB=()=>new Promise((res,rej)=>{try{const r=indexedDB.open('mitkonenim',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
+async function exPut(id,v){const db=await exDB();return new Promise((res,rej)=>{const t=db.transaction('photos','readwrite');t.objectStore('photos').put(v,id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function exGet(id){const db=await exDB();return new Promise(res=>{const q=db.transaction('photos').objectStore('photos').get(id);q.onsuccess=()=>res(q.result||'');q.onerror=()=>res('')})}
+async function exDel(id){try{const db=await exDB();db.transaction('photos','readwrite').objectStore('photos').delete(id)}catch(e){}}
+function exShrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=1100,s=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('img'))};im.src=u})}
+/* תזכורת: מופיעה בבית ובמסך הלוח, ואם אושרו התראות גם כהתראה של המכשיר (כשהאפליקציה נפתחת) */
+function exNotify(){
+ try{
+  const due=exDue();if(!due.length||!('Notification' in window)||Notification.permission!=='granted')return;
+  const today=new Date().toISOString().slice(0,10);S.exNotified=S.exNotified||{};let ch=false;
+  due.forEach(e=>{const k=e.id+'|'+today;if(S.exNotified[k])return;S.exNotified[k]=1;ch=true;
+   const opt={body:e.subject+' · '+exLabel(exDays(e.date)),icon:IMG['icon-192.png'],tag:'exam-'+e.id,lang:'he',dir:'rtl'};
+   if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){navigator.serviceWorker.getRegistration().then(r=>r?r.showNotification(EX_MSG,opt):new Notification(EX_MSG,opt)).catch(()=>{try{new Notification(EX_MSG,opt)}catch(x){}})}
+   else new Notification(EX_MSG,opt)});
+  if(ch){Object.keys(S.exNotified).forEach(k=>{if(k.split('|')[1]!==today)delete S.exNotified[k]});save()}
+ }catch(e){}
+}
+setInterval(()=>{exNotify();if(!tab&&!showSet)try{render()}catch(e){}},3600000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){exNotify();if(!tab&&!showSet)try{render()}catch(e){}}});
+const X={photo:'',subject:'',date:'',note:'',busy:false,msg:''};
+function exBoard(){
+ const up=S.exams.filter(e=>exDays(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)),due=exDue();
+ const hot=due.length>0;
+ const line=e=>{const n=exDays(e.date),h=n<=2;return `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.28)"><b>${esc(e.subject)}</b><span>${exDate(e.date).replace(/^יום /,'')} · <b>${exLabel(n)}</b></span></div>`};
+ return `<button class="tile" data-go="7" style="display:block;background:${hot?'linear-gradient(135deg,#dc2626,#f97316)':'linear-gradient(135deg,#0ea5e9,#6366f1)'};margin-bottom:14px;color:#fff">
+  <div style="display:flex;align-items:center;gap:12px"><div class="ti e">${hot?'🔔':'📅'}</div><div class="tt"><b>לוח מבחנים</b><small>${hot?EX_MSG:(up.length?'המבחנים הקרובים שלך':'עוד לא הוספת מבחנים · לחץ כדי להוסיף')}</small></div><span class="tm">${up.length} קרובים</span></div>
+  ${up.length?`<div style="margin-top:10px;font-size:15px">${up.slice(0,3).map(line).join('')}${up.length>3?`<div style="padding-top:6px;opacity:.9">ועוד ${up.length-3}...</div>`:''}</div>`:''}
+ </button>`;
+}
+function examsView(){
+ const v=$('v'),list=S.exams.slice().sort((a,b)=>a.date.localeCompare(b.date)),up=list.filter(e=>exDays(e.date)>=0),past=list.filter(e=>exDays(e.date)<0);
+ const perm=('Notification' in window)?Notification.permission:'none';
+ const row=e=>{const n=exDays(e.date),hot=n>=0&&n<=2;return `<div class="item" style="align-items:center;${n<0?'opacity:.55;':''}${hot?'background:color-mix(in srgb,var(--bad) 12%,transparent);border-radius:12px;padding:8px;':''}">
+  <span style="flex:1"><b>${esc(e.subject)}</b><br><span class="mute">${exDate(e.date)} · <b style="color:${hot?'var(--bad)':'inherit'}">${exLabel(n)}</b></span>${e.note?`<br><span class="mute">${esc(e.note)}</span>`:''}</span>
+  ${e.photo?`<img data-ph="${e.id}" alt="" style="width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff">`:''}
+  <button data-del="${e.id}" aria-label="מחק">✕</button></div>`};
+ v.innerHTML=`<div class="card"><p style="font-weight:800;font-size:20px;margin:0 0 4px">📅 לוח מבחנים</p><p class="mute" style="margin:0 0 10px">הוסף מבחן עם תאריך ומקצוע, או צלם את דף המבחן. נזכיר לך יום–יומיים לפני.</p>
+  <label class="mute" for="xs">מקצוע</label><input id="xs" list="xsl" placeholder="למשל: מתמטיקה" value="${esc(X.subject)}"><datalist id="xsl">${S.subjects.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+  <label class="mute" for="xd">תאריך המבחן</label><input id="xd" type="date" value="${X.date}" dir="ltr" style="text-align:right">
+  <label class="mute" for="xn">הערה (לא חובה)</label><input id="xn" placeholder="פרקים, חומר..." value="${esc(X.note)}">
+  <div class="row" style="margin:6px 0 8px"><button class="btn sec" id="xcam">📷 צלם</button><button class="btn sec" id="xup">🖼️ העלה תמונה</button></div>
+  <input id="xf1" type="file" accept="image/*" capture="environment" hidden><input id="xf2" type="file" accept="image/*" hidden>
+  ${X.photo?`<div style="text-align:center;margin-bottom:8px"><img id="xpv" src="${X.photo}" alt="" style="max-width:100%;max-height:200px;border-radius:12px;border:1px solid var(--line)"><br><button class="btn sec" id="xrm" style="margin-top:6px;width:auto;padding:6px 12px">הסר תמונה</button></div>`:''}
+  <div class="msg" id="xm" style="${/^(⚠|❌)/.test(X.msg)?'color:var(--bad)':''}">${esc(X.msg)}</div>
+  <button class="btn" id="xadd">➕ הוסף מבחן</button></div>
+  ${up.length?`<div class="card"><p style="font-weight:600;margin:0 0 6px">מבחנים קרובים</p>${up.map(row).join('')}</div>`:''}
+  ${past.length?`<div class="card"><p style="font-weight:600;margin:0 0 6px">מבחנים שעברו</p>${past.map(row).join('')}</div>`:''}
+  ${!list.length?'<p class="mute" style="text-align:center;color:#fff">עדיין לא הוספת מבחנים</p>':''}
+  <div class="card"><p style="font-weight:600;margin:0 0 4px">🔔 תזכורות</p><p class="mute" style="margin:0 0 8px">התזכורת "${EX_MSG}" מופיעה במסך הבית 2 ימים לפני המבחן, ביום שלפניו ובבוקר המבחן.${perm=='granted'?' התראות המכשיר פעילות ✓':''}</p>
+  ${perm=='default'?'<button class="btn sec" id="xnot">הפעל התראות במכשיר</button>':perm=='denied'?'<p class="mute">ההתראות חסומות בדפדפן. אפשר להפעיל בהגדרות האתר.</p>':perm=='none'?'<p class="mute">הדפדפן לא תומך בהתראות. התזכורת תופיע בתוך האפליקציה.</p>':''}
+  <p class="mute" style="margin:8px 0 0;font-size:12px">התראות המכשיר מופיעות כשהאפליקציה נפתחת. אפליקציה באתר לא יכולה לשלוח התראות כשהיא סגורה לגמרי.</p></div>`;
+ const keep=()=>{X.subject=$('xs').value;X.date=$('xd').value;X.note=$('xn').value};
+ const pick=async f=>{if(!f)return;keep();X.msg='';X.busy=true;try{X.photo=await exShrink(f)}catch(e){X.msg='❌ לא הצלחתי לקרוא את התמונה';render();return}X.busy=false;render();
+  if(getKey()&&(!X.subject||!X.date)){const m=$('xm');if(m)m.textContent='קורא את התמונה...';try{
+   const r=await aiJson(`זו תמונה של דף מבחן או הודעה על מבחן. מצא את שם המקצוע ואת תאריך המבחן. התאריך הנוכחי הוא ${new Date().toISOString().slice(0,10)}. החזר JSON בלבד: {"subject":"שם המקצוע או ריק","date":"YYYY-MM-DD או ריק"}`,[{mime:'image/jpeg',data:X.photo.split(',')[1]}]);
+   if(r&&r.subject&&!X.subject)X.subject=String(r.subject);if(r&&/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')&&!X.date)X.date=r.date;X.msg=(r&&(r.subject||r.date))?'✓ מילאתי מהתמונה. בדוק שהפרטים נכונים':'';render()}catch(e){X.msg='';render()}}};
+ $('xcam').onclick=()=>$('xf1').click();$('xup').onclick=()=>$('xf2').click();
+ $('xf1').onchange=e=>pick(e.target.files[0]);$('xf2').onchange=e=>pick(e.target.files[0]);
+ if($('xrm'))$('xrm').onclick=()=>{keep();X.photo='';render()};
+ $('xadd').onclick=async()=>{keep();const s=X.subject.trim();
+  if(!s&&!X.photo){X.msg='⚠️ כתוב מקצוע או הוסף תמונה';render();return}
+  if(!X.date){X.msg='⚠️ בחר תאריך למבחן (אפשר גם אחרי שצילמת)';render();return}
+  const id=String(Date.now());let ph=false;
+  if(X.photo){try{await exPut(id,X.photo);ph=true}catch(e){}}
+  S.exams.push({id,subject:s||'מבחן',date:X.date,note:X.note.trim(),photo:ph});save();
+  X.photo='';X.subject='';X.date='';X.note='';X.msg='✓ המבחן נוסף';render();exNotify()};
+ if($('xnot'))$('xnot').onclick=async()=>{try{const p=await Notification.requestPermission();if(p==='granted'){toast('התראות הופעלו');exNotify()}}catch(e){}render()};
+ v.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('למחוק את המבחן?'))return;S.exams=S.exams.filter(e=>e.id!=b.dataset.del);exDel(b.dataset.del);save();render()});
+ v.querySelectorAll('[data-ph]').forEach(async im=>{const d=await exGet(im.dataset.ph);if(d){im.src=d;im.onclick=()=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:12px';o.innerHTML='<img src="'+d+'" alt="" style="max-width:100%;max-height:100%;border-radius:8px">';o.onclick=()=>o.remove();document.body.appendChild(o)}}else im.remove()});
 }
 /* ---- פודקאסט ---- */
 let P={sub:'',len:5,loading:false,err:'',cur:null,i:0,playing:false,rate:1,tok:0,msg:''};
@@ -1165,12 +1243,13 @@ async function upRun(id,files){
 }
 function homeView(){
  const tile=(k,ic,t)=>`<button class="tile ex" aria-label="${t}" data-go="${k}" style="background-image:url(${ic})"></button>`;
- $('v').innerHTML=`<p class="mute" style="margin:0 0 12px;font-size:16px">במה נתאמן היום? 🚀</p>`
+ $('v').innerHTML=`<p class="mute" style="margin:0 0 12px;font-size:16px">במה נתאמן היום? 🎯</p>`+(S.exams.some(e=>exDays(e.date)>=0)?exBoard():'')
  +tile(4,IMG['tile-4.jpg'],'מבחנים','בחר מקצוע ותתאמן',S.subjects.length+' מקצועות','linear-gradient(135deg,#2a6df4,#5b8cff)')
  +tile(1,IMG['tile-1.jpg'],'פתקיות','שאלה בצד אחד, תשובה בצד השני',S.cards.length+' פתקיות','linear-gradient(135deg,#8b5cf6,#b794f6)')
  +tile(2,IMG['tile-2.jpg'],'הכתבות','שמע, כתוב ותרגם',S.words.length+' מילים','linear-gradient(135deg,#10a37f,#34d399)')
  +tile(5,IMG['tile-5.jpg'],'ציונים','ההתקדמות שלך','הציונים שלי','linear-gradient(135deg,#f59e0b,#fbbf24)');
  $('v').insertAdjacentHTML('beforeend',`<button class="tile ex podp" data-go="6" aria-label="פודקאסט" style="background-image:url(${IMG['tile-podcast.jpg']})"></button>`);
+ $('v').insertAdjacentHTML('beforeend',`<button class="tile ex" data-go="7" aria-label="לוח מבחנים" style="background-image:url(${IMG['tile-exams.jpg']});aspect-ratio:528/131"></button>`);
  $('v').insertAdjacentHTML('beforeend',`<p class="mute" style="text-align:center;margin:8px 0 0">גרסה ${VER} · תמונות ${window.IMG_VER||'חסר'}</p>`);
  $('v').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{tab=+b.dataset.go;mode='list';GS='';render()});
 }
@@ -1216,7 +1295,7 @@ function gradesView(){
  $('ga').onclick=()=>{const x=parseFloat($('gi').value);if(isNaN(x)||x<0||x>100)return;S.grades[n]=(S.grades[n]||[]).concat(x);save();render()};
  v.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{S.grades[n].splice(+b.dataset.gd,1);save();render()});
 }
-render();
+render();exNotify();
 try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('02_sw.js').catch(()=>{})}catch(e){}
 </script>
 </body>
