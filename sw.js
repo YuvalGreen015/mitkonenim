@@ -17,3 +17,12 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(r).then(res => { const cp = res.clone(); caches.open(V).then(c => c.put(r, cp)); return res; }).catch(() => caches.match(r)));
   }
 });
+
+/* לחיצה על התראה פותחת את האפליקציה */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    for (const c of cs) { if ('focus' in c) return c.focus(); }
+    return self.clients.openWindow('./');
+  }));
+});
