@@ -10,7 +10,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
-  const isAsset = /\/assets\//.test(r.url);
+  const isAsset = /\/images\//.test(r.url);
   if (isAsset) { // תמונות: קודם מהמטמון
     e.respondWith(caches.match(r).then(m => m || fetch(r).then(res => { const cp = res.clone(); caches.open(V).then(c => c.put(r, cp)); return res; })));
   } else { // דף: קודם רשת (כך עדכונים מגיעים), ואם אין אינטרנט - מהמטמון
