@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 1.97 -->
+<!-- מתכוננים | index.html | גרסה 2.03 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" data-img="icon-192.png">
 <link rel="icon" type="image/png" data-img="favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f6fb;--card:#fff;--ink:#14213d;--mute:#5d6b85;--acc:#2a6df4;--ok:#1f9d68;--bad:#d64545;--line:#dde4f0;
@@ -231,7 +232,8 @@ const t=document.createElement('meta');t.name='theme-color';t.content='#052149';
 let S={cards:[],words:[],subjects:[],mats:{},scores:[],grades:{}},tab=0,SUBJ='',edit=false,mode='list',idx=0,flip=false,queue=[],stat={ok:0,bad:0},cur=null,done=false;
 try{const r=localStorage.getItem('study');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 S.subjects=['מתמטיקה','היסטוריה','עברית','מדעים','תנ"ך','אנגלית'];S.mats=S.mats||{};
-const save=()=>{try{localStorage.setItem('study',JSON.stringify(S))}catch(e){}};
+let saveWarned=0;
+const save=()=>{try{localStorage.setItem('study',JSON.stringify(S))}catch(e){if(!saveWarned){saveWarned=1;try{toast('לא הצלחתי לשמור (אין מקום בדפדפן או מצב פרטי). הנתונים עלולים להימחק.')}catch(x){}}}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -326,6 +328,7 @@ function wordsView(){
 }
 /* ---- מבחן מהחומר ---- */
 let T={n:5,no:3,qs:[],i:0,score:0,pick:null,ans:'',fb:null,busy:false,loading:false,err:''};
+const srcLbl=x=>x=='ai'?'🤖 נוצר עם AI':x=='local'?'⚙️ נוצר בלי AI (פחות מדויק)':'';
 const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 
 /* ---- חיבור ישיר ל-Google Gemini API (מפתח חינמי אישי ב-localStorage) ---- */
@@ -348,7 +351,7 @@ const hasAI=()=>!!(getKey()||getProxy());
 const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
 async function pollJson(prompt,files,ms){
- const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms||45000);
+ const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms||30000);
  try{
   const res=await fetch('https://text.pollinations.ai/openai?referrer=mitkonenim',{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
    body:JSON.stringify({model:'openai',messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
@@ -377,7 +380,7 @@ async function aiGem(prompt,files){
   catch(e){const x=new Error('net');x.detail=String(e&&e.message||e);throw x}
   if(res.status==400&&th0){try{BODY=mkBody(false);res=await fetch(U,{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:BODY})}catch(e){}}
   if(res.status==404){last='http404';continue}
-  if(res.status==429)throw new Error('limit');
+  if(res.status==429){last='limit';continue}/* לכל מודל מכסה נפרדת: ננסה את הבא */
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,220)}catch(e){}const x=new Error(res.status==401||res.status==403?'badkey':'http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(c=>c.text||'').join('');
   const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
@@ -403,7 +406,7 @@ async function aiOA(key,prompt){
 }
 /* ---- AI מהאפליקציה בטלפון (Gemini / ChatGPT) ---- */
 let AIST=hasAI()?'key':'search';
-const appOn=()=>!hasAI()&&AIST==='app';
+const appOn=()=>false;/* הוסר: חלון ההעתקה ל-Gemini/ChatGPT */
 function aiPill(t,ms){
  let e=document.getElementById('aipill');
  if(!e){const st=document.createElement('style');st.textContent='@keyframes aispin{to{transform:rotate(360deg)}}';document.head.appendChild(st);
@@ -411,7 +414,7 @@ function aiPill(t,ms){
  clearTimeout(e._t);e.style.opacity=1;e.innerHTML=t;
  if(ms)e._t=setTimeout(()=>{e.style.opacity=0},ms)}
 const SPIN='<span style="display:inline-block;animation:aispin 1s linear infinite">⏳</span> ';
-function aiGoApp(){if(AIST!=='app'){AIST='app';aiPill('🤝 משתמש באפליקציית AI שבטלפון (Gemini / ChatGPT). אם אין לך, תתבקש להתקין',6000)}}
+function aiGoApp(){}
 let probing=null;
 function aiProbe(force){
  if(hasAI()){AIST='key';return Promise.resolve()}
@@ -422,7 +425,7 @@ function aiProbe(force){
   for(let i=0;i<2;i++){
    try{const r=await pollJson('החזר JSON בלבד: {"ok":true}',null,12000);if(r){AIST='free';aiPill('✓ AI חינמי מחובר',2500);return}}catch(e){}
   }
-  aiGoApp();
+  aiPill('אין AI חינמי זמין כרגע. מבחנים ייווצרו בלי AI',4000);
  })().finally(()=>{probing=null});
  return probing}
 const APPS={gemini:{name:'Gemini',pkg:'com.google.android.apps.bard',host:'gemini.google.com',path:'/app',play:'https://play.google.com/store/apps/details?id=com.google.android.apps.bard'},
@@ -441,7 +444,9 @@ function aiAppDlg(prompt,files){
   const full=prompt+'\n\n(חשוב: החזר רק JSON תקין, בלי הסברים ובלי טקסט נוסף, כדי שאפשר יהיה להעתיק אותו.)'+((files&&files.length)?'\n(הבקשה כוללת תמונה: צרף אותה.)':'');
   const o=document.createElement('div');o.id='appdlg';o.style.cssText='position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:0';
   o.innerHTML=`<div dir="rtl" style="background:#fff;color:#111;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px 22px;box-sizing:border-box;font:15px/1.5 inherit">
-   <div style="font-weight:800;font-size:18px">🤝 AI מהאפליקציה שבטלפון</div>
+   <div style="font-weight:800;font-size:18px">🤝 אין חיבור אוטומטי ל-AI כרגע</div>
+   <button class="btn" id="ad-l" style="margin:8px 0 4px">⚙️ צור לי מבחן עכשיו בלי AI</button>
+   <p style="margin:0 0 12px;font-size:13px;color:#555">מהיר, בתוך האפליקציה, אבל פחות מדויק. אפשר גם להשתמש ב-Gemini/ChatGPT (ידני), או לחבר AI קבוע בהגדרות ⚙️.</p>
    <p style="margin:6px 0 10px;color:#444">האתר לא יכול להפעיל את אפליקציית ה-AI ישירות. אז מעבירים לה את הבקשה ומחזירים את התשובה:</p>
    <div style="font-weight:700">1. העתק את הבקשה</div>
    <button class="btn sec" id="ad-copy" style="margin:6px 0 12px">📋 העתק את הבקשה</button>
@@ -467,42 +472,45 @@ function aiAppDlg(prompt,files){
     if(!navigator.share)throw new Error('noshare');await navigator.share(d)}catch(e){if(!e||e.name!=='AbortError')msg('אין שיתוף במכשיר הזה. פתח את אפליקציית ה-AI והדבק (הבקשה הועתקה).',true)}};
   $$('ad-p').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t){msg('הלוח ריק',true);return}$$('ad-t').value=t;if(!tryTxt(t))msg('מה שבלוח לא נראה כמו תשובה תקינה. העתק את כל התשובה של ה-AI.',true)}catch(e){msg('אין הרשאה לקרוא את הלוח. לחץ לחיצה ארוכה בתיבה ובחר "הדבק".',true)}};
   $$('ad-ok').onclick=()=>{const t=$$('ad-t').value;if(!t.trim()){msg('הדבק קודם את התשובה',true);return}if(!tryTxt(t))msg('לא הצלחתי לקרוא את התשובה. ודא שהעתקת את כולה (מ-[ או { ועד הסוף).',true)};
+  $$('ad-l').onclick=()=>{done();rej(new Error('local'))};
   $$('ad-x').onclick=()=>{done();rej(new Error('cancel'))};
   const vis=async()=>{if(document.hidden)return;try{const t=await navigator.clipboard.readText();if(t&&t.trim()&&t!==full&&!$$('ad-t').value){try{appParse(t);$$('ad-t').value=t;msg('✓ זיהיתי תשובה בלוח. לחץ "המשך".')}catch(e){}}}catch(e){}};
   document.addEventListener('visibilitychange',vis);
  });
 }
-const aiJsonA=(p,f)=>appOn()?aiApp(p,f):aiJson(p,f).catch(e=>{if(!hasAI()&&!(e&&e.message=='cancel')){aiGoApp();return aiApp(p,f)}throw e});
+const aiJsonA=(p,f)=>aiJson(p,f);
+const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
 async function genViaApp(text,n,no){
  const total=n+no;
  try{
-  const r=await aiApp(`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
+  const r=await aiApp(ONEPROMPT(text,n,no));
   let a=(Array.isArray(r)?r:r.questions||[]).filter(okQ);
   const seen=new Set();a=a.filter(x=>seen.has(x.q)?false:(seen.add(x.q),true));
   while(a.length>total){const cnt={};a.forEach(x=>{cnt[x.t]=(cnt[x.t]||0)+1});const k=Object.keys(cnt).sort((p,q)=>cnt[q]-cnt[p])[0];if(cnt[k]<2)break;const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1)}
   if(a.length>total)a=a.slice(0,total);
   if(!a.length)throw new Error('empty');
-  T.qs=shuffle(a);saveTest(T.qs);T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
+  T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
   if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
- }catch(e){T.err=(e&&e.message=='cancel')?'':(e&&e.message=='parse'||e&&e.message=='empty')?'לא קיבלתי שאלות תקינות מה-AI. נסה שוב.':'משהו השתבש: '+((e&&e.message)||'?')}
+ }catch(e){if(e&&e.message=='local'){AIST='search';useLocal(text,n,no,e);return}
+  T.err=(e&&e.message=='cancel')?'':(e&&e.message=='parse'||e&&e.message=='empty')?'לא קיבלתי שאלות תקינות מה-AI. נסה שוב.':'משהו השתבש: '+((e&&e.message)||'?')}
  T.loading=false;render();
 }
 const aiErr=e=>{const m=({nokey:'כדי ליצור מבחן צריך להדביק מפתח חינמי של Google AI Studio בהגדרות (⚙️).',badkey:'מפתח ה-API לא תקין. בדוק אותו בהגדרות (⚙️).',net:'לא הצלחתי להתחבר לשרת של Google. ייתכן שאין אינטרנט, או שסינון/הדפדפן חוסמים את הכתובת.',limit:'חרגת ממכסת הבקשות החינמית. נסה שוב עוד דקה.',cancel:'ביטלת את הבקשה.'}[e&&e.message])||'לא הצלחתי ליצור מבחן. נסה שוב.';return(e&&e.message=='nokey'||e&&e.message=='badkey')?m:m+' [פירוט: '+((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'')+']'};
 
 /* ---- מבחנים שמורים (ללמוד גם בלי אינטרנט) ---- */
-function saveTest(qs){
+function saveTest(qs,src){T.src=src||'';
  S.tests=S.tests||{};const l=S.tests[SUBJ]=S.tests[SUBJ]||[];
- l.unshift({id:Date.now(),qs:JSON.parse(JSON.stringify(qs))});
+ l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs))});
  if(l.length>10)l.length=10;save();
 }
 function startSaved(id){
  const t=((S.tests||{})[SUBJ]||[]).find(x=>x.id==id);if(!t)return;
- T.qs=JSON.parse(JSON.stringify(t.qs));T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
+ T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs));T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
 }
 function savedCard(){
  const l=(S.tests||{})[SUBJ]||[];if(!l.length)return '';
  const fd=id=>new Date(id).toLocaleDateString('he-IL',{day:'numeric',month:'numeric'})+' '+new Date(id).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
- return `<div class="card"><p style="font-weight:600;margin-top:0">📂 מבחנים שמורים (עובדים גם בלי אינטרנט)</p>${l.map(t=>`<div class="item"><span>${fd(t.id)} · ${t.qs.length} שאלות</span><span><button class="btn" style="width:auto;padding:6px 14px" data-play="${t.id}">תרגל</button> <button data-del="${t.id}">✕</button></span></div>`).join('')}</div>`;
+ return `<div class="card"><p style="font-weight:600;margin-top:0">📂 מבחנים שמורים (עובדים גם בלי אינטרנט)</p>${l.map(t=>`<div class="item"><span>${fd(t.id)} · ${t.qs.length} שאלות${t.src?' · '+srcLbl(t.src):''}</span><span><button class="btn" style="width:auto;padding:6px 14px" data-play="${t.id}">תרגל</button> <button data-del="${t.id}">✕</button></span></div>`).join('')}</div>`;
 }
 const STOP=new Set('של את על עם אל כי גם או אם זה זו הוא היא הם הן אני לא כל מן יש אין היה להיות כך אבל רק עוד כמו בין לפי אחרי לפני תוך אשר שלא שהוא שהיא מאוד'.split(' '));
 const GEN=new Set('מספר מספרים דוגמה דוגמאות תרגיל תרגילים נושא פרק שאלה שאלות חומר צריך יכול אפשר בעל בעלי התלמידים התלמיד להבין להכיר לדעת מבנה סוגי בעזרת יחידה טקסט כתיבה הבנה עליהם שונים שונות מסוגים'.split(' '));
@@ -591,25 +599,33 @@ const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const fr=(n,d)=>{const g=gcd(n,d);n/=g;d/=g;return d==1?String(n):n+'/'+d};
 const dc=x=>String(+x.toFixed(2));
 function enGens(text){
+ /* שאלות אנגלית: רק am/is/are ו-have/has, משפטים חדשים משלנו (לא מהחומר) */
  const g=[],cap=x=>x[0].toUpperCase()+x.slice(1);
- const lines=text.split(/\n+/).flatMap(l=>l.split(/(?<=[.?!])\s+(?=[A-Z])/)).map(x=>x.trim().replace(/^[\d.)\-•*\s]+(?=[A-Z])/,'')).filter(x=>x&&!/[\u0590-\u05FF]/.test(x)&&!/\?$/.test(x)&&/^[A-Za-z]/.test(x)&&x.split(/\s+/).length>=3&&x.split(/\s+/).length<=14);
+ const lines=text.split(/\n+/).flatMap(l=>l.split(/(?<=[.?!])\s+(?=[A-Z])/)).map(x=>x.trim().replace(/^[\d.)\-•*\s]+(?=[A-Z])/,'')).filter(x=>x&&!/[֐-׿]/.test(x)&&!/\?$/.test(x)&&/^[A-Za-z]/.test(x)&&x.split(/\s+/).length>=3&&x.split(/\s+/).length<=14);
  const RE=/^(I|You|He|She|It|We|They|[A-Z][a-z]+(?: and [A-Z][a-z]+)?)\s+(am|is|are|has|have)\s+(not\s+)?(.+?)[.!]?$/;
- const P=[],N=[];
- lines.forEach(x=>{const m=x.match(RE);if(!m)return;const o={sub:m[1],verb:m[2],rest:m[4],sl:m[1]=='I'?'I':(/^(You|He|She|It|We|They)$/.test(m[1])?m[1].toLowerCase():m[1])};(m[3]?N:P).push(o)});
- if(!P.length&&!N.length)return g;
- const full=o=>`${o.sub} ${o.verb} ${o.rest}.`,isBe=o=>/^(am|is|are)$/.test(o.verb);
+ let hasBe=false,hasHave=false;
+ lines.forEach(x=>{const m=x.match(RE);if(!m)return;/^(am|is|are)$/.test(m[2])?hasBe=true:hasHave=true});
+ if(!hasBe&&!hasHave)return g;
+ const BE=[['I','am',['happy','tired','a student','in the garden','ten years old','very hungry','late today']],['You','are',['kind','a good friend','in the kitchen','right','ready','at home','very smart']],['He','is',['tall','a doctor','at the park','eleven years old','my uncle','busy','in the car']],['She','is',['a nurse','funny','in the library','twelve years old','my cousin','sleepy','at the shop']],['It','is',['cold today','under the bed','very big','on the shelf','a sunny day','too small']],['We','are',['in class','good friends','ready','at the beach','cold','in the same team','proud']],['They','are',['at the zoo','nice neighbors','in the yard','late','very loud','my classmates','happy']],['Noa','is',['a singer','in the pool','eight years old','brave','at the bus stop','my neighbor']],['Ben','is',['a baker','upstairs','very fast','in the park','a good player','sad today']],['The cat','is',['on the sofa','black and white','very lazy','under the chair','hungry','asleep']],['My parents','are',['at work','in the kitchen','very kind','home today','young','at the market']],['The kids','are',['in the pool','noisy','at the playground','tired','on the bus','excited']]];
+ const HV=[['I','have',['a blue bag','two brothers','a small dog','a new pencil case','long hair','a big family']],['You','have',['a nice smile','a red scarf','three cousins','a good idea','a loud voice']],['We','have',['a big garden','a math test','two cars','a new teacher','a long vacation']],['They','have',['a tall house','four children','a green boat','a pet rabbit','lots of books']],['He','has',['a black cap','one sister','a fast bike','short hair','an old guitar']],['She','has',['a yellow dress','two cats','a pretty smile','a new bike','curly hair']],['It','has',['four legs','a long tail','soft fur','big wings']],['Dan','has',['a brown hat','a big drum','three pens','a strong dog']],['Maya','has',['a purple bag','a loud laugh','two rabbits','a long braid']],['The dog','has',['a wet nose','a red collar','four paws','a short tail']],['My parents','have',['a small shop','two jobs','a blue car','a lot of friends']],['The kids','have',['new shoes','a big ball','red hats','a lot of homework']]];
+ const NAMES=/^(Noa|Ben|Dan|Maya)$/,low=t=>t=='I'||NAMES.test(t)?t:t[0].toLowerCase()+t.slice(1);
+ const mat=text.toLowerCase().replace(/\s+/g,' ');
+ const pick=bank=>{for(let t=0;t<12;t++){const b=bank[rnd(0,bank.length-1)],r=b[2][rnd(0,b[2].length-1)];
+   if(!mat.includes((b[0]+' '+b[1]+' '+r).toLowerCase()))return{sub:b[0],verb:b[1],rest:r,sl:low(b[0])}}return null};
+ const full=o=>`${o.sub} ${o.verb} ${o.rest}.`;
  const W=(text.match(/\b(Why|What|Where|Who|How)\b/)||[])[1]||(/מילת שאלה/.test(text)?'Why':null);
- const ch=(o)=>{const fam=isBe(o)?['am','is','are']:['have','has'];return{q:`בחר את הצורה הנכונה: ${o.sub} ___ ${o.rest}.`,a:o.verb,wrong:fam.filter(v=>v!=o.verb).concat(isBe(o)?['be','being']:['having','had']),en:1}};
- P.forEach(o=>{
-  g.push(()=>ch(o));
-  if(isBe(o))g.push(()=>({q:`הפוך למשפט שלילי: ${full(o)}`,a:`${o.sub} ${o.verb} not ${o.rest}.`,wrong:[`${o.sub} not ${o.verb} ${o.rest}.`,`${o.sub} ${o.verb} no ${o.rest}.`,`${o.sub} don't ${o.verb} ${o.rest}.`,`${o.sub} ${o.verb} ${o.rest} not.`],en:1}));
-  if(isBe(o)){
-   g.push(()=>({q:`הפוך לשאלת כן/לא: ${full(o)}`,a:`${cap(o.verb)} ${o.sl} ${o.rest}?`,wrong:[`${o.sub} ${o.verb} ${o.rest}?`,`Do ${o.sl} ${o.verb} ${o.rest}?`,`${cap(o.verb)} ${o.rest} ${o.sl}?`,`${cap(o.sl)} ${o.verb} ${o.rest}?`],en:1}));
-   if(W)g.push(()=>({q:`כתוב שאלה עם ${W} מהמשפט: ${full(o)}`,a:`${W} ${o.verb} ${o.sl} ${o.rest}?`,wrong:[`${W} ${o.sl} ${o.verb} ${o.rest}?`,`${W} do ${o.sl} ${o.verb} ${o.rest}?`,`${o.sl} ${o.verb} ${W} ${o.rest}?`,`${W} ${o.verb} ${o.rest} ${o.sl}?`],en:1}));
-  }
- });
- N.filter(isBe).forEach(o=>g.push(()=>({q:`הפוך למשפט חיובי: ${o.sub} ${o.verb} not ${o.rest}.`,a:full(o),wrong:[`${o.sub} ${o.verb} no ${o.rest}.`,`${o.sub} ${o.verb} ${o.rest} not.`,`${o.sub} don't ${o.verb} ${o.rest}.`,`${o.sub} not ${o.verb} ${o.rest}.`],en:1})));
- [["isn't","is not"],["aren't","are not"],["hasn't","has not"],["haven't","have not"]].forEach(([c,f])=>{if(text.includes(c)){const all=['is not','are not','am not','has not','have not'];g.push(()=>({q:`מה פירוש הקיצור ${c} ?`,a:f,wrong:all.filter(x=>x!=f),en:1}))}});
+ if(hasBe){
+  g.push(()=>{const o=pick(BE);return o&&{q:`בחר את הצורה הנכונה: ${o.sub} ___ ${o.rest}.`,a:o.verb,wrong:['am','is','are','be','being'].filter(v=>v!=o.verb),en:1}});
+  g.push(()=>{const o=pick(BE);if(!o)return null;const ot=['am','is','are'].filter(v=>v!=o.verb);return{q:'איזה משפט נכון?',a:full(o),wrong:[`${o.sub} ${ot[0]} ${o.rest}.`,`${o.sub} ${ot[1]} ${o.rest}.`,`${o.sub} be ${o.rest}.`,`${o.sub} being ${o.rest}.`],mcOnly:1}});
+  g.push(()=>{const o=pick(BE);return o&&{q:`הפוך למשפט שלילי: ${full(o)}`,a:`${o.sub} ${o.verb} not ${o.rest}.`,wrong:[`${o.sub} not ${o.verb} ${o.rest}.`,`${o.sub} ${o.verb} no ${o.rest}.`,`${o.sub} don't ${o.verb} ${o.rest}.`,`${o.sub} ${o.verb} ${o.rest} not.`],en:1}});
+  g.push(()=>{const o=pick(BE);return o&&{q:`הפוך למשפט חיובי: ${o.sub} ${o.verb} not ${o.rest}.`,a:full(o),wrong:[`${o.sub} ${o.verb} no ${o.rest}.`,`${o.sub} ${o.verb} ${o.rest} not.`,`${o.sub} don't ${o.verb} ${o.rest}.`,`${o.sub} not ${o.verb} ${o.rest}.`],en:1}});
+  g.push(()=>{const o=pick(BE);return o&&{q:`הפוך לשאלת כן/לא: ${full(o)}`,a:`${cap(o.verb)} ${o.sl} ${o.rest}?`,wrong:[`${o.sub} ${o.verb} ${o.rest}?`,`Do ${o.sl} ${o.verb} ${o.rest}?`,`${cap(o.verb)} ${o.rest} ${o.sl}?`,`${cap(o.sl)} ${o.verb} ${o.rest}?`],en:1}});
+  if(W)g.push(()=>{const o=pick(BE);return o&&{q:`כתוב שאלה עם ${W} מהמשפט: ${full(o)}`,a:`${W} ${o.verb} ${o.sl} ${o.rest}?`,wrong:[`${W} ${o.sl} ${o.verb} ${o.rest}?`,`${W} do ${o.sl} ${o.verb} ${o.rest}?`,`${o.sl} ${o.verb} ${W} ${o.rest}?`,`${W} ${o.verb} ${o.rest} ${o.sl}?`],en:1}});
+ }
+ if(hasHave){
+  g.push(()=>{const o=pick(HV);return o&&{q:`בחר את הצורה הנכונה: ${o.sub} ___ ${o.rest}.`,a:o.verb,wrong:['have','has'].filter(v=>v!=o.verb).concat(['having','had']),en:1}});
+  g.push(()=>{const o=pick(HV);if(!o)return null;const ot=o.verb=='has'?'have':'has';return{q:'איזה משפט נכון?',a:full(o),wrong:[`${o.sub} ${ot} ${o.rest}.`,`${o.sub} haves ${o.rest}.`,`${o.sub} having ${o.rest}.`,`${o.sub} are ${o.rest}.`],mcOnly:1}});
+ }
  return g;
 }
 function exGens(text,sub){
@@ -672,7 +688,7 @@ function minNeeded(text){
  try{
   const eg=enGens(text);
   if(eg.length){
-   const L=text.split(/\n+/).flatMap(l=>l.split(/(?<=[.?!])\s+(?=[A-Z])/)).filter(x=>/^[A-Za-z]/.test(x.trim())&&x.split(/\s+/).length>=3).length;return Math.min(45,Math.max(1,L))}
+   const L=text.split(/\n+/).flatMap(l=>l.split(/(?<=[.?!])\s+(?=[A-Z])/)).filter(x=>/^[A-Za-z]/.test(x.trim())&&x.split(/\s+/).length>=3).length;return 1}
   const mg=exGens(text,SUBJ);
   if(mg.length)return Math.min(45,mg.length);
   let L=sentencesOf(text);if(L.length<3){const r=sentencesOf(text,true);if(r.length>L.length)L=r}
@@ -693,7 +709,7 @@ function localTest(text,n,no){
   let q=null;
   if(gens.length){
    
-   if(!q){const x=mkEx(gens,used);if(x)q=isOpen?{type:'open',q:x.q,model:x.a,num:!x.en,exact:!!x.en}:exMc(x)}
+   if(!q){const x=mkEx(gens,used);if(x)q=isOpen&&!x.mcOnly?{type:'open',q:x.q,model:x.a,num:!x.en,exact:!!x.en}:exMc(x)}
   }else{
    q=takeDef(!isOpen);
    if(!q&&L.length){const si=Math.min(L.length-1,Math.floor((i+Math.random())*L.length/Math.max(1,total))),s=L[si],key=(K[si]||[])[0];
@@ -717,8 +733,9 @@ async function aiTopics(text){
 }
 async function aiQs(text,topics,idxs,n,no,extra){
  const list=idxs.map(i=>i+': '+topics[i]).join('\n');
- return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
+ return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
 }
+const ENNOTE=t=>(SUBJ=='אנגלית'&&/\b(am|is|are|has|have)\b/i.test(t))?'\nחשוב מאוד (אנגלית): החומר עוסק במשפטי תיאור עם am/is/are ועם have/has. שאל אך ורק על המבנים האלה (בחירת הצורה הנכונה, משפט שלילי, שאלת כן/לא, השלמה). חובה לכתוב משפטים חדשים לגמרי משלך, עם נושאים, שמות ומילים אחרים. אסור להעתיק או לחזור על משפטים ודוגמאות מהחומר, אסור לשאול על נושאי דקדוק אחרים, והאנגלית תהיה פשוטה ברמת תלמיד כיתה ג-ה.':'';
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
 async function gen(){
  const text=$('mat').value.trim(),n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
@@ -729,6 +746,14 @@ async function gen(){
  const total=n+no;
  if(appOn()){await genViaApp(text,n,no);return}
  try{
+  if(text.length<2500&&total<=25){/* חומר קצר: בקשה אחת במקום שתיים (מהיר יותר) */
+   const r=await aiJson(ONEPROMPT(text,n,no));
+   let a=(Array.isArray(r)?r:r.questions||[]).filter(okQ);const sn=new Set();a=a.filter(x=>sn.has(x.q)?false:(sn.add(x.q),true));
+   if(a.length>total)a=a.slice(0,total);if(!a.length)throw new Error('empty');
+   T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
+   if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
+   T.loading=false;render();return;
+  }
   const topics=await aiTopics(text);
   if(!topics.length)throw new Error('empty');
   if(total<topics.length){
@@ -746,7 +771,7 @@ async function gen(){
   let a=[];rs.forEach(x=>{if(x.status=='fulfilled'){const r=x.value;a=a.concat((Array.isArray(r)?r:r.questions||[]).filter(okQ))}});
   const cov=()=>new Set(a.map(x=>+x.t));
   let miss=all.filter(i=>!cov().has(i));
-  for(let tries=0;miss.length&&tries<2;tries++){
+  for(let tries=0;miss.length&&tries<1;tries++){
    try{
     const r2=await aiQs(text,topics,miss,Math.ceil(miss.length*.6),Math.floor(miss.length*.4),'שאלה אחת בדיוק על כל נושא ברשימה.');
     a=a.concat((Array.isArray(r2)?r2:r2.questions||[]).filter(okQ));
@@ -761,16 +786,23 @@ async function gen(){
    const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1);
   }
   if(!a.length)throw new Error('empty');
-  T.qs=shuffle(a);saveTest(T.qs);T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;
+  T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;
   if(miss.length)toast('לא הצלחתי ליצור שאלות על '+miss.length+' נושאים. נסה שוב.');
  }catch(e){
-  if(!hasAI()&&!appOn()&&!(e&&e.message=='cancel')){aiGoApp();await genViaApp(text,n,no);return}
+    useLocal(text,n,no,e);return
+ }
+ T.loading=false;render();
+}
+function useLocal(text,n,no,e){
+ const total=n+no;
+ try{
   const mn=minNeeded(text);
   if(total<mn){T.err=`כדי לכסות את כל החומר צריך לפחות ${mn} שאלות בסך הכל. כרגע בחרת ${total}.`;T.loading=false;render();return}
   const lr=localTest(text,n,no);
-  if(lr.length){T.qs=lr;saveTest(lr);T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast('ה-AI לא עבד ('+aiErr(e).slice(0,70)+'). נוצר מבחן בסיסי בלי AI שלא בהכרח מכסה את כל החומר. הדבק מפתח חינמי בהגדרות ⚙️')}
+  if(lr.length){T.qs=lr;saveTest(lr,'local');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast((e&&e.message=='local'?'':'ה-AI לא עבד ('+aiErr(e).slice(0,70)+'). ')+'נוצר מבחן בסיסי בלי AI שלא בהכרח מכסה את כל החומר. הדבק מפתח חינמי בהגדרות ⚙️')}
   else T.err=!hasAI()?'לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), או הדבק מפתח בהגדרות ⚙️':aiErr(e)
- }
+
+ }catch(x){T.err='לא הצלחתי ליצור מבחן. נסה שוב.'}
  T.loading=false;render();
 }
 const THEMES=[['סגול-ורוד','linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2777 100%)','linear-gradient(135deg,#2a6df4,#6b9bff)'],['ים','linear-gradient(160deg,#0f4c81 0%,#0891b2 60%,#34d399 100%)','linear-gradient(135deg,#0891b2,#38bdf8)'],['ירוק','linear-gradient(160deg,#064e3b 0%,#10a37f 60%,#a3e635 100%)','linear-gradient(135deg,#10a37f,#34d399)'],['שקיעה','linear-gradient(160deg,#9a3412 0%,#f97316 55%,#fbbf24 100%)','linear-gradient(135deg,#ea580c,#fb923c)'],['לילה','linear-gradient(160deg,#0b1020 0%,#1e1b4b 60%,#312e81 100%)','linear-gradient(135deg,#4338ca,#818cf8)']];
@@ -827,10 +859,10 @@ async function gradeOpen(q){
 }
 function testView(){
  const v=$('v');document.body.classList.add('tbg');
- if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div></div>';return}
+ if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">בדרך כלל 10–30 שניות</div></div>';return}
  if(T.qs.length){document.body.classList.add('tbg');
   const sk=T.skipped||0,tot=Math.max(0,T.qs.length-sk);
-  const hdr=tag=>`<div class="thd"><img src="${IM[SUBJ]||''}" alt=""><div><small>המבחן ייערך ב${esc(SUBJ)}</small><b>${esc(SUBJ)}</b></div><span class="ttag">${tag}</span></div><div class="tpb"><i style="width:${Math.round(100*Math.min(T.i,T.qs.length)/T.qs.length)}%"></i></div>`;
+  const hdr=tag=>`<div class="thd"><img src="${IM[SUBJ]||''}" alt=""><div><small>המבחן ייערך ב${esc(SUBJ)}</small><b>${esc(SUBJ)}</b>${T.src?`<small>${srcLbl(T.src)}</small>`:''}</div><span class="ttag">${tag}</span></div><div class="tpb"><i style="width:${Math.round(100*Math.min(T.i,T.qs.length)/T.qs.length)}%"></i></div>`;
   if(T.i>=T.qs.length){
    const first=T.savedFor!==T.qs;
    if(first){T.savedFor=T.qs;if(tot)rec('test',T.score,tot,SUBJ)}
@@ -1056,7 +1088,7 @@ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמח
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='1.97';function navDraw(){
+const VER='2.03';function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
