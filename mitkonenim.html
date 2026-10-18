@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 2.06 -->
+<!-- מתכוננים | index.html | גרסה 2.07 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -201,13 +201,14 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 .kc .kmsg{margin-top:12px;font-weight:800;font-size:14px;text-align:center;min-height:18px;text-shadow:0 1px 0 rgba(0,0,0,.25);color:#fff}
 #gear{width:42px;height:42px;padding:0;border:0;border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.22);line-height:0}#gear svg{width:30px;height:34px;display:block}#gear:active{transform:scale(.94)}
 </style>
-<script src="01_images.js?v=1.98"></script>
+<script src="01_images.js"></script>
+<script>(function(){/* אם קובץ התמונות לא נטען: מנסים שמות אחרים */["images.js","img.js"].forEach(function(n){if(!(window.IMG&&window.IMG["tile-1.jpg"]))document.write('<script src="'+n+'"><\/script>')})})();</script>
 <script>
 window.IMG_VER=window.IMG_VER||'1.96';window.IMG=window.IMG||{};
 ['tile-exams.jpg','apple-touch-icon.png','favicon.png','icon-192.png','icon-512.png','logo.jpg','subj-english.jpg','subj-hebrew.jpg','subj-history.jpg','subj-math.jpg','subj-science.jpg','subj-tanakh.jpg','tile-1.jpg','tile-2.jpg','tile-4.jpg','tile-5.jpg','tile-podcast.jpg','trophy.png','upload-file.png','upload-image.png','upload-word.png'].forEach(function(n){if(!IMG[n]&&!/^tile-(exams|homework)/.test(n))IMG[n]='images/'+n});
 function fillImg(){document.querySelectorAll('[data-img]').forEach(function(e){var u=IMG[e.getAttribute('data-img')];if(u){e.tagName=='LINK'?e.setAttribute('href',u):e.setAttribute('src',u)}})}
 document.addEventListener('DOMContentLoaded',fillImg);
-window.imgDiag=async function(){var o=['כתובת: '+location.href];for(var n of ['images/logo.jpg','images/tile-exams.jpg']){try{var r=await fetch(n+'?t='+Date.now(),{cache:'no-store'});o.push(n+' → '+(r.ok?'נמצא ✓':'לא נמצא (שגיאה '+r.status+')'))}catch(e){o.push(n+' → אין חיבור')}}o.push('אם כתוב "לא נמצא": צריך להעלות לגיטהב את התיקייה images עם כל התמונות, באותה תיקייה של index.html');return o.join('\n')};
+window.imgDiag=async function(){var o=['כתובת: '+location.href,'גרסת אפליקציה: '+(window.VER||'?')];for(var n of ['01_images.js','images.js']){try{var r=await fetch(n+'?t='+Date.now(),{cache:'no-store'});o.push(n+' → '+(r.ok?'נמצא ✓':'לא נמצא (שגיאה '+r.status+')'))}catch(e){o.push(n+' → אין חיבור')}}o.push('אם כתוב "לא נמצא": צריך להעלות לגיטהב את הקובץ 01_images.js באותה תיקייה של index.html, בדיוק בשם הזה. אחרי ההעלאה לרענן את הדף פעמיים.');return o.join('\n')};
 window.imgFix=async function(){try{var rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(function(r){return r.unregister()}))}catch(e){}try{var ks=await caches.keys();await Promise.all(ks.map(function(k){return caches.delete(k)}))}catch(e){}location.reload()};
 </script>
 </head>
@@ -1087,7 +1088,7 @@ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמח
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.06';function navDraw(){
+const VER='2.07';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1438,15 +1439,17 @@ async function upRun(id,files){
  if(add>1){m.className='upm ok';m.textContent='✓ נוספו '+add+' קבצים'}
 }
 function homeView(){
- const tile=(k,ic,t)=>`<button class="tile ex" aria-label="${t}" data-go="${k}" style="background-image:url(${ic})"></button>`;
+ const EMO={4:'📝',1:'🗂️',2:'🎧',5:'🏆',6:'🎙️'};
+ const tile=(k,ic,t,sub,cnt,grad)=>/^data:|^images\//.test(ic||'')&&/^data:/.test(ic)?`<button class="tile ex" aria-label="${t}" data-go="${k}" style="background-image:url(${ic})"></button>`:`<button class="tile" aria-label="${t}" data-go="${k}" style="background:${grad||'linear-gradient(135deg,#2a6df4,#6b9bff)'}"><div class="ti e">${EMO[k]||'📚'}</div><div class="tt"><b>${t}</b><small>${sub||''}</small></div></button>`;
  $('v').innerHTML=`<p class="mute" style="margin:0 0 12px;font-size:16px">במה נתאמן היום? 🎯</p>`+(S.exams.some(e=>exDays(e.date)>=0)?exBoard():'')
  +tile(4,IMG['tile-4.jpg'],'מבחנים','בחר מקצוע ותתאמן',S.subjects.length+' מקצועות','linear-gradient(135deg,#2a6df4,#5b8cff)')
  +tile(1,IMG['tile-1.jpg'],'פתקיות','שאלה בצד אחד, תשובה בצד השני',S.cards.length+' פתקיות','linear-gradient(135deg,#8b5cf6,#b794f6)')
  +tile(2,IMG['tile-2.jpg'],'הכתבות','שמע, כתוב ותרגם',S.words.length+' מילים','linear-gradient(135deg,#10a37f,#34d399)')
  +tile(5,IMG['tile-5.jpg'],'ציונים','ההתקדמות שלך','הציונים שלי','linear-gradient(135deg,#f59e0b,#fbbf24)');
- $('v').insertAdjacentHTML('beforeend',`<button class="tile ex podp" data-go="6" aria-label="פודקאסט" style="background-image:url(${IMG['tile-podcast.jpg']})"></button>`);
+ $('v').insertAdjacentHTML('beforeend',/^data:/.test(IMG['tile-podcast.jpg']||'')?`<button class="tile ex podp" data-go="6" aria-label="פודקאסט" style="background-image:url(${IMG['tile-podcast.jpg']})"></button>`:tile(6,'','פודקאסט','מקשיבים לחומר כמו לשיחה','','linear-gradient(135deg,#7c3aed,#ec4899)'));
  $('v').insertAdjacentHTML('beforeend',IMG['tile-exams.jpg']?`<button class="tile ex" data-go="7" aria-label="לוח מבחנים" style="background-image:url(${IMG['tile-exams.jpg']});position:relative"><span class="exc">${S.exams.filter(e=>exDays(e.date)>=0).length} קרובים</span></button>`:`<button class="tile" data-go="7" style="background:linear-gradient(135deg,#0ea5e9,#6366f1)"><div class="ti e">📅</div><div class="tt"><b>לוח מבחנים</b><small>הוסף מבחן וקבל תזכורת</small></div></button>`);
- $('v').insertAdjacentHTML('beforeend',`<p class="mute" style="text-align:center;margin:8px 0 0">גרסה ${VER} · תמונות ${window.IMG_VER}</p>`);
+ $('v').insertAdjacentHTML('beforeend',`<p class="mute" style="text-align:center;margin:8px 0 0">גרסה ${VER} · תמונות ${window.IMG_VER||'לא נטענו'}</p>`+(/^data:/.test(IMG['tile-1.jpg']||'')?'':'<button class="btn sec" id="imgchk" style="margin-top:8px">התמונות לא נטענו. לחץ לבדיקה</button>'));
+ if($('imgchk'))$('imgchk').onclick=async()=>{$('imgchk').textContent='בודק…';alert(await imgDiag())};
  $('v').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{tab=+b.dataset.go;mode='list';GS='';render()});
 }
 const IM={'מתמטיקה':IMG['subj-math.jpg'],'היסטוריה':IMG['subj-history.jpg'],'עברית':IMG['subj-hebrew.jpg'],'מדעים':IMG['subj-science.jpg'],'תנ\"ך':IMG['subj-tanakh.jpg'],'אנגלית':IMG['subj-english.jpg']};
