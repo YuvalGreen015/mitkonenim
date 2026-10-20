@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 2.07 -->
+<!-- מתכוננים | index.html | גרסה 2.08 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -23,7 +23,7 @@ h1{font-size:26px;font-weight:800;margin:8px 0 14px}
 .tabs button{flex:1;padding:10px 4px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;font:600 15px inherit;font-family:inherit}
 .tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
-input,textarea{width:100%;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:400 17px inherit;font-family:inherit;margin-bottom:8px}
+input,textarea,select{width:100%;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:400 17px inherit;font-family:inherit;margin-bottom:8px}
 input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
 .btn{padding:12px 16px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:600 16px inherit;font-family:inherit;width:100%}
 .btn.sec{background:transparent;color:var(--acc);border:2px solid var(--acc)}
@@ -233,7 +233,7 @@ let S={cards:[],words:[],subjects:[],mats:{},scores:[],grades:{}},tab=0,SUBJ='',
 try{const r=localStorage.getItem('study');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 S.subjects=['מתמטיקה','היסטוריה','עברית','מדעים','תנ"ך','אנגלית'];S.mats=S.mats||{};
 let saveWarned=0;
-const save=()=>{try{localStorage.setItem('study',JSON.stringify(S))}catch(e){if(!saveWarned){saveWarned=1;try{toast('לא הצלחתי לשמור (אין מקום בדפדפן או מצב פרטי). הנתונים עלולים להימחק.')}catch(x){}}}};
+const save=()=>{try{exSyncSoon()}catch(e){}try{localStorage.setItem('study',JSON.stringify(S))}catch(e){if(!saveWarned){saveWarned=1;try{toast('לא הצלחתי לשמור (אין מקום בדפדפן או מצב פרטי). הנתונים עלולים להימחק.')}catch(x){}}}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -334,6 +334,18 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 /* ---- חיבור ישיר ל-Google Gemini API (מפתח חינמי אישי ב-localStorage) ---- */
 const AI_MODELS=['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
 const DEFAULT_PROXY='';/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
+/* קורא JSON סלחני: מנקה גדרות קוד, מוצא את גוש ה-JSON התקין הראשון גם אם יש טקסט מסביב */
+function jparse(t){
+ t=String(t||'').replace(/```[a-zA-Z]*/g,'').trim();
+ try{const v=JSON.parse(t);if(v&&typeof v=='object')return v}catch(e){}
+ for(let i=0;i<t.length;i++){const c=t[i];if(c!='['&&c!='{')continue;
+  let d=0,q=false,esc=false;
+  for(let j=i;j<t.length;j++){const ch=t[j];
+   if(q){if(esc)esc=false;else if(ch=='\\')esc=true;else if(ch=='"')q=false;continue}
+   if(ch=='"'){q=true;continue}
+   if(ch=='['||ch=='{')d++;else if(ch==']'||ch=='}'){d--;if(d==0){try{const v=JSON.parse(t.slice(i,j+1));if(v&&typeof v=='object'&&(Array.isArray(v)?v.length&&typeof v[0]=='object':Object.keys(v).length>1))return v}catch(e){}break}}}
+ }
+ const x=new Error('parse');x.detail='parse: '+t.replace(/\s+/g,' ').slice(0,160);throw x}
 const getProxy=()=>{try{return (localStorage.getItem('aiproxy')||DEFAULT_PROXY).trim()}catch(e){return DEFAULT_PROXY}};
 async function aiProxy(prompt){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),90000);
@@ -342,27 +354,34 @@ async function aiProxy(prompt){
   if(res.status==429)throw new Error('limit');
   if(!res.ok){let m='';try{m=(await res.text()).slice(0,200)}catch(e){}const x=new Error('http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=j.text||'';
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
-  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+  return jparse(t);
  }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
  finally{clearTimeout(tm)}
 }
 const hasAI=()=>!!(getKey()||getProxy());
 const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
-async function pollJson(prompt,files,ms){
+async function pollOne(prompt,files,ms,model){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms||30000);
  try{
-  const res=await fetch('https://text.pollinations.ai/openai?referrer=mitkonenim',{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
-   body:JSON.stringify({model:'openai',messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
+  const res=await fetch('https://text.pollinations.ai/openai?referrer='+encodeURIComponent(/^https?:$/.test(location.protocol)?location.hostname:'mitkonenim'),{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
+   body:JSON.stringify({model:model||'openai',seed:Math.floor(Math.random()*1e6),messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
   if(res.status==429)throw new Error('limit');
   if(!res.ok)throw new Error('http'+res.status);
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
-  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+  return jparse(t);
  }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
  finally{clearTimeout(tm)}
 }
+/* AI חינמי בלי מפתח: המגבלה אצלם היא בקשה אחת ל-15 שניות, אז מחכים כמו שצריך ומנסים שוב לבד */
+async function pollJson(prompt,files,ms){
+ if(files&&files.length)return pollOne(prompt,files,ms,'openai');
+ const W=window.POLL_WAIT||16000;let last;
+ for(const m of ['openai','openai','mistral','openai']){
+  if(last)await new Promise(r=>setTimeout(r,last.message=='limit'?W:Math.min(2500,W)));
+  try{return await pollOne(prompt,files,40000,m)}catch(e){last=e}
+ }
+ throw last}
 async function aiJson(prompt,files){
  try{return await aiGem(prompt,files)}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){return pollJson(prompt)}throw e}
 }
@@ -383,8 +402,7 @@ async function aiGem(prompt,files){
   if(res.status==429){last='limit';continue}/* לכל מודל מכסה נפרדת: ננסה את הבא */
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,220)}catch(e){}const x=new Error(res.status==401||res.status==403?'badkey':'http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(c=>c.text||'').join('');
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
-  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+  return jparse(t);
  }
  throw new Error(last);
 }
@@ -399,8 +417,7 @@ async function aiOA(key,prompt){
   if(res.status==401||res.status==403){const x=new Error('badkey');throw x}
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m){last=new Error('parse');continue}
-  try{return JSON.parse(m[0])}catch(e){last=new Error('parse')}
+  try{return jparse(t)}catch(e){last=e}
  }
  throw last;
 }
@@ -435,8 +452,7 @@ function appUrl(k){const a=APPS[k];return isAnd()?'intent://'+a.host+a.path+'#In
 function openApp(k){const u=appUrl(k);if(isAnd())location.href=u;else window.open(u,'_blank')}
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);return true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(x){return false}}}
 function appParse(t){
- t=String(t||'').replace(/```[a-zA-Z]*/g,'');const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
- try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}}
+ return jparse(t)}
 let appQ=Promise.resolve();
 const aiApp=(prompt,files)=>{const run=()=>aiAppDlg(prompt,files);const p=appQ.then(run,run);appQ=p.catch(()=>{});return p};
 function aiAppDlg(prompt,files){
@@ -1088,7 +1104,7 @@ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמח
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.07';window.VER=VER;function navDraw(){
+const VER='2.13';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1097,12 +1113,21 @@ const VER='2.07';window.VER=VER;function navDraw(){
 /* ---- לוח מבחנים ---- */
 S.exams=S.exams||[];
 const EX_MSG='יש לך מבחן חשוב להתכונן אליו';
+const exWhen=n=>n<=0?'היום':n==1?'מחר':'בעוד '+n+' ימים';
+const exTitle=(e,n)=>exWhen(n)+' יש לך '+(e.kind||'מבחן')+' ב'+e.subject;
+const exTag=e=>e.kind&&e.kind!='מבחן'?esc(e.kind)+' · ':'';
+let exST=0;
+function exSyncSoon(){clearTimeout(exST);exST=setTimeout(exSync,600)}
+async function exSync(){/* מעתיק את התזכורות ל-IndexedDB כדי שה-Service Worker יוכל להזכיר גם כשהאפליקציה סגורה */
+ try{const db=await exDB();const t=db.transaction('rem','readwrite');t.objectStore('rem').put((S.exams||[]).map(e=>({id:e.id,subject:e.subject,date:e.date,kind:e.kind||'מבחן'})),'list')}catch(e){}
+}
+async function exPeriodic(){try{if(Notification.permission!=='granted')return;const reg=await navigator.serviceWorker.ready;if(reg.periodicSync)await reg.periodicSync.register('exam-remind',{minInterval:6*3600*1000})}catch(e){}}
 const exDays=d=>{const a=new Date(d+'T00:00:00'),n=new Date();n.setHours(0,0,0,0);return Math.round((a-n)/864e5)};
 const exLabel=n=>n<0?'עבר':n==0?'היום!':n==1?'מחר':'בעוד '+n+' ימים';
 const exDate=d=>new Date(d+'T00:00:00').toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});
 const exDue=()=>S.exams.filter(e=>{const n=exDays(e.date);return n>=0&&n<=2}).sort((a,b)=>a.date.localeCompare(b.date));
 /* תמונות נשמרות ב-IndexedDB (לא ב-localStorage הקטן) */
-const exDB=()=>new Promise((res,rej)=>{try{const r=indexedDB.open('mitkonenim',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
+const exDB=()=>new Promise((res,rej)=>{try{const r=indexedDB.open('mitkonenim',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos');if(!d.objectStoreNames.contains('rem'))d.createObjectStore('rem')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
 async function exPut(id,v){const db=await exDB();return new Promise((res,rej)=>{const t=db.transaction('photos','readwrite');t.objectStore('photos').put(v,id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
 async function exGet(id){const db=await exDB();return new Promise(res=>{const q=db.transaction('photos').objectStore('photos').get(id);q.onsuccess=()=>res(q.result||'');q.onerror=()=>res('')})}
 async function exDel(id){try{const db=await exDB();db.transaction('photos','readwrite').objectStore('photos').delete(id)}catch(e){}}
@@ -1122,12 +1147,12 @@ function exNotify(){
   const due=exDue();if(!due.length||!('Notification' in window)||Notification.permission!=='granted')return;
   const today=hwToday();S.exNotified=S.exNotified||{};
   due.forEach(e=>{const k=e.id+'|'+today;if(S.exNotified[k]||NB[k])return;NB[k]=1;
-   showNote(EX_MSG,{body:e.subject+' · '+exLabel(exDays(e.date)),icon:IMG['icon-192.png'],tag:'exam-'+e.id,lang:'he',dir:'rtl'}).then(()=>{S.exNotified[k]=1;Object.keys(S.exNotified).forEach(x=>{if(x.split('|')[1]!==today)delete S.exNotified[x]});save()}).catch(()=>{}).then(()=>{delete NB[k]})});
+   showNote(exTitle(e,exDays(e.date)),{body:'בהצלחה! כדאי לתרגל היום באפליקציה 💪',icon:IMG['icon-192.png'],tag:'exam-'+e.id,lang:'he',dir:'rtl'}).then(()=>{S.exNotified[k]=1;Object.keys(S.exNotified).forEach(x=>{if(x.split('|')[1]!==today)delete S.exNotified[x]});save()}).catch(()=>{}).then(()=>{delete NB[k]})});
  }catch(e){}
 }
 setInterval(()=>{exNotify();if(!tab&&!showSet)try{render()}catch(e){}},3600000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){exNotify();if(!tab&&!showSet)try{render()}catch(e){}}});
-const X={photo:'',subject:'',date:'',note:'',busy:false,msg:'',found:[],used:{},manual:false};
+const X={kind:'מבחן',photo:'',subject:'',date:'',note:'',busy:false,msg:'',found:[],used:{},manual:false};
 const xNorm=t=>String(t||'').replace(/["'׳״\s]/g,'').toLowerCase();
 /* קריאת תמונה בלי AI (OCR בדפדפן) */
 const XSTOP=['מבחן','בוחן','מקוון','מקוו','מבחנים','לוח','יום','שעה','תאריך','סיכום'];
@@ -1198,7 +1223,7 @@ function xFill(i){const t=X.found[i];if(!t)return;X.subject=t.subject;X.date=t.d
 function exBoard(){
  const up=S.exams.filter(e=>exDays(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)),due=exDue();
  const hot=due.length>0;
- const line=e=>{const n=exDays(e.date),h=n<=2;return `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.28)"><b>${esc(e.subject)}</b><span>${exDate(e.date).replace(/^יום /,'')} · <b>${exLabel(n)}</b></span></div>`};
+ const line=e=>{const n=exDays(e.date),h=n<=2;return `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.28)"><b>${exTag(e)}${esc(e.subject)}</b><span>${exDate(e.date).replace(/^יום /,'')} · <b>${exLabel(n)}</b></span></div>`};
  return `<button class="tile" data-go="7" style="display:block;background:${hot?'linear-gradient(135deg,#dc2626,#f97316)':'linear-gradient(135deg,#0ea5e9,#6366f1)'};margin-bottom:14px;color:#fff">
   <div style="display:flex;align-items:center;gap:12px"><div class="ti e">${hot?'🔔':'📅'}</div><div class="tt"><b>לוח מבחנים</b><small>${hot?EX_MSG:(up.length?'המבחנים הקרובים שלך':'עוד לא הוספת מבחנים · לחץ כדי להוסיף')}</small></div><span class="tm">${up.length} קרובים</span></div>
   ${up.length?`<div style="margin-top:10px;font-size:15px">${up.slice(0,3).map(line).join('')}${up.length>3?`<div style="padding-top:6px;opacity:.9">ועוד ${up.length-3}...</div>`:''}</div>`:''}
@@ -1208,10 +1233,11 @@ function examsView(){
  const v=$('v'),list=S.exams.slice().sort((a,b)=>a.date.localeCompare(b.date)),up=list.filter(e=>exDays(e.date)>=0),past=list.filter(e=>exDays(e.date)<0);
  const perm=('Notification' in window)?Notification.permission:'none';
  const row=e=>{const n=exDays(e.date),hot=n>=0&&n<=2;return `<div class="item" style="align-items:center;${n<0?'opacity:.55;':''}${hot?'background:color-mix(in srgb,var(--bad) 12%,transparent);border-radius:12px;padding:8px;':''}">
-  <span style="flex:1"><b>${esc(e.subject)}</b><br><span class="mute">${exDate(e.date)} · <b style="color:${hot?'var(--bad)':'inherit'}">${exLabel(n)}</b></span>${e.note?`<br><span class="mute">${esc(e.note)}</span>`:''}</span>
+  <span style="flex:1"><b>${exTag(e)}${esc(e.subject)}</b><br><span class="mute">${exDate(e.date)} · <b style="color:${hot?'var(--bad)':'inherit'}">${exLabel(n)}</b></span>${e.note?`<br><span class="mute">${esc(e.note)}</span>`:''}</span>
   ${e.photo?`<img data-ph="${e.id}" alt="" style="width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff">`:''}
   <button data-del="${e.id}" aria-label="מחק">✕</button></div>`};
  v.innerHTML=`<div class="card"><p style="font-weight:800;font-size:20px;margin:0 0 4px">📅 לוח מבחנים</p><p class="mute" style="margin:0 0 10px">הוסף מבחן עם תאריך ומקצוע, או צלם את דף המבחן. נזכיר לך יום–יומיים לפני.</p>
+  <label class="mute" for="xk">סוג</label><select id="xk"><option ${X.kind!='הכתבה'&&X.kind!='בוחן'?'selected':''}>מבחן</option><option ${X.kind=='בוחן'?'selected':''}>בוחן</option><option ${X.kind=='הכתבה'?'selected':''}>הכתבה</option></select>
   <label class="mute" for="xs">מקצוע</label><input id="xs" list="xsl" placeholder="למשל: מתמטיקה" value="${esc(X.subject)}"><datalist id="xsl">${S.subjects.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
   <label class="mute" for="xd">תאריך המבחן</label><input id="xd" type="date" value="${X.date}" dir="ltr" style="text-align:right">
   <label class="mute" for="xn">הערה (לא חובה)</label><input id="xn" placeholder="פרקים, חומר..." value="${esc(X.note)}">
@@ -1224,10 +1250,10 @@ function examsView(){
   ${up.length?`<div class="card"><p style="font-weight:600;margin:0 0 6px">מבחנים קרובים</p>${up.map(row).join('')}</div>`:''}
   ${past.length?`<div class="card"><p style="font-weight:600;margin:0 0 6px">מבחנים שעברו</p>${past.map(row).join('')}</div>`:''}
   ${!list.length?'<p class="mute" style="text-align:center;color:#fff">עדיין לא הוספת מבחנים</p>':''}
-  <div class="card"><p style="font-weight:600;margin:0 0 4px">🔔 תזכורות</p><p class="mute" style="margin:0 0 8px">התזכורת "${EX_MSG}" מופיעה במסך הבית 2 ימים לפני המבחן, ביום שלפניו ובבוקר המבחן.${perm=='granted'?' התראות המכשיר פעילות ✓':''}</p>
+  <div class="card"><p style="font-weight:600;margin:0 0 4px">🔔 תזכורות</p><p class="mute" style="margin:0 0 8px">התזכורת (למשל "מחר יש לך הכתבה באנגלית") מופיעה במסך הבית ובהתראה של המכשיר 2 ימים לפני, ביום שלפניו ובבוקר האירוע.${perm=='granted'?' התראות המכשיר פעילות ✓':''}</p>
   ${perm=='default'?'<button class="btn sec" id="xnot">הפעל התראות במכשיר</button>':perm=='denied'?'<p class="mute">ההתראות חסומות בדפדפן. אפשר להפעיל בהגדרות האתר.</p>':perm=='none'?'<p class="mute">הדפדפן לא תומך בהתראות. התזכורת תופיע בתוך האפליקציה.</p>':''}
-  <p class="mute" style="margin:8px 0 0;font-size:12px">התראות המכשיר מופיעות כשהאפליקציה נפתחת. אפליקציה באתר לא יכולה לשלוח התראות כשהיא סגורה לגמרי.</p></div>`;
- const keep=()=>{X.subject=$('xs').value;X.date=$('xd').value;X.note=$('xn').value};
+  <p class="mute" style="margin:8px 0 0;font-size:12px">התראות המכשיר מופיעות כשהאפליקציה נפתחת. אם הוספת אותה למסך הבית (התקנה), אנדרואיד עשוי גם להזכיר לך כשהיא סגורה, אבל זה לא מובטח.</p></div>`;
+ const keep=()=>{X.kind=$('xk').value;X.subject=$('xs').value;X.date=$('xd').value;X.note=$('xn').value};
  const pick=async f=>{if(!f)return;keep();X.msg='';X.undo=[];X.busy=true;X.found=[];X.used={};try{X.photo=await exShrink(f)}catch(e){X.msg='❌ לא הצלחתי לקרוא את התמונה';render();return}X.busy=false;render();
   const say=t=>{const m=$('xm');if(m)m.textContent=t};
   let L=[],how='',why='';
@@ -1255,10 +1281,10 @@ function examsView(){
   if(!X.date){X.msg='⚠️ בחר תאריך למבחן (אפשר גם אחרי שצילמת)';render();return}
   const id=String(Date.now());let ph=false;
   if(X.photo){try{await exPut(id,X.photo);ph=true}catch(e){}}
-  S.exams.push({id,subject:s||'מבחן',date:X.date,note:X.note.trim(),photo:ph});save();
+  S.exams.push({id,subject:s||'מבחן',date:X.date,note:X.note.trim(),photo:ph,kind:X.kind||'מבחן'});save();
   if(X.cur!==undefined)X.used[X.cur]=1;else{const mi=xMatch(s);if(mi>=0)X.used[mi]=1}
   X.subject='';X.date='';X.note='';X.manual=false;X.cur=undefined;X.msg=X.photo?'✓ המבחן נוסף. התמונה נשארה, אפשר להוסיף עוד מבחן ממנה (או להסיר אותה)':'✓ המבחן נוסף';render();exNotify()};
- if($('xnot'))$('xnot').onclick=async()=>{try{const p=await Notification.requestPermission();if(p==='granted'){toast('התראות הופעלו');exNotify()}}catch(e){}render()};
+ if($('xnot'))$('xnot').onclick=async()=>{try{const p=await Notification.requestPermission();if(p==='granted'){toast('התראות הופעלו');exNotify();exPeriodic();exSync()}}catch(e){}render()};
  v.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('למחוק את המבחן?'))return;S.exams=S.exams.filter(e=>e.id!=b.dataset.del);exDel(b.dataset.del);save();render()});
  v.querySelectorAll('[data-ph]').forEach(async im=>{const d=await exGet(im.dataset.ph);if(d){im.src=d;im.onclick=()=>{const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:12px';o.innerHTML='<img src="'+d+'" alt="" style="max-width:100%;max-height:100%;border-radius:8px">';o.onclick=()=>o.remove();document.body.appendChild(o)}}else im.remove()});
 }
@@ -1494,7 +1520,7 @@ function gradesView(){
  $('ga').onclick=()=>{const x=parseFloat($('gi').value);if(isNaN(x)||x<0||x>100)return;S.grades[n]=(S.grades[n]||[]).concat(x);save();render()};
  v.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{S.grades[n].splice(+b.dataset.gd,1);save();render()});
 }
-render();exNotify();aiProbe();addEventListener('online',()=>{if(AIST==='app')aiProbe(true)});
+render();exNotify();exSync();exPeriodic();aiProbe();addEventListener('online',()=>{if(AIST==='app')aiProbe(true)});
 try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('02_sw.js').catch(()=>{})}catch(e){}
 </script>
 </body>
