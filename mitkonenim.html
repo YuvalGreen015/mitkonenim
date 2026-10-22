@@ -320,10 +320,12 @@ function wordsView(){
  v.innerHTML=`<div class="card"><textarea id="w" rows="4" placeholder="מילים להכתבה, מילה בכל שורה (או מופרדות בפסיק)"></textarea><button class="btn" id="add">הוסף מילים</button></div>
  ${S.words.length?`<button class="btn" id="go">התחל הכתבה (${S.words.length} מילים)</button>`:`<p class="mute" style="text-align:center">הוסף את מילות ההכתבה והאפליקציה תקריא אותן</p>`}
  ${S.words.some(isEn)?`<button class="btn sec" id="tr" style="margin-bottom:14px">תרגום מילים באנגלית (${S.words.filter(isEn).length})</button>`:''}
+ ${S.words.length?`<button class="btn sec" id="delall" style="margin-bottom:14px;color:#d33">מחק הכל (Delete All)</button>`:''}
  <div class="card" ${S.words.length?'':'hidden'}>${S.words.map((w,i)=>`<div class="item"><span>${esc(w)}</span><button data-i="${i}" aria-label="מחק">✕</button></div>`).join('')}</div>`;
  $('add').onclick=()=>{const ws=$('w').value.split(/[\n,،]+/).map(x=>x.trim()).filter(Boolean);if(!ws.length)return;S.words.push(...ws);save();render()};
  if(S.words.length)$('go').onclick=()=>{queue=shuffle(S.words);stat={ok:0,bad:0};done=false;mode='quiz';render()};
  if($('tr'))$('tr').onclick=genTr;
+ if($('delall'))$('delall').onclick=()=>{if(!confirm('למחוק את כל '+S.words.length+' המילים?'))return;S.words=[];save();render()};
  v.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{S.words.splice(+b.dataset.i,1);save();render()});
 }
 /* ---- מבחן מהחומר ---- */
@@ -333,19 +335,7 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 
 /* ---- חיבור ישיר ל-Google Gemini API (מפתח חינמי אישי ב-localStorage) ---- */
 const AI_MODELS=['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
-const DEFAULT_PROXY='';/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
-/* קורא JSON סלחני: מנקה גדרות קוד, מוצא את גוש ה-JSON התקין הראשון גם אם יש טקסט מסביב */
-function jparse(t){
- t=String(t||'').replace(/```[a-zA-Z]*/g,'').trim();
- try{const v=JSON.parse(t);if(v&&typeof v=='object')return v}catch(e){}
- for(let i=0;i<t.length;i++){const c=t[i];if(c!='['&&c!='{')continue;
-  let d=0,q=false,esc=false;
-  for(let j=i;j<t.length;j++){const ch=t[j];
-   if(q){if(esc)esc=false;else if(ch=='\\')esc=true;else if(ch=='"')q=false;continue}
-   if(ch=='"'){q=true;continue}
-   if(ch=='['||ch=='{')d++;else if(ch==']'||ch=='}'){d--;if(d==0){try{const v=JSON.parse(t.slice(i,j+1));if(v&&typeof v=='object'&&(Array.isArray(v)?v.length&&typeof v[0]=='object':Object.keys(v).length>1))return v}catch(e){}break}}}
- }
- const x=new Error('parse');x.detail='parse: '+t.replace(/\s+/g,' ').slice(0,160);throw x}
+const DEFAULT_PROXY='';/* >>> כתובת שרת ה-AI (Gemini Worker) תיכנס כאן, בין הגרשיים. כל עוד זה ריק: AI חינמי <<< */
 const getProxy=()=>{try{return (localStorage.getItem('aiproxy')||DEFAULT_PROXY).trim()}catch(e){return DEFAULT_PROXY}};
 async function aiProxy(prompt){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),90000);
@@ -354,39 +344,32 @@ async function aiProxy(prompt){
   if(res.status==429)throw new Error('limit');
   if(!res.ok){let m='';try{m=(await res.text()).slice(0,200)}catch(e){}const x=new Error('http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=j.text||'';
-  return jparse(t);
+  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
+  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
  }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
  finally{clearTimeout(tm)}
 }
 const hasAI=()=>!!(getKey()||getProxy());
 const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
-async function pollOne(prompt,files,ms,model){
+async function pollJson(prompt,files,ms){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms||30000);
  try{
-  const res=await fetch('https://text.pollinations.ai/openai?referrer='+encodeURIComponent(/^https?:$/.test(location.protocol)?location.hostname:'mitkonenim'),{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
-   body:JSON.stringify({model:model||'openai',seed:Math.floor(Math.random()*1e6),messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
+  const res=await fetch('https://text.pollinations.ai/openai?referrer=mitkonenim',{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
+   body:JSON.stringify({model:'openai',messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
   if(res.status==429)throw new Error('limit');
   if(!res.ok)throw new Error('http'+res.status);
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  return jparse(t);
+  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
+  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
  }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
  finally{clearTimeout(tm)}
 }
-/* AI חינמי בלי מפתח: המגבלה אצלם היא בקשה אחת ל-15 שניות, אז מחכים כמו שצריך ומנסים שוב לבד */
-async function pollJson(prompt,files,ms){
- if(files&&files.length)return pollOne(prompt,files,ms,'openai');
- const W=window.POLL_WAIT||16000;let last;
- for(const m of ['openai','openai','mistral','openai']){
-  if(last)await new Promise(r=>setTimeout(r,last.message=='limit'?W:Math.min(2500,W)));
-  try{return await pollOne(prompt,files,40000,m)}catch(e){last=e}
- }
- throw last}
 async function aiJson(prompt,files){
  try{return await aiGem(prompt,files)}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){return pollJson(prompt)}throw e}
 }
 async function aiGem(prompt,files){
- const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt):pollJson(prompt)}
+ const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt).catch(()=>pollJson(prompt)):pollJson(prompt)}
  if(/^gsk_/.test(key)||/^sk-or-/.test(key)){if(files&&files.length)throw new Error('nofiles');return aiOA(key,prompt)}
  let last='http';
  for(const model of AI_MODELS){
@@ -402,7 +385,8 @@ async function aiGem(prompt,files){
   if(res.status==429){last='limit';continue}/* לכל מודל מכסה נפרדת: ננסה את הבא */
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,220)}catch(e){}const x=new Error(res.status==401||res.status==403?'badkey':'http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(c=>c.text||'').join('');
-  return jparse(t);
+  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
+  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
  }
  throw new Error(last);
 }
@@ -417,7 +401,8 @@ async function aiOA(key,prompt){
   if(res.status==401||res.status==403){const x=new Error('badkey');throw x}
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  try{return jparse(t)}catch(e){last=e}
+  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m){last=new Error('parse');continue}
+  try{return JSON.parse(m[0])}catch(e){last=new Error('parse')}
  }
  throw last;
 }
@@ -452,7 +437,8 @@ function appUrl(k){const a=APPS[k];return isAnd()?'intent://'+a.host+a.path+'#In
 function openApp(k){const u=appUrl(k);if(isAnd())location.href=u;else window.open(u,'_blank')}
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);return true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(x){return false}}}
 function appParse(t){
- return jparse(t)}
+ t=String(t||'').replace(/```[a-zA-Z]*/g,'');const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
+ try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}}
 let appQ=Promise.resolve();
 const aiApp=(prompt,files)=>{const run=()=>aiAppDlg(prompt,files);const p=appQ.then(run,run);appQ=p.catch(()=>{});return p};
 function aiAppDlg(prompt,files){
@@ -1104,7 +1090,7 @@ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמח
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.13';window.VER=VER;function navDraw(){
+const VER='2.08';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
