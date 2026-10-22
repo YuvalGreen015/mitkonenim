@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 2.08 -->
+<!-- מתכוננים | index.html | גרסה 2.18 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -202,10 +202,110 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 #gear{width:42px;height:42px;padding:0;border:0;border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.22);line-height:0}#gear svg{width:30px;height:34px;display:block}#gear:active{transform:scale(.94)}
 </style>
 <script src="01_images.js"></script>
+<script>
+/* ---- סטטיסטיקה: כתובת הספירה שלך. אם ריק, שום דבר לא נשלח ולא נוצר קוד. ---- */
+window.ANALYTICS_URL = window.ANALYTICS_URL || "";
+window.UPDATE_CODE = "V-T9XC-TD7C";   /* קוד העדכון של גרסה 2.18: משתנה בכל גרסה. נשלח עם כל אירוע */
+window.APP_VER = "2.18";
+(function () {
+  var BASE = (window.ANALYTICS_URL || "").replace(/\/$/, "");
+  var TK = "an_token", UK = "an_user", QK = "an_queue", busy = false;
+  function get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+  function set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  function rand(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join(""); }
+  function uuid() { return crypto.randomUUID ? crypto.randomUUID() : rand(16); }
+  var ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  function newId() { var a = new Uint8Array(8), o = ""; crypto.getRandomValues(a); for (var i = 0; i < 8; i++) o += ABC[a[i] % 32]; return o; }
+  function validId(x) { return typeof x === "string" && /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(x); }
+  function ensureId() {                                  // automatic on first open, works offline too
+    var u = get(UK);
+    if (!validId(u)) { u = newId(); set(UK, u); setTimeout(function () { toast(u); }, 2500); }
+    return u;
+  }
+  function device() {                                    // computer / apple (iPhone, iPad) / android
+    var ua = navigator.userAgent || "";
+    if (/Android/i.test(ua)) return "android";
+    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return "apple";
+    return "computer";
+  }
+  function meta() { return { version_code: window.UPDATE_CODE, app_version: window.APP_VER, device: device() }; }
+  function token() { var t = get(TK); if (!t) { t = "t_" + rand(32); set(TK, t); } return t; }   // 256 random bits
+
+  function toast(code) {                                  // small, subtle "Your code: X" popup; tap to copy
+    try {
+      var el = document.createElement("div");
+      code = String(code).toUpperCase();
+      el.textContent = "הקוד שלך: " + code + "  (לחץ להעתקה)";
+      el.setAttribute("role", "status");
+      el.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;padding:7px 14px;" +
+        "border-radius:999px;background:rgba(30,27,75,.88);color:#fff;font:500 13px/1.2 system-ui,sans-serif;" +
+        "letter-spacing:.3px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:opacity .4s;cursor:pointer";
+      el.onclick = function () { try { navigator.clipboard.writeText(code); el.textContent = "הועתק ✓"; } catch (e) {} };
+      document.body.appendChild(el);
+      setTimeout(function () { el.style.opacity = "1"; }, 30);
+      setTimeout(function () { el.style.opacity = "0"; setTimeout(function () { el.remove(); }, 500); }, 6000);
+    } catch (e) {}
+  }
+
+  function flush() {
+    if (busy || !BASE) return Promise.resolve();
+    busy = true;
+    var loop = function () {
+      var q = get(QK) || [];
+      if (!q.length) return;
+      var ev = q[0], feat = ev.f;
+      return fetch(BASE + (feat ? "/api/events/feature" : "/api/session"), {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify(Object.assign(meta(), feat ? { event_id: ev.id, ts: ev.ts, token: token(), user_id: ensureId(), feature: feat } : { event_id: ev.id, ts: ev.ts, token: token(), user_id: ensureId() }))
+      }).then(function (r) {
+        if (r.status >= 400 && r.status < 500 && r.status !== 429) { q.shift(); set(QK, q); return loop(); }  // permanently rejected: drop, don't loop forever
+        if (!r.ok) throw new Error("retry later");
+        return r.json().then(function (j) { if (validId(j.user_id)) { var fresh = get(UK) !== j.user_id; if (fresh) toast(j.user_id); set(UK, j.user_id); if (fresh) { try { window.dispatchEvent(new Event("an-code")); } catch (e) {} } } q.shift(); set(QK, q); return loop(); });
+      });
+    };
+    return Promise.resolve(loop()).catch(function () { /* offline or server down: stays queued */ }).then(function () { busy = false; });
+  }
+
+  window.trackLogin = function () {
+    var q = get(QK) || [];
+    q.push({ id: uuid(), ts: Math.floor(Date.now() / 1000) });
+    set(QK, q.slice(-200));
+    return flush();
+  };
+  // Feature usage: trackFeature("practice_test"). Logged-in users only (the login registers the device first).
+  window.trackFeature = function (name) {
+    var q = get(QK) || [];
+    q.push({ id: uuid(), ts: Math.floor(Date.now() / 1000), f: String(name).slice(0, 40) });
+    set(QK, q.slice(-200));
+    return flush();
+  };
+  // Installs: counted when the browser reports the PWA was installed.
+  addEventListener("appinstalled", function () {
+    if (!BASE) return;
+    var id = "i_" + uuid();
+    fetch(BASE + "/api/events/install", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(Object.assign(meta(), { event_id: get("an_inst") || (set("an_inst", id), id), device_id: token().slice(0, 16), platform: "pwa", ts: Math.floor(Date.now() / 1000) })) }).catch(function () {});
+  });
+  // Heartbeat: tells the counter "this user is here right now" (powers "online now"). Once a minute, only while the page is visible.
+  function ping() {
+    if (!BASE || document.hidden || !get(UK)) return;
+    fetch(BASE + "/api/events/ping", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign(meta(), { token: token(), user_id: get(UK) })) }).catch(function () {});
+  }
+  setInterval(ping, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) ping(); });
+  window.analyticsUserId = function () { return ensureId(); };
+  ensureId();
+  addEventListener("online", flush);
+  addEventListener("load", flush);                      // send anything left over from last time
+})();
+
+(function(){try{var k="an_last",n=Date.now(),l=+localStorage.getItem(k)||0;if(n-l>30*60*1000){localStorage.setItem(k,String(n));window.trackLogin();}}catch(e){}})();
+</script>
 <script>(function(){/* אם קובץ התמונות לא נטען: מנסים שמות אחרים */["images.js","img.js"].forEach(function(n){if(!(window.IMG&&window.IMG["tile-1.jpg"]))document.write('<script src="'+n+'"><\/script>')})})();</script>
 <script>
 window.IMG_VER=window.IMG_VER||'1.96';window.IMG=window.IMG||{};
 ['tile-exams.jpg','apple-touch-icon.png','favicon.png','icon-192.png','icon-512.png','logo.jpg','subj-english.jpg','subj-hebrew.jpg','subj-history.jpg','subj-math.jpg','subj-science.jpg','subj-tanakh.jpg','tile-1.jpg','tile-2.jpg','tile-4.jpg','tile-5.jpg','tile-podcast.jpg','trophy.png','upload-file.png','upload-image.png','upload-word.png'].forEach(function(n){if(!IMG[n]&&!/^tile-(exams|homework)/.test(n))IMG[n]='images/'+n});
+['apple-touch-icon.png','icon-192.png','icon-512.png','favicon.png'].forEach(function(n){IMG[n]='app-icon.png'});/* אייקון האפליקציה: קובץ אחד, app-icon.png, באותה תיקייה */
 function fillImg(){document.querySelectorAll('[data-img]').forEach(function(e){var u=IMG[e.getAttribute('data-img')];if(u){e.tagName=='LINK'?e.setAttribute('href',u):e.setAttribute('src',u)}})}
 document.addEventListener('DOMContentLoaded',fillImg);
 window.imgDiag=async function(){var o=['כתובת: '+location.href,'גרסת אפליקציה: '+(window.VER||'?')];for(var n of ['01_images.js','images.js']){try{var r=await fetch(n+'?t='+Date.now(),{cache:'no-store'});o.push(n+' → '+(r.ok?'נמצא ✓':'לא נמצא (שגיאה '+r.status+')'))}catch(e){o.push(n+' → אין חיבור')}}o.push('אם כתוב "לא נמצא": צריך להעלות לגיטהב את הקובץ 01_images.js באותה תיקייה של index.html, בדיוק בשם הזה. אחרי ההעלאה לרענן את הדף פעמיים.');return o.join('\n')};
@@ -320,12 +420,10 @@ function wordsView(){
  v.innerHTML=`<div class="card"><textarea id="w" rows="4" placeholder="מילים להכתבה, מילה בכל שורה (או מופרדות בפסיק)"></textarea><button class="btn" id="add">הוסף מילים</button></div>
  ${S.words.length?`<button class="btn" id="go">התחל הכתבה (${S.words.length} מילים)</button>`:`<p class="mute" style="text-align:center">הוסף את מילות ההכתבה והאפליקציה תקריא אותן</p>`}
  ${S.words.some(isEn)?`<button class="btn sec" id="tr" style="margin-bottom:14px">תרגום מילים באנגלית (${S.words.filter(isEn).length})</button>`:''}
- ${S.words.length?`<button class="btn sec" id="delall" style="margin-bottom:14px;color:#d33">מחק הכל (Delete All)</button>`:''}
  <div class="card" ${S.words.length?'':'hidden'}>${S.words.map((w,i)=>`<div class="item"><span>${esc(w)}</span><button data-i="${i}" aria-label="מחק">✕</button></div>`).join('')}</div>`;
  $('add').onclick=()=>{const ws=$('w').value.split(/[\n,،]+/).map(x=>x.trim()).filter(Boolean);if(!ws.length)return;S.words.push(...ws);save();render()};
  if(S.words.length)$('go').onclick=()=>{queue=shuffle(S.words);stat={ok:0,bad:0};done=false;mode='quiz';render()};
  if($('tr'))$('tr').onclick=genTr;
- if($('delall'))$('delall').onclick=()=>{if(!confirm('למחוק את כל '+S.words.length+' המילים?'))return;S.words=[];save();render()};
  v.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{S.words.splice(+b.dataset.i,1);save();render()});
 }
 /* ---- מבחן מהחומר ---- */
@@ -335,7 +433,19 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 
 /* ---- חיבור ישיר ל-Google Gemini API (מפתח חינמי אישי ב-localStorage) ---- */
 const AI_MODELS=['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
-const DEFAULT_PROXY='';/* >>> כתובת שרת ה-AI (Gemini Worker) תיכנס כאן, בין הגרשיים. כל עוד זה ריק: AI חינמי <<< */
+const DEFAULT_PROXY='';/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
+/* קורא JSON סלחני: מנקה גדרות קוד, מוצא את גוש ה-JSON התקין הראשון גם אם יש טקסט מסביב */
+function jparse(t){
+ t=String(t||'').replace(/```[a-zA-Z]*/g,'').trim();
+ try{const v=JSON.parse(t);if(v&&typeof v=='object')return v}catch(e){}
+ for(let i=0;i<t.length;i++){const c=t[i];if(c!='['&&c!='{')continue;
+  let d=0,q=false,esc=false;
+  for(let j=i;j<t.length;j++){const ch=t[j];
+   if(q){if(esc)esc=false;else if(ch=='\\')esc=true;else if(ch=='"')q=false;continue}
+   if(ch=='"'){q=true;continue}
+   if(ch=='['||ch=='{')d++;else if(ch==']'||ch=='}'){d--;if(d==0){try{const v=JSON.parse(t.slice(i,j+1));if(v&&typeof v=='object'&&(Array.isArray(v)?v.length&&typeof v[0]=='object':Object.keys(v).length>1))return v}catch(e){}break}}}
+ }
+ const x=new Error('parse');x.detail='parse: '+t.replace(/\s+/g,' ').slice(0,160);throw x}
 const getProxy=()=>{try{return (localStorage.getItem('aiproxy')||DEFAULT_PROXY).trim()}catch(e){return DEFAULT_PROXY}};
 async function aiProxy(prompt){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),90000);
@@ -344,32 +454,39 @@ async function aiProxy(prompt){
   if(res.status==429)throw new Error('limit');
   if(!res.ok){let m='';try{m=(await res.text()).slice(0,200)}catch(e){}const x=new Error('http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=j.text||'';
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
-  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+  return jparse(t);
  }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
  finally{clearTimeout(tm)}
 }
 const hasAI=()=>!!(getKey()||getProxy());
 const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
-async function pollJson(prompt,files,ms){
+async function pollOne(prompt,files,ms,model){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms||30000);
  try{
-  const res=await fetch('https://text.pollinations.ai/openai?referrer=mitkonenim',{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
-   body:JSON.stringify({model:'openai',messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
+  const res=await fetch('https://text.pollinations.ai/openai?referrer='+encodeURIComponent(/^https?:$/.test(location.protocol)?location.hostname:'mitkonenim'),{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,
+   body:JSON.stringify({model:model||'openai',seed:Math.floor(Math.random()*1e6),messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:(files&&files.length)?[{type:'text',text:prompt}].concat(files.map(f=>({type:'image_url',image_url:{url:'data:'+f.mime+';base64,'+f.data}}))):prompt}],temperature:.7})});
   if(res.status==429)throw new Error('limit');
   if(!res.ok)throw new Error('http'+res.status);
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
-  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+  return jparse(t);
  }catch(e){if(e&&(e.name=='AbortError'||e instanceof TypeError)){const x=new Error('net');x.detail=String(e.message||e);throw x}throw e}
  finally{clearTimeout(tm)}
 }
+/* AI חינמי בלי מפתח: המגבלה אצלם היא בקשה אחת ל-15 שניות, אז מחכים כמו שצריך ומנסים שוב לבד */
+async function pollJson(prompt,files,ms){
+ if(files&&files.length)return pollOne(prompt,files,ms,'openai');
+ const W=window.POLL_WAIT||16000;let last;
+ for(const m of ['openai','openai','mistral','openai']){
+  if(last)await new Promise(r=>setTimeout(r,last.message=='limit'?W:Math.min(2500,W)));
+  try{return await pollOne(prompt,files,40000,m)}catch(e){last=e}
+ }
+ throw last}
 async function aiJson(prompt,files){
  try{return await aiGem(prompt,files)}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){return pollJson(prompt)}throw e}
 }
 async function aiGem(prompt,files){
- const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt).catch(()=>pollJson(prompt)):pollJson(prompt)}
+ const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt):pollJson(prompt)}
  if(/^gsk_/.test(key)||/^sk-or-/.test(key)){if(files&&files.length)throw new Error('nofiles');return aiOA(key,prompt)}
  let last='http';
  for(const model of AI_MODELS){
@@ -385,8 +502,7 @@ async function aiGem(prompt,files){
   if(res.status==429){last='limit';continue}/* לכל מודל מכסה נפרדת: ננסה את הבא */
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,220)}catch(e){}const x=new Error(res.status==401||res.status==403?'badkey':'http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(c=>c.text||'').join('');
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
-  try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}
+  return jparse(t);
  }
  throw new Error(last);
 }
@@ -401,8 +517,7 @@ async function aiOA(key,prompt){
   if(res.status==401||res.status==403){const x=new Error('badkey');throw x}
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m){last=new Error('parse');continue}
-  try{return JSON.parse(m[0])}catch(e){last=new Error('parse')}
+  try{return jparse(t)}catch(e){last=e}
  }
  throw last;
 }
@@ -420,14 +535,12 @@ function aiGoApp(){}
 let probing=null;
 function aiProbe(force){
  if(hasAI()){AIST='key';return Promise.resolve()}
+ if(!force){AIST='free';return Promise.resolve()}   /* בפתיחה לא בודקים כלום ברשת: הבדיקה גוזלת את הבקשה היחידה שמותרת ל-15 שניות. יוצרים מבחן = מנסים AI ממילא */
  if(probing)return probing;
- if(!force&&AIST==='free')return Promise.resolve();
- AIST='search';aiPill(SPIN+'מחפש AI זמין…');
+ AIST='search';aiPill(SPIN+'בודק AI חינמי…');
  probing=(async()=>{
-  for(let i=0;i<2;i++){
-   try{const r=await pollJson('החזר JSON בלבד: {"ok":true}',null,12000);if(r){AIST='free';aiPill('✓ AI חינמי מחובר',2500);return}}catch(e){}
-  }
-  aiPill('אין AI חינמי זמין כרגע. מבחנים ייווצרו בלי AI',4000);
+  try{const r=await pollOne('החזר JSON בלבד: {"ok":true}',null,12000,'openai');if(r){AIST='free';aiPill('✓ AI חינמי מחובר',2500);return}}catch(e){}
+  AIST='free';aiPill('ה-AI החינמי לא ענה כרגע (אולי הוא עמוס). בעת יצירת מבחן האפליקציה תנסה שוב לבד',5000);
  })().finally(()=>{probing=null});
  return probing}
 const APPS={gemini:{name:'Gemini',pkg:'com.google.android.apps.bard',host:'gemini.google.com',path:'/app',play:'https://play.google.com/store/apps/details?id=com.google.android.apps.bard'},
@@ -437,8 +550,7 @@ function appUrl(k){const a=APPS[k];return isAnd()?'intent://'+a.host+a.path+'#In
 function openApp(k){const u=appUrl(k);if(isAnd())location.href=u;else window.open(u,'_blank')}
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);return true}catch(e){try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(x){return false}}}
 function appParse(t){
- t=String(t||'').replace(/```[a-zA-Z]*/g,'');const m=t.match(/[\[{][\s\S]*[\]}]/);if(!m)throw new Error('parse');
- try{return JSON.parse(m[0])}catch(e){throw new Error('parse')}}
+ return jparse(t)}
 let appQ=Promise.resolve();
 const aiApp=(prompt,files)=>{const run=()=>aiAppDlg(prompt,files);const p=appQ.then(run,run);appQ=p.catch(()=>{});return p};
 function aiAppDlg(prompt,files){
@@ -448,7 +560,7 @@ function aiAppDlg(prompt,files){
   o.innerHTML=`<div dir="rtl" style="background:#fff;color:#111;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px 22px;box-sizing:border-box;font:15px/1.5 inherit">
    <div style="font-weight:800;font-size:18px">🤝 אין חיבור אוטומטי ל-AI כרגע</div>
    <button class="btn" id="ad-l" style="margin:8px 0 4px">⚙️ צור לי מבחן עכשיו בלי AI</button>
-   <p style="margin:0 0 12px;font-size:13px;color:#555">מהיר, בתוך האפליקציה, אבל פחות מדויק. אפשר גם להשתמש ב-Gemini/ChatGPT (ידני), או לחבר AI קבוע בהגדרות ⚙️.</p>
+   <p style="margin:0 0 12px;font-size:13px;color:#555">מהיר, בתוך האפליקציה, אבל פחות מדויק. </p>
    <p style="margin:6px 0 10px;color:#444">האתר לא יכול להפעיל את אפליקציית ה-AI ישירות. אז מעבירים לה את הבקשה ומחזירים את התשובה:</p>
    <div style="font-weight:700">1. העתק את הבקשה</div>
    <button class="btn sec" id="ad-copy" style="margin:6px 0 12px">📋 העתק את הבקשה</button>
@@ -497,10 +609,10 @@ async function genViaApp(text,n,no){
   T.err=(e&&e.message=='cancel')?'':(e&&e.message=='parse'||e&&e.message=='empty')?'לא קיבלתי שאלות תקינות מה-AI. נסה שוב.':'משהו השתבש: '+((e&&e.message)||'?')}
  T.loading=false;render();
 }
-const aiErr=e=>{const m=({nokey:'כדי ליצור מבחן צריך להדביק מפתח חינמי של Google AI Studio בהגדרות (⚙️).',badkey:'מפתח ה-API לא תקין. בדוק אותו בהגדרות (⚙️).',net:'לא הצלחתי להתחבר לשרת של Google. ייתכן שאין אינטרנט, או שסינון/הדפדפן חוסמים את הכתובת.',limit:'חרגת ממכסת הבקשות החינמית. נסה שוב עוד דקה.',cancel:'ביטלת את הבקשה.'}[e&&e.message])||'לא הצלחתי ליצור מבחן. נסה שוב.';return(e&&e.message=='nokey'||e&&e.message=='badkey')?m:m+' [פירוט: '+((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'')+']'};
+const aiErr=e=>{const m=({nokey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',badkey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',net:'לא הצלחתי להתחבר לשרת של Google. ייתכן שאין אינטרנט, או שסינון/הדפדפן חוסמים את הכתובת.',limit:'חרגת ממכסת הבקשות החינמית. נסה שוב עוד דקה.',cancel:'ביטלת את הבקשה.'}[e&&e.message])||'לא הצלחתי ליצור מבחן. נסה שוב.';return(e&&e.message=='nokey'||e&&e.message=='badkey')?m:m+' [פירוט: '+((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'')+']'};
 
 /* ---- מבחנים שמורים (ללמוד גם בלי אינטרנט) ---- */
-function saveTest(qs,src){T.src=src||'';
+function saveTest(qs,src){T.src=src||'';try{window.trackFeature&&trackFeature(src=='ai'?'test_made_ai':'test_made_local')}catch(e){}
  S.tests=S.tests||{};const l=S.tests[SUBJ]=S.tests[SUBJ]||[];
  l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs))});
  if(l.length>10)l.length=10;save();
@@ -801,8 +913,8 @@ function useLocal(text,n,no,e){
   const mn=minNeeded(text);
   if(total<mn){T.err=`כדי לכסות את כל החומר צריך לפחות ${mn} שאלות בסך הכל. כרגע בחרת ${total}.`;T.loading=false;render();return}
   const lr=localTest(text,n,no);
-  if(lr.length){T.qs=lr;saveTest(lr,'local');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast((e&&e.message=='local'?'':'ה-AI לא עבד ('+aiErr(e).slice(0,70)+'). ')+'נוצר מבחן בסיסי בלי AI שלא בהכרח מכסה את כל החומר. הדבק מפתח חינמי בהגדרות ⚙️')}
-  else T.err=!hasAI()?'לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), או הדבק מפתח בהגדרות ⚙️':aiErr(e)
+  if(lr.length){T.qs=lr;saveTest(lr,'local');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast((e&&e.message=='local'?'':'ה-AI לא עבד ('+aiErr(e).slice(0,70)+'). ')+'נוצר מבחן בסיסי בלי AI שלא בהכרח מכסה את כל החומר. אפשר לנסות שוב בעוד רגע')}
+  else T.err=!hasAI()?'לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא).':aiErr(e)
 
  }catch(x){T.err='לא הצלחתי ליצור מבחן. נסה שוב.'}
  T.loading=false;render();
@@ -1045,10 +1157,16 @@ function voiceCard(){
  const sel=(k,t)=>`<label class="mute">${t}</label><select data-vn="${k}" style="width:100%;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:400 16px inherit;margin-bottom:8px"><option value="">אוטומטי</option>${vl(k).map(x=>`<option value="${esc(x.name)}" ${S.vn&&S.vn[k]==x.name?'selected':''}>${esc(x.name)}${x.localService?'':' (אונליין)'}</option>`).join('')}</select>`;
  return `<div class="card"><p style="font-weight:600;margin-top:0">קול המכשיר</p><p class="mute" style="margin-top:0">אם הקול לא מתאים, בחר כאן קול אחר. בכל בחירה תישמע דוגמה. קולות אונליין לא תמיד מגיבים להתאמת גובה.</p>${all.length?sel('he','עברית')+sel('en','אנגלית'):'<p class="mute">לא נמצאו קולות במכשיר.</p>'}</div>`;
 }
+const myCode=()=>{try{const c=window.analyticsUserId&&analyticsUserId();return c?String(c).toUpperCase():''}catch(e){return ''}};
+window.addEventListener('an-code',()=>{if(typeof showSet!=='undefined'&&showSet)render()});
 function settingsView(){
  const v=$('v'),vo=S.voice||'';
  const opt=(k,t)=>`<button class="btn ${vo==k?'':'sec'}" data-v="${k}">${t}</button>`;
- v.innerHTML=`<div class="card"><p style="font-weight:600;margin-top:0">סגנון קול</p>
+ v.innerHTML=`<div class="card"><p style="font-weight:600;margin-top:0">🪪 הקוד שלך</p>
+ <div id="mycode" dir="ltr" style="font:700 24px ui-monospace,monospace;text-align:center;letter-spacing:2px;margin:6px 0">${myCode()||'—'}</div>
+ <p class="mute" style="margin:0 0 8px;text-align:center">הקוד האישי והייחודי שלך. נוצר אוטומטית.</p>
+ <button class="btn sec" id="cpcode">העתק קוד</button></div>
+ <div class="card"><p style="font-weight:600;margin-top:0">סגנון קול</p>
  <div class="row" style="margin-bottom:8px">${opt('female','בת')}${opt('male','בן')}</div>${opt('mine','🎙 הקול שלי')}
  <div style="height:8px"></div><button class="btn sec" id="demo">השמע דוגמה</button></div>
  ${vo=='mine'?`<div class="card"><p style="margin-top:0">לחץ על "הקלט" ואמור "אאאאאא" ברצף במשך 3 שניות. האפליקציה תזהה את גובה הקול שלך ותתאים אליו את הקראת המילים.</p>
@@ -1060,37 +1178,21 @@ function settingsView(){
  ${S.hz?`<p class="mute">זוהה גובה קול: כ-${S.hz} הרץ (${S.hz>=165?'גבוה, כמו בת':'נמוך, כמו בן'}).</p>`:''}
  <p class="mute">חשוב לדעת: האפליקציה מתאימה את גובה הקול של ההקראה לקול שלך, אבל לא יכולה לשכפל את הצליל המדויק שלו.</p></div>`:''}
 
- <div class="kc"><div class="kh"><div><div class="kt">מפתח AI חינמי</div><div class="ks">למבחנים ופודקאסטים חכמים</div></div><div class="kst${getKey()?' on':''}" id="kst">${getKey()?'מחובר ✓':'לא מחובר'}</div></div>
- <div class="ksteps"><span>1️⃣ לחץ על הקישור</span><span>2️⃣ Create API key</span><span>3️⃣ הדבק כאן</span></div>
- <div class="kfield"><input id="akey" type="password" dir="ltr" placeholder="הדבק כאן את המפתח" value="${esc(getKey())}" autocomplete="off"></div>
- <div class="kfield" style="margin-top:8px"><input id="aprx" type="url" dir="ltr" placeholder="או: כתובת שרת AI (Cloudflare Worker)" value="${esc((()=>{try{return localStorage.getItem('aiproxy')||''}catch(e){return ''}})())}" autocomplete="off"></div>
- <div class="krow"><button class="kb p" id="aks">שמור</button><button class="kb g" id="akd">מחק</button></div>
- <a class="klnk" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">✨ צור מפתח חינמי ב-Google</a>
- <a class="klnk" href="https://console.groq.com/keys" target="_blank" rel="noopener" style="margin-top:8px">⚡ או: מפתח חינמי ב-Groq (מתחיל ב-gsk_)</a>
- <div class="ks" style="margin-top:12px;text-align:center;opacity:.85">בלי מפתח: שירות AI חינמי של Pollinations (החומר נשלח אליהם)</div>
- <div class="kmsg" id="akm">${getKey()?'מפתח שמור ✓':''}</div></div>
 ${themeCard()}${voiceCard()}
-<div class="card"><p style="font-weight:600;margin:0 0 4px">🔍 חיפוש AI אוטומטי</p><p class="mute" style="margin:0 0 8px">האפליקציה מחפשת AI לבד בכל פתיחה: קודם מפתח שלך, אחר כך AI חינמי, ואם אין, היא משתמשת ב-Gemini / ChatGPT שבטלפון (ואם אין, תתבקש להתקין). עכשיו: <b>${hasAI()?'מפתח שלך':AIST=='free'?'AI חינמי':AIST=='app'?'אפליקציית AI בטלפון':'מחפש…'}</b></p><button class="btn sec" id="appmode">🔄 חפש שוב</button></div>
 <div class="card"><p style="font-weight:600;margin-top:0">🛠 בדיקת תמונות</p><p class="mute" style="margin-top:-6px">אם התמונות לא מופיעות</p><button class="btn sec" id="imgdiag">בדוק למה אין תמונות</button><button class="btn sec" id="imgfix" style="margin-top:8px">נקה מטמון ורענן</button><pre id="imgrep" dir="auto" style="white-space:pre-wrap;font-size:13px;margin:10px 0 0"></pre></div>
  <button class="btn sec" id="sb">חזרה</button>`;
  v.querySelectorAll('[data-vn]').forEach(sel=>sel.onchange=()=>{S.vn=S.vn||{};S.vn[sel.dataset.vn]=sel.value||undefined;save();speak(sel.dataset.vn=='he'?(S.words.find(w=>!isEn(w))||'שלום'):'Hello')});
  v.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.voice=b.dataset.v;save();render()});
  if($('rc'))$('rc').onclick=recordVoice;
  if($('hz')){$('hz').oninput=e=>{S.hz=+e.target.value;S.voice='mine';$('hzl').textContent=S.hz+' הרץ'};$('hz').onchange=()=>{save();speak(S.words[0]||'Hello')}}
- const ks=()=>{const on=!!(getKey()||getProxy()),e=$('kst');e.textContent=on?'מחובר ✓':'לא מחובר';e.classList.toggle('on',on)};
- $('aks').onclick=async()=>{setKey($('akey').value.trim());try{const px=$('aprx').value.trim();px?localStorage.setItem('aiproxy',px):localStorage.removeItem('aiproxy')}catch(e){}ks();if(!getKey()&&!getProxy()){$('akm').textContent='נמחק';return}
-  $('akm').textContent='בודק את המפתח...';
-  try{const r=await aiGem('החזר JSON בלבד: {"ok":true}');$('akm').textContent='✅ המפתח עובד!'}
-  catch(e){$('akm').textContent='❌ '+aiErr(e)}};
- $('appmode').onclick=async()=>{await aiProbe(true);render()};
  $('imgdiag').onclick=async()=>{$('imgrep').textContent='בודק...';$('imgrep').textContent=await window.imgDiag()};$('imgfix').onclick=()=>window.imgFix();
-$('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמחק';ks()};
  $('demo').onclick=()=>speak(S.words[0]||'Hello');
+ if($('cpcode'))$('cpcode').onclick=async()=>{const ok=await copyTxt(myCode());toast(ok?'הקוד הועתק ✓':'לא הצלחתי להעתיק')};
  $('sb').onclick=()=>{showSet=false;render()};
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.08';window.VER=VER;function navDraw(){
+const VER='2.18';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1334,7 +1436,7 @@ async function podGen(){
  P.loading=true;P.err='';render();
  try{
   const n=POD_LINES[P.len]||34;
-  let r;try{r=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);}catch(e0){r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), או הדבק מפתח בהגדרות ⚙️';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
+  let r;try{r=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);}catch(e0){r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
   const lines=(r.lines||[]).filter(x=>x&&x.t&&String(x.t).trim()).map(x=>({w:x.w=='b'?'b':'a',t:String(x.t).trim()}));
   if(lines.length<4)throw new Error('empty');
   const pod={id:Date.now(),sub:P.sub,title:String(r.title||P.sub),lines};
@@ -1470,7 +1572,7 @@ function subjectsView(){
  <div class="grid">${S.subjects.map((n,i)=>`<button class="subj" data-s="${i}"><img class="si" src="${IM[n]||''}" alt=""><b>${esc(n)}</b><small>${S.mats[n]?'יש חומר ✓':'אין חומר עדיין'}</small></button>`).join('')}</div>`;
  $('v').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{SUBJ=S.subjects[+b.dataset.s];T.qs=[];tab=3;render()});
 }
-function rec(k,s,t,sub){if(!t)return;S.scores=S.scores||[];S.scores.push({k,s,t,sub:sub||'',d:Date.now()});if(S.scores.length>300)S.scores.shift();save()}
+function rec(k,s,t,sub){if(!t)return;try{window.trackFeature&&trackFeature(({test:'practice_test',trans:'word_translate',dict:'dictation',cards:'flashcards'})[k]||String(k))}catch(e){}S.scores=S.scores||[];S.scores.push({k,s,t,sub:sub||'',d:Date.now()});if(S.scores.length>300)S.scores.shift();save()}
 let gConfirm=false,GS='';
 function gradesView(){
  const v=$('v'),sc=S.scores||[],pc=x=>Math.round(100*x.s/x.t);
