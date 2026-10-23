@@ -420,10 +420,12 @@ function wordsView(){
  v.innerHTML=`<div class="card"><textarea id="w" rows="4" placeholder="מילים להכתבה, מילה בכל שורה (או מופרדות בפסיק)"></textarea><button class="btn" id="add">הוסף מילים</button></div>
  ${S.words.length?`<button class="btn" id="go">התחל הכתבה (${S.words.length} מילים)</button>`:`<p class="mute" style="text-align:center">הוסף את מילות ההכתבה והאפליקציה תקריא אותן</p>`}
  ${S.words.some(isEn)?`<button class="btn sec" id="tr" style="margin-bottom:14px">תרגום מילים באנגלית (${S.words.filter(isEn).length})</button>`:''}
+ ${S.words.length?`<button class="btn sec" id="delall" style="margin-bottom:14px;color:#d33">מחק הכל (Delete All)</button>`:''}
  <div class="card" ${S.words.length?'':'hidden'}>${S.words.map((w,i)=>`<div class="item"><span>${esc(w)}</span><button data-i="${i}" aria-label="מחק">✕</button></div>`).join('')}</div>`;
  $('add').onclick=()=>{const ws=$('w').value.split(/[\n,،]+/).map(x=>x.trim()).filter(Boolean);if(!ws.length)return;S.words.push(...ws);save();render()};
  if(S.words.length)$('go').onclick=()=>{queue=shuffle(S.words);stat={ok:0,bad:0};done=false;mode='quiz';render()};
  if($('tr'))$('tr').onclick=genTr;
+ if($('delall'))$('delall').onclick=()=>{if(!confirm('למחוק את כל '+S.words.length+' המילים?'))return;S.words=[];save();render()};
  v.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{S.words.splice(+b.dataset.i,1);save();render()});
 }
 /* ---- מבחן מהחומר ---- */
@@ -459,7 +461,9 @@ async function aiProxy(prompt){
  finally{clearTimeout(tm)}
 }
 const hasAI=()=>!!(getKey()||getProxy());
-const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
+/* >>> מפתח Google (מתחיל ב-AIza) נכנס כאן, בין הגרשיים. כל עוד ריק: AI חינמי <<< */
+const DEFAULT_KEY='AQ.Ab8RN6J4Xqe7MP0vOCIStKrl-h5sKyhArEy2_wZTHkRL98QdpQ';
+const getKey=()=>{try{return localStorage.getItem('gkey')||DEFAULT_KEY}catch(e){return DEFAULT_KEY}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
 async function pollOne(prompt,files,ms,model){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms||30000);
@@ -486,7 +490,7 @@ async function aiJson(prompt,files){
  try{return await aiGem(prompt,files)}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){return pollJson(prompt)}throw e}
 }
 async function aiGem(prompt,files){
- const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt):pollJson(prompt)}
+ const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt).catch(()=>pollJson(prompt)):pollJson(prompt)}
  if(/^gsk_/.test(key)||/^sk-or-/.test(key)){if(files&&files.length)throw new Error('nofiles');return aiOA(key,prompt)}
  let last='http';
  for(const model of AI_MODELS){
@@ -1178,6 +1182,15 @@ function settingsView(){
  ${S.hz?`<p class="mute">זוהה גובה קול: כ-${S.hz} הרץ (${S.hz>=165?'גבוה, כמו בת':'נמוך, כמו בן'}).</p>`:''}
  <p class="mute">חשוב לדעת: האפליקציה מתאימה את גובה הקול של ההקראה לקול שלך, אבל לא יכולה לשכפל את הצליל המדויק שלו.</p></div>`:''}
 
+ <div class="kc"><div class="kh"><div><div class="kt">מפתח AI חינמי</div><div class="ks">למבחנים ופודקאסטים חכמים</div></div><div class="kst${getKey()?' on':''}" id="kst">${getKey()?'מחובר ✓':'לא מחובר'}</div></div>
+ <div class="ksteps"><span>1️⃣ לחץ על הקישור</span><span>2️⃣ Create API key</span><span>3️⃣ הדבק כאן</span></div>
+ <div class="kfield"><input id="akey" type="password" dir="ltr" placeholder="הדבק כאן את המפתח" value="${esc(getKey())}" autocomplete="off"></div>
+ <div class="kfield" style="margin-top:8px"><input id="aprx" type="url" dir="ltr" placeholder="או: כתובת שרת AI (Cloudflare Worker)" value="${esc((()=>{try{return localStorage.getItem('aiproxy')||''}catch(e){return ''}})())}" autocomplete="off"></div>
+ <div class="krow"><button class="kb p" id="aks">שמור</button><button class="kb g" id="akd">מחק</button></div>
+ <a class="klnk" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">✨ צור מפתח חינמי ב-Google</a>
+ <a class="klnk" href="https://console.groq.com/keys" target="_blank" rel="noopener" style="margin-top:8px">⚡ או: מפתח חינמי ב-Groq (מתחיל ב-gsk_)</a>
+ <div class="ks" style="margin-top:12px;text-align:center;opacity:.85">בלי מפתח: שירות AI חינמי של Pollinations (החומר נשלח אליהם)</div>
+ <div class="kmsg" id="akm">${getKey()?'מפתח שמור ✓':''}</div></div>
 ${themeCard()}${voiceCard()}
 <div class="card"><p style="font-weight:600;margin-top:0">🛠 בדיקת תמונות</p><p class="mute" style="margin-top:-6px">אם התמונות לא מופיעות</p><button class="btn sec" id="imgdiag">בדוק למה אין תמונות</button><button class="btn sec" id="imgfix" style="margin-top:8px">נקה מטמון ורענן</button><pre id="imgrep" dir="auto" style="white-space:pre-wrap;font-size:13px;margin:10px 0 0"></pre></div>
  <button class="btn sec" id="sb">חזרה</button>`;
@@ -1188,6 +1201,12 @@ ${themeCard()}${voiceCard()}
  $('imgdiag').onclick=async()=>{$('imgrep').textContent='בודק...';$('imgrep').textContent=await window.imgDiag()};$('imgfix').onclick=()=>window.imgFix();
  $('demo').onclick=()=>speak(S.words[0]||'Hello');
  if($('cpcode'))$('cpcode').onclick=async()=>{const ok=await copyTxt(myCode());toast(ok?'הקוד הועתק ✓':'לא הצלחתי להעתיק')};
+ const ks=()=>{const on=!!(getKey()||getProxy()),e=$('kst');e.textContent=on?'מחובר ✓':'לא מחובר';e.classList.toggle('on',on)};
+ $('aks').onclick=async()=>{setKey($('akey').value.trim());try{const px=$('aprx').value.trim();px?localStorage.setItem('aiproxy',px):localStorage.removeItem('aiproxy')}catch(e){}ks();if(!getKey()&&!getProxy()){$('akm').textContent='נמחק';return}
+  $('akm').textContent='בודק את המפתח...';
+  try{await aiGem('החזר JSON בלבד: {"ok":true}');$('akm').textContent='✅ המפתח עובד!'}
+  catch(e){$('akm').textContent='❌ '+aiErr(e)}};
+ $('akd').onclick=()=>{setKey('');$('akey').value='';$('akm').textContent='נמחק';ks()};
  $('sb').onclick=()=>{showSet=false;render()};
  bindTheme(v);
 }
