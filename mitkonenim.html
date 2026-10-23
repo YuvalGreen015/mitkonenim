@@ -487,12 +487,14 @@ async function pollJson(prompt,files,ms){
  }
  throw last}
 async function aiJson(prompt,files){
- try{return await aiGem(prompt,files)}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){return pollJson(prompt)}throw e}
+ let e0=null;
+ for(let k=0;k<3;k++){try{return await aiGem(prompt,files)}catch(e){e0=e;if(!(e&&e.message=='limit')||k==2)break;await new Promise(z=>setTimeout(z,9000*(k+1)))}}/* מכסה חינמית של Google: מחכים ומנסים שוב לפני שוויתרנו */
+ try{throw e0}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){try{const pv=await pollJson(prompt);if(Array.isArray(pv)&&!pv.length)throw new Error('ריק');return pv}catch(e2){e.detail=((e.detail||'Google: '+e.message)+' | חינמי: '+(e2&&e2.message||'?'));throw e}}throw e}
 }
 async function aiGem(prompt,files){
  const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt).catch(()=>pollJson(prompt)):pollJson(prompt)}
  if(/^gsk_/.test(key)||/^sk-or-/.test(key)){if(files&&files.length)throw new Error('nofiles');return aiOA(key,prompt)}
- let last='http';
+ let last='http',lastD='';
  for(const model of AI_MODELS){
   let res;
   const U='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent';
@@ -503,12 +505,12 @@ async function aiGem(prompt,files){
   catch(e){const x=new Error('net');x.detail=String(e&&e.message||e);throw x}
   if(res.status==400&&th0){try{BODY=mkBody(false);res=await fetch(U,{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:BODY})}catch(e){}}
   if(res.status==404){last='http404';continue}
-  if(res.status==429){last='limit';continue}/* לכל מודל מכסה נפרדת: ננסה את הבא */
+  if(res.status==429){last='limit';lastD='Google ('+model+') 429';continue}/* לכל מודל מכסה נפרדת: ננסה את הבא */
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,220)}catch(e){}const x=new Error(res.status==401||res.status==403?'badkey':'http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(c=>c.text||'').join('');
-  return jparse(t);
+  try{const v=jparse(t);if(Array.isArray(v)&&!v.length)throw Object.assign(new Error('parse'),{detail:'ריק'});return v}catch(pe){last='parse';lastD='Google ('+model+') '+(pe.detail||'')}/* תשובה ריקה או לא קריאה: ננסה את המודל הבא */
  }
- throw new Error(last);
+ const fx=new Error(last);if(lastD)fx.detail=lastD;throw fx;
 }
 async function aiOA(key,prompt){
  const gr=/^gsk_/.test(key),url=gr?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
@@ -616,7 +618,7 @@ async function genViaApp(text,n,no){
 const aiErr=e=>{const m=({nokey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',badkey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',net:'לא הצלחתי להתחבר לשרת של Google. ייתכן שאין אינטרנט, או שסינון/הדפדפן חוסמים את הכתובת.',limit:'חרגת ממכסת הבקשות החינמית. נסה שוב עוד דקה.',cancel:'ביטלת את הבקשה.'}[e&&e.message])||'לא הצלחתי ליצור מבחן. נסה שוב.';return(e&&e.message=='nokey'||e&&e.message=='badkey')?m:m+' [פירוט: '+((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'')+']'};
 
 /* ---- מבחנים שמורים (ללמוד גם בלי אינטרנט) ---- */
-function saveTest(qs,src){T.src=src||'';try{window.trackFeature&&trackFeature(src=='ai'?'test_made_ai':'test_made_local')}catch(e){}
+function saveTest(qs,src){T.src=src||'';T.why='';try{window.trackFeature&&trackFeature(src=='ai'?'test_made_ai':'test_made_local')}catch(e){}
  S.tests=S.tests||{};const l=S.tests[SUBJ]=S.tests[SUBJ]||[];
  l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs))});
  if(l.length>10)l.length=10;save();
@@ -884,16 +886,17 @@ async function gen(){
   const plan=groups.map((g,gi)=>{const e=Math.floor(extra/groups.length)+(gi<extra%groups.length?1:0);return{g,t:g.length+e}});
   let noLeft=no;
   plan.forEach((pl,gi)=>{pl.no=gi==plan.length-1?noLeft:Math.min(noLeft,Math.round(pl.t*no/total));noLeft-=pl.no;pl.mc=pl.t-pl.no});
-  const rs=await Promise.allSettled(plan.map(pl=>aiQs(text,topics,pl.g,pl.mc,pl.no)));
+  const rs=[];/* אחת אחרי השנייה (במקביל המכסה החינמית של Google נחסמת ורק קבוצה אחת מצליחה), עם ניסיון חוזר */
+  for(const pl of plan){let st=null;for(let k=0;k<3&&!st;k++){try{st={status:'fulfilled',value:await aiQs(text,topics,pl.g,pl.mc,pl.no)}}catch(e){st=k==2?{status:'rejected',reason:e}:null;if(!st)await new Promise(z=>setTimeout(z,k?7000:3500))}}rs.push(st)}
   if(rs.every(x=>x.status=='rejected'))throw rs[0].reason;
   let a=[];rs.forEach(x=>{if(x.status=='fulfilled'){const r=x.value;a=a.concat((Array.isArray(r)?r:r.questions||[]).filter(okQ))}});
   const cov=()=>new Set(a.map(x=>+x.t));
   let miss=all.filter(i=>!cov().has(i));
-  for(let tries=0;miss.length&&tries<1;tries++){
+  for(let tries=0;miss.length&&tries<3;tries++){
    try{
     const r2=await aiQs(text,topics,miss,Math.ceil(miss.length*.6),Math.floor(miss.length*.4),'שאלה אחת בדיוק על כל נושא ברשימה.');
     a=a.concat((Array.isArray(r2)?r2:r2.questions||[]).filter(okQ));
-   }catch(e){break}
+   }catch(e){await new Promise(z=>setTimeout(z,5000))}
    miss=all.filter(i=>!cov().has(i));
   }
   const seen=new Set();a=a.filter(x=>seen.has(x.q)?false:(seen.add(x.q),true));
@@ -917,7 +920,7 @@ function useLocal(text,n,no,e){
   const mn=minNeeded(text);
   if(total<mn){T.err=`כדי לכסות את כל החומר צריך לפחות ${mn} שאלות בסך הכל. כרגע בחרת ${total}.`;T.loading=false;render();return}
   const lr=localTest(text,n,no);
-  if(lr.length){T.qs=lr;saveTest(lr,'local');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast((e&&e.message=='local'?'':'ה-AI לא עבד ('+aiErr(e).slice(0,70)+'). ')+'נוצר מבחן בסיסי בלי AI שלא בהכרח מכסה את כל החומר. אפשר לנסות שוב בעוד רגע')}
+  if(lr.length){T.qs=lr;saveTest(lr,'local');T.why=(e&&e.message=='local')?'':String((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';toast((e&&e.message=='local'?'':'ה-AI לא עבד ('+aiErr(e).slice(0,70)+'). ')+'נוצר מבחן בסיסי בלי AI שלא בהכרח מכסה את כל החומר. אפשר לנסות שוב בעוד רגע')}
   else T.err=!hasAI()?'לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא).':aiErr(e)
 
  }catch(x){T.err='לא הצלחתי ליצור מבחן. נסה שוב.'}
@@ -980,7 +983,7 @@ function testView(){
  if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">בדרך כלל 10–30 שניות</div></div>';return}
  if(T.qs.length){document.body.classList.add('tbg');
   const sk=T.skipped||0,tot=Math.max(0,T.qs.length-sk);
-  const hdr=tag=>`<div class="thd"><img src="${IM[SUBJ]||''}" alt=""><div><small>המבחן ייערך ב${esc(SUBJ)}</small><b>${esc(SUBJ)}</b>${T.src?`<small>${srcLbl(T.src)}</small>`:''}</div><span class="ttag">${tag}</span></div><div class="tpb"><i style="width:${Math.round(100*Math.min(T.i,T.qs.length)/T.qs.length)}%"></i></div>`;
+  const hdr=tag=>`<div class="thd"><img src="${IM[SUBJ]||''}" alt=""><div><small>המבחן ייערך ב${esc(SUBJ)}</small><b>${esc(SUBJ)}</b>${T.src?`<small>${srcLbl(T.src)}</small>`:''}${(T.src=='local'&&T.why)?`<small dir="ltr" style="user-select:text;-webkit-user-select:text;opacity:.95;word-break:break-all">${esc(T.why).slice(0,300)}</small>`:''}</div><span class="ttag">${tag}</span></div><div class="tpb"><i style="width:${Math.round(100*Math.min(T.i,T.qs.length)/T.qs.length)}%"></i></div>`;
   if(T.i>=T.qs.length){
    const first=T.savedFor!==T.qs;
    if(first){T.savedFor=T.qs;if(tot)rec('test',T.score,tot,SUBJ)}
