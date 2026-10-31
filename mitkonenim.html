@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 2.18 -->
+<!-- מתכוננים | index.html | גרסה 2.19 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -205,8 +205,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 <script>
 /* ---- סטטיסטיקה: כתובת הספירה שלך. אם ריק, שום דבר לא נשלח ולא נוצר קוד. ---- */
 window.ANALYTICS_URL = window.ANALYTICS_URL || "";
-window.UPDATE_CODE = "V-T9XC-TD7C";   /* קוד העדכון של גרסה 2.18: משתנה בכל גרסה. נשלח עם כל אירוע */
-window.APP_VER = "2.18";
+window.UPDATE_CODE = "V-K4WQ-MR2H";   /* קוד העדכון של גרסה 2.19: משתנה בכל גרסה. נשלח עם כל אירוע */
+window.APP_VER = "2.19";
 (function () {
   var BASE = (window.ANALYTICS_URL || "").replace(/\/$/, "");
   var TK = "an_token", UK = "an_user", QK = "an_queue", busy = false;
@@ -1214,7 +1214,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.18';window.VER=VER;function navDraw(){
+const VER='2.19';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1632,6 +1632,72 @@ function gradesView(){
 }
 render();exNotify();exSync();exPeriodic();aiProbe();addEventListener('online',()=>{if(AIST==='app')aiProbe(true)});
 try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('02_sw.js').catch(()=>{})}catch(e){}
+</script>
+<script type="module">
+/* ---- Firebase: anonymous visitor stats (no login screen) ---- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+import { getDatabase, ref, update, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBkG0nbNYj3_cw2HJr31pu932WnfAazfPc",
+  authDomain: "mitkonenim-c9ca8.firebaseapp.com",
+  databaseURL: "https://mitkonenim-c9ca8-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "mitkonenim-c9ca8",
+  storageBucket: "mitkonenim-c9ca8.firebasestorage.app",
+  messagingSenderId: "1058576103430",
+  appId: "1:1058576103430:web:a02722314f314c1582eb87"
+};
+
+try {
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  let uid = null;
+  const queue = [];
+
+  const key = s => String(s).replace(/[.#$\[\]\/]/g, "_").slice(0, 60);
+  const dev = () => {
+    const ua = navigator.userAgent || "";
+    if (/Android/i.test(ua)) return "android";
+    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return "apple";
+    return "computer";
+  };
+
+  function writeClick(id) {
+    update(ref(db, "clicks/" + key(id) + "/" + uid), { n: increment(1), last: serverTimestamp() }).catch(() => {});
+  }
+  function track(id) {
+    if (uid) writeClick(id); else queue.push(id);
+  }
+
+  signInAnonymously(auth).then(cred => {
+    uid = cred.user.uid;
+    let code = "";
+    try { code = String(window.analyticsUserId ? window.analyticsUserId() : "").toUpperCase(); } catch (e) {}
+    const v = { last: serverTimestamp(), device: dev(), app_version: window.APP_VER || "", code: code };
+    let newSession = false;
+    try { if (!sessionStorage.getItem("fb_sess")) { sessionStorage.setItem("fb_sess", "1"); newSession = true; } } catch (e) {}
+    if (newSession) v.visits = increment(1);
+    try { if (!localStorage.getItem("fb_first")) { localStorage.setItem("fb_first", "1"); v.first = serverTimestamp(); } } catch (e) {}
+    update(ref(db, "visitors/" + uid), v).catch(() => {});
+    queue.splice(0).forEach(writeClick);
+  }).catch(() => {});
+
+  /* Clicks on the home-screen tiles */
+  const TILES = { 4: "tests", 1: "flashcards", 2: "dictation", 5: "grades", 6: "podcast", 7: "exam_board" };
+  document.addEventListener("click", e => {
+    const t = e.target.closest && e.target.closest("[data-go]");
+    if (t) track("tile_" + (TILES[t.dataset.go] || t.dataset.go));
+  }, true);
+
+  /* Feature usage already reported by the app (practice_test, dictation, ...) */
+  const orig = window.trackFeature;
+  window.trackFeature = function (name) {
+    try { track("feature_" + name); } catch (e) {}
+    return orig ? orig.apply(this, arguments) : undefined;
+  };
+} catch (e) { /* stats must never break the app */ }
 </script>
 </body>
 </html>
