@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.19 | קוד עדכון V-6LJY-8F6M -->
+<!-- מתכוננים | גרסה 2.20 | קוד עדכון V-AU9A-CS3D -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -204,10 +204,11 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 <script src="01_images.js"></script>
 <script>
 /* ---- מתכוננים: ספירה ב-Firebase. ההגדרה של Firebase נכנסת רק בשורה FB_CONFIG למטה. ---- */
+window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-6LJY-8F6M";   /* קוד העדכון של גרסה 2.19. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.19";
+window.UPDATE_CODE = "V-AU9A-CS3D";   /* קוד העדכון של גרסה 2.20. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.20";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -415,7 +416,7 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 
 /* ---- חיבור ישיר ל-Google Gemini API (מפתח חינמי אישי ב-localStorage) ---- */
 const AI_MODELS=['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
-const DEFAULT_PROXY=(window.ANALYTICS_URL?String(window.ANALYTICS_URL).replace(/\/$/,'')+'/api/ai':'');/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
+const DEFAULT_PROXY=String(window.AI_URL||'').trim();/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
 /* קורא JSON סלחני: מנקה גדרות קוד, מוצא את גוש ה-JSON התקין הראשון גם אם יש טקסט מסביב */
 function jparse(t){
  t=String(t||'').replace(/```[a-zA-Z]*/g,'').trim();
@@ -429,10 +430,10 @@ function jparse(t){
  }
  const x=new Error('parse');x.detail='parse: '+t.replace(/\s+/g,' ').slice(0,160);throw x}
 const getProxy=()=>{try{return (localStorage.getItem('aiproxy')||DEFAULT_PROXY).trim()}catch(e){return DEFAULT_PROXY}};
-async function aiProxy(prompt){
+async function aiProxy(prompt,files){
  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),90000);
  try{
-  const res=await fetch(getProxy(),{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,body:JSON.stringify({prompt})});
+  const res=await fetch(getProxy(),{method:'POST',headers:{'content-type':'application/json'},signal:ac.signal,body:JSON.stringify({prompt,files:(files||[]).map(f=>({mime:f.mime,data:f.data}))})});
   if(res.status==429)throw new Error('limit');
   if(!res.ok){let m='';try{m=(await res.text()).slice(0,200)}catch(e){}const x=new Error('http'+res.status);x.detail=m;throw x}
   const j=await res.json(),t=j.text||'';
@@ -442,7 +443,7 @@ async function aiProxy(prompt){
 }
 const hasAI=()=>!!(getKey()||getProxy());
 /* >>> מפתח Google (מתחיל ב-AIza) נכנס כאן, בין הגרשיים. כל עוד ריק: AI חינמי <<< */
-const DEFAULT_KEY='AQ.Ab8RN6J4Xqe7MP0vOCIStKrl-h5sKyhArEy2_wZTHkRL98QdpQ';
+const DEFAULT_KEY='';
 const getKey=()=>{try{return localStorage.getItem('gkey')||DEFAULT_KEY}catch(e){return DEFAULT_KEY}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
 async function pollOne(prompt,files,ms,model){
@@ -472,7 +473,7 @@ async function aiJson(prompt,files){
  try{throw e0}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){try{const pv=await pollJson(prompt);if(Array.isArray(pv)&&!pv.length)throw new Error('ריק');return pv}catch(e2){e.detail=((e.detail||'Google: '+e.message)+' | חינמי: '+(e2&&e2.message||'?'));throw e}}throw e}
 }
 async function aiGem(prompt,files){
- if(!(files&&files.length)&&getProxy()){try{return await aiProxy(prompt)}catch(e){/* השרת לא ענה: ממשיכים לדרך הרגילה */}}
+ if(getProxy()){try{return await aiProxy(prompt,files)}catch(e){if(!(e&&/^(net|limit|http\d*|parse)$/.test(e.message)))throw e;/* השרת לא ענה: ממשיכים לדרך הרגילה */}}
  const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt).catch(()=>pollJson(prompt)):pollJson(prompt)}
  if(/^gsk_/.test(key)||/^sk-or-/.test(key)){if(files&&files.length)throw new Error('nofiles');return aiOA(key,prompt)}
  let last='http',lastD='';
@@ -1195,7 +1196,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.19';window.VER=VER;function navDraw(){
+const VER='2.20';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
