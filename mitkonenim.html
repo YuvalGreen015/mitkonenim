@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | index.html | גרסה 2.19 -->
+<!-- מתכוננים | index.html | גרסה 2.18 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -203,109 +203,89 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 </style>
 <script src="01_images.js"></script>
 <script>
-/* ---- סטטיסטיקה: כתובת הספירה שלך. אם ריק, שום דבר לא נשלח ולא נוצר קוד. ---- */
-window.ANALYTICS_URL = window.ANALYTICS_URL || "";
-window.UPDATE_CODE = "V-K4WQ-MR2H";   /* קוד העדכון של גרסה 2.19: משתנה בכל גרסה. נשלח עם כל אירוע */
-window.APP_VER = "2.19";
+/* ---- מתכוננים: ספירה ב-Firebase. ההגדרה של Firebase נכנסת רק בשורה FB_CONFIG למטה. ---- */
+window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
+window.APP_ID = "mitkonenim";
+window.UPDATE_CODE = "V-T9XC-TD7C";   /* קוד העדכון של גרסה 2.18. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.18";
+window.ANALYTICS_URL = "";
 (function () {
-  var BASE = (window.ANALYTICS_URL || "").replace(/\/$/, "");
-  var TK = "an_token", UK = "an_user", QK = "an_queue", busy = false;
+  var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   function get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
-  function set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
-  function rand(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join(""); }
-  function uuid() { return crypto.randomUUID ? crypto.randomUUID() : rand(16); }
-  var ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  function newId() { var a = new Uint8Array(8), o = ""; crypto.getRandomValues(a); for (var i = 0; i < 8; i++) o += ABC[a[i] % 32]; return o; }
+  function set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function now() { return Math.floor(Date.now() / 1000); }
   function validId(x) { return typeof x === "string" && /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(x); }
-  function ensureId() {                                  // automatic on first open, works offline too
-    var u = get(UK);
-    if (!validId(u)) { u = newId(); set(UK, u); setTimeout(function () { toast(u); }, 2500); }
-    return u;
-  }
-  function device() {                                    // computer / apple (iPhone, iPad) / android
+  function newId() { var a = new Uint8Array(8), o = ""; crypto.getRandomValues(a); for (var i = 0; i < 8; i++) o += ABC[a[i] % 32]; return o; }
+  function device() {
     var ua = navigator.userAgent || "";
     if (/Android/i.test(ua)) return "android";
     if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return "apple";
     return "computer";
   }
-  function meta() { return { version_code: window.UPDATE_CODE, app_version: window.APP_VER, device: device() }; }
-  function token() { var t = get(TK); if (!t) { t = "t_" + rand(32); set(TK, t); } return t; }   // 256 random bits
-
-  function toast(code) {                                  // small, subtle "Your code: X" popup; tap to copy
+  function toast(code) {
     try {
       var el = document.createElement("div");
-      code = String(code).toUpperCase();
       el.textContent = "הקוד שלך: " + code + "  (לחץ להעתקה)";
-      el.setAttribute("role", "status");
-      el.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;padding:7px 14px;" +
-        "border-radius:999px;background:rgba(30,27,75,.88);color:#fff;font:500 13px/1.2 system-ui,sans-serif;" +
-        "letter-spacing:.3px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:opacity .4s;cursor:pointer";
+      el.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;padding:7px 14px;border-radius:999px;background:rgba(30,27,75,.88);color:#fff;font:500 13px/1.2 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:opacity .4s;cursor:pointer";
       el.onclick = function () { try { navigator.clipboard.writeText(code); el.textContent = "הועתק ✓"; } catch (e) {} };
       document.body.appendChild(el);
       setTimeout(function () { el.style.opacity = "1"; }, 30);
       setTimeout(function () { el.style.opacity = "0"; setTimeout(function () { el.remove(); }, 500); }, 6000);
     } catch (e) {}
   }
-
-  function flush() {
-    if (busy || !BASE) return Promise.resolve();
-    busy = true;
-    var loop = function () {
-      var q = get(QK) || [];
-      if (!q.length) return;
-      var ev = q[0], feat = ev.f;
-      return fetch(BASE + (feat ? "/api/events/feature" : "/api/session"), {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify(Object.assign(meta(), feat ? { event_id: ev.id, ts: ev.ts, token: token(), user_id: ensureId(), feature: feat } : { event_id: ev.id, ts: ev.ts, token: token(), user_id: ensureId() }))
-      }).then(function (r) {
-        if (r.status >= 400 && r.status < 500 && r.status !== 429) { q.shift(); set(QK, q); return loop(); }  // permanently rejected: drop, don't loop forever
-        if (!r.ok) throw new Error("retry later");
-        return r.json().then(function (j) { if (validId(j.user_id)) { var fresh = get(UK) !== j.user_id; if (fresh) toast(j.user_id); set(UK, j.user_id); if (fresh) { try { window.dispatchEvent(new Event("an-code")); } catch (e) {} } } q.shift(); set(QK, q); return loop(); });
-      });
-    };
-    return Promise.resolve(loop()).catch(function () { /* offline or server down: stays queued */ }).then(function () { busy = false; });
+  function ensureId() {            /* הקוד האישי נוצר אוטומטית בפתיחה הראשונה ולא משתנה אחר כך */
+    var u = get(UK);
+    if (!validId(u)) { u = newId(); set(UK, u); setTimeout(function () { toast(u); }, 2500); }
+    return u;
   }
+  window.analyticsUserId = ensureId; ensureId();
 
-  window.trackLogin = function () {
-    var q = get(QK) || [];
-    q.push({ id: uuid(), ts: Math.floor(Date.now() / 1000) });
-    set(QK, q.slice(-200));
-    return flush();
-  };
-  // Feature usage: trackFeature("practice_test"). Logged-in users only (the login registers the device first).
+  var doc = get(MK) || { logins: [], features: {} }, ref = null, busy = false, dirty = false, ft = null;
+  function stamp() {
+    var n = now();
+    doc.app = window.APP_ID; doc.code = ensureId(); doc.device = device();
+    doc.version = window.APP_VER; doc.versionCode = window.UPDATE_CODE;
+    doc.firstSeen = doc.firstSeen || n; doc.lastSeen = n;
+    doc.logins = (doc.logins || []).filter(function (t) { return t > n - 14 * 86400; }).slice(-60);
+    doc.features = doc.features || {};
+    set(MK, doc);
+  }
+  function push() {
+    if (!ref) return;
+    if (busy) { dirty = true; return; }
+    busy = true; stamp();
+    Promise.resolve().then(function () { return ref.set(doc); }).catch(function () {}).then(function () { busy = false; if (dirty) { dirty = false; push(); } });
+  }
+  window.trackLogin = function () { var n = now(), l = doc.logins || (doc.logins = []); if (!l.length || n - l[l.length - 1] > 1800) l.push(n); doc.lastPing = n; stamp(); push(); };
   window.trackFeature = function (name) {
-    var q = get(QK) || [];
-    q.push({ id: uuid(), ts: Math.floor(Date.now() / 1000), f: String(name).slice(0, 40) });
-    set(QK, q.slice(-200));
-    return flush();
+    name = String(name).replace(/[^\w.\-]/g, "").slice(0, 40); if (!name) return;
+    var f = doc.features || (doc.features = {}); f[name] = (f[name] || 0) + 1; set(MK, doc);
+    clearTimeout(ft); ft = setTimeout(push, 2500);
   };
-  // Installs: counted when the browser reports the PWA was installed.
-  addEventListener("appinstalled", function () {
-    if (!BASE) return;
-    var id = "i_" + uuid();
-    fetch(BASE + "/api/events/install", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify(Object.assign(meta(), { event_id: get("an_inst") || (set("an_inst", id), id), device_id: token().slice(0, 16), platform: "pwa", ts: Math.floor(Date.now() / 1000) })) }).catch(function () {});
-  });
-  // Heartbeat: tells the counter "this user is here right now" (powers "online now"). Once a minute, only while the page is visible.
-  function ping() {
-    if (!BASE || document.hidden || !get(UK)) return;
-    fetch(BASE + "/api/events/ping", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign(meta(), { token: token(), user_id: get(UK) })) }).catch(function () {});
-  }
-  setInterval(ping, 60000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) ping(); });
-  window.analyticsUserId = function () { return ensureId(); };
-  ensureId();
-  addEventListener("online", flush);
-  addEventListener("load", flush);                      // send anything left over from last time
+  setInterval(function () { if (document.hidden || !ref) return; doc.lastPing = now(); push(); }, 90000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && ref) { doc.lastPing = now(); push(); } });
+
+  /* טעינת Firebase רק אם הוגדרה FB_CONFIG. בלי הגדרה: כלום לא נשלח. */
+  var V = "10.12.2";
+  function load(src) { return new Promise(function (ok, no) { var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+  (async function () {
+    var c = window.FB_CONFIG; if (!c || !c.apiKey || !c.projectId) return;
+    try {
+      var base = "https://www.gstatic.com/firebasejs/" + V + "/";
+      await load(base + "firebase-app-compat.js"); await load(base + "firebase-auth-compat.js"); await load(base + "firebase-firestore-compat.js");
+      firebase.initializeApp(c);
+      var cred = await firebase.auth().signInAnonymously();
+      ref = firebase.firestore().collection("users").doc(cred.user.uid);
+      window.trackLogin();
+    } catch (e) {}
+  })();
 })();
 
-(function(){try{var k="an_last",n=Date.now(),l=+localStorage.getItem(k)||0;if(n-l>30*60*1000){localStorage.setItem(k,String(n));window.trackLogin();}}catch(e){}})();
 </script>
 <script>(function(){/* אם קובץ התמונות לא נטען: מנסים שמות אחרים */["images.js","img.js"].forEach(function(n){if(!(window.IMG&&window.IMG["tile-1.jpg"]))document.write('<script src="'+n+'"><\/script>')})})();</script>
 <script>
 window.IMG_VER=window.IMG_VER||'1.96';window.IMG=window.IMG||{};
 ['tile-exams.jpg','apple-touch-icon.png','favicon.png','icon-192.png','icon-512.png','logo.jpg','subj-english.jpg','subj-hebrew.jpg','subj-history.jpg','subj-math.jpg','subj-science.jpg','subj-tanakh.jpg','tile-1.jpg','tile-2.jpg','tile-4.jpg','tile-5.jpg','tile-podcast.jpg','trophy.png','upload-file.png','upload-image.png','upload-word.png'].forEach(function(n){if(!IMG[n]&&!/^tile-(exams|homework)/.test(n))IMG[n]='images/'+n});
-['apple-touch-icon.png','icon-192.png','icon-512.png','favicon.png'].forEach(function(n){IMG[n]='app-icon.png'});/* אייקון האפליקציה: קובץ אחד, app-icon.png, באותה תיקייה */
 function fillImg(){document.querySelectorAll('[data-img]').forEach(function(e){var u=IMG[e.getAttribute('data-img')];if(u){e.tagName=='LINK'?e.setAttribute('href',u):e.setAttribute('src',u)}})}
 document.addEventListener('DOMContentLoaded',fillImg);
 window.imgDiag=async function(){var o=['כתובת: '+location.href,'גרסת אפליקציה: '+(window.VER||'?')];for(var n of ['01_images.js','images.js']){try{var r=await fetch(n+'?t='+Date.now(),{cache:'no-store'});o.push(n+' → '+(r.ok?'נמצא ✓':'לא נמצא (שגיאה '+r.status+')'))}catch(e){o.push(n+' → אין חיבור')}}o.push('אם כתוב "לא נמצא": צריך להעלות לגיטהב את הקובץ 01_images.js באותה תיקייה של index.html, בדיוק בשם הזה. אחרי ההעלאה לרענן את הדף פעמיים.');return o.join('\n')};
@@ -435,7 +415,7 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 
 /* ---- חיבור ישיר ל-Google Gemini API (מפתח חינמי אישי ב-localStorage) ---- */
 const AI_MODELS=['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
-const DEFAULT_PROXY='';/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
+const DEFAULT_PROXY=(window.ANALYTICS_URL?String(window.ANALYTICS_URL).replace(/\/$/,'')+'/api/ai':'');/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
 /* קורא JSON סלחני: מנקה גדרות קוד, מוצא את גוש ה-JSON התקין הראשון גם אם יש טקסט מסביב */
 function jparse(t){
  t=String(t||'').replace(/```[a-zA-Z]*/g,'').trim();
@@ -492,6 +472,7 @@ async function aiJson(prompt,files){
  try{throw e0}catch(e){if(files&&files.length)throw e;if(getKey()&&e&&/^(badkey|net|limit|http\d*|parse)$/.test(e.message)){try{const pv=await pollJson(prompt);if(Array.isArray(pv)&&!pv.length)throw new Error('ריק');return pv}catch(e2){e.detail=((e.detail||'Google: '+e.message)+' | חינמי: '+(e2&&e2.message||'?'));throw e}}throw e}
 }
 async function aiGem(prompt,files){
+ if(!(files&&files.length)&&getProxy()){try{return await aiProxy(prompt)}catch(e){/* השרת לא ענה: ממשיכים לדרך הרגילה */}}
  const key=getKey();if(!key){if(files&&files.length)throw new Error('nokey');return getProxy()?aiProxy(prompt).catch(()=>pollJson(prompt)):pollJson(prompt)}
  if(/^gsk_/.test(key)||/^sk-or-/.test(key)){if(files&&files.length)throw new Error('nofiles');return aiOA(key,prompt)}
  let last='http',lastD='';
@@ -1214,7 +1195,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.19';window.VER=VER;function navDraw(){
+const VER='2.18';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1632,72 +1613,6 @@ function gradesView(){
 }
 render();exNotify();exSync();exPeriodic();aiProbe();addEventListener('online',()=>{if(AIST==='app')aiProbe(true)});
 try{if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('02_sw.js').catch(()=>{})}catch(e){}
-</script>
-<script type="module">
-/* ---- Firebase: anonymous visitor stats (no login screen) ---- */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
-import { getDatabase, ref, update, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBkG0nbNYj3_cw2HJr31pu932WnfAazfPc",
-  authDomain: "mitkonenim-c9ca8.firebaseapp.com",
-  databaseURL: "https://mitkonenim-c9ca8-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "mitkonenim-c9ca8",
-  storageBucket: "mitkonenim-c9ca8.firebasestorage.app",
-  messagingSenderId: "1058576103430",
-  appId: "1:1058576103430:web:a02722314f314c1582eb87"
-};
-
-try {
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-  let uid = null;
-  const queue = [];
-
-  const key = s => String(s).replace(/[.#$\[\]\/]/g, "_").slice(0, 60);
-  const dev = () => {
-    const ua = navigator.userAgent || "";
-    if (/Android/i.test(ua)) return "android";
-    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return "apple";
-    return "computer";
-  };
-
-  function writeClick(id) {
-    update(ref(db, "clicks/" + key(id) + "/" + uid), { n: increment(1), last: serverTimestamp() }).catch(() => {});
-  }
-  function track(id) {
-    if (uid) writeClick(id); else queue.push(id);
-  }
-
-  signInAnonymously(auth).then(cred => {
-    uid = cred.user.uid;
-    let code = "";
-    try { code = String(window.analyticsUserId ? window.analyticsUserId() : "").toUpperCase(); } catch (e) {}
-    const v = { last: serverTimestamp(), device: dev(), app_version: window.APP_VER || "", code: code };
-    let newSession = false;
-    try { if (!sessionStorage.getItem("fb_sess")) { sessionStorage.setItem("fb_sess", "1"); newSession = true; } } catch (e) {}
-    if (newSession) v.visits = increment(1);
-    try { if (!localStorage.getItem("fb_first")) { localStorage.setItem("fb_first", "1"); v.first = serverTimestamp(); } } catch (e) {}
-    update(ref(db, "visitors/" + uid), v).catch(() => {});
-    queue.splice(0).forEach(writeClick);
-  }).catch(() => {});
-
-  /* Clicks on the home-screen tiles */
-  const TILES = { 4: "tests", 1: "flashcards", 2: "dictation", 5: "grades", 6: "podcast", 7: "exam_board" };
-  document.addEventListener("click", e => {
-    const t = e.target.closest && e.target.closest("[data-go]");
-    if (t) track("tile_" + (TILES[t.dataset.go] || t.dataset.go));
-  }, true);
-
-  /* Feature usage already reported by the app (practice_test, dictation, ...) */
-  const orig = window.trackFeature;
-  window.trackFeature = function (name) {
-    try { track("feature_" + name); } catch (e) {}
-    return orig ? orig.apply(this, arguments) : undefined;
-  };
-} catch (e) { /* stats must never break the app */ }
 </script>
 </body>
 </html>
