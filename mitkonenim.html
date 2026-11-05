@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.30 | קוד עדכון V-B36R-PCDB -->
+<!-- מתכוננים | גרסה 2.32 | קוד עדכון V-JPFW-D73D -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -111,6 +111,7 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 .tbtn.sec{flex:1;background:#fff;color:#6d28d9;border:2px solid #d9c9f7;box-shadow:none}
 .tbtn.r{background:linear-gradient(135deg,#e04848,#f87171);box-shadow:0 6px 14px rgba(224,72,72,.35)}
 .tbtn.y{background:linear-gradient(135deg,#2a6df4,#6b9bff);box-shadow:0 6px 14px rgba(42,109,244,.35)}
+.tstory{margin:12px 16px;background:#fff8e6;border:1px solid #f1d48a;border-radius:14px;padding:10px 14px;color:#4a3a10;text-align:right}.tstory summary{font-weight:800;cursor:pointer}.tstory div{white-space:pre-wrap;line-height:1.7;margin-top:8px;font-size:15px}
 .tmsg{margin-top:14px;padding:14px;border-radius:16px;font-weight:700;text-align:center;font-size:16px;animation:tpop .4s}
 .tok{background:#e6fbf3;color:#0b7a58}.tbad{background:#ffecec;color:#c02c2c}.tneu{background:#eef1f7;color:#5d6b85}
 .tbig{font-size:54px;text-align:center;margin:10px 0}
@@ -208,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-B36R-PCDB";   /* קוד העדכון של גרסה 2.30. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.30";
+window.UPDATE_CODE = "V-JPFW-D73D";   /* קוד העדכון של גרסה 2.32. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.32";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -594,7 +595,7 @@ function aiAppDlg(prompt,files){
  });
 }
 const aiJsonA=(p,f)=>aiJson(p,f);
-const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
+const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}. שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
 async function genViaApp(text,n,no){
  const total=n+no;
  try{
@@ -878,7 +879,28 @@ function normQs(r){
   return y}).filter(Boolean);
 }
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
+async function genStory(){
+ const n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0)),gr=$('grade').value||'ה';
+ S.grade=gr;T.n=n;T.no=no;save();T.loading=true;T.err='';T.story='';render();
+ const early='אבגדהו'.includes(gr)&&gr.length==1;
+ const wc={'א':'60 עד 90','ב':'90 עד 130','ג':'130 עד 180','ד':'170 עד 230','ה':'220 עד 300','ו':'250 עד 330','ז':'300 עד 400','ח':'350 עד 450','ט':'400 עד 500'}[gr]||'450 עד 600';
+ const kinds=['סיפור','קטע מידעי (על נושא מעניין מהטבע, מההיסטוריה או מהחיים)','כתבה קצרה','סיפור עם מסר','קטע על אדם מעניין או מקום'];
+ const kind=kinds[Math.floor(Math.random()*kinds.length)];
+ let st='';
+ try{
+  const r=await aiJson(`כתוב בעברית קטע קריאה מקורי מסוג: ${kind}, מתאים לתלמיד כיתה ${gr} לפי תוכנית הלימודים של משרד החינוך בישראל בעברית (רמת אוצר מילים, אורך משפטים ונושאים מתאימים). אורך: ${wc} מילים. יש כותרת, מבנה ברור, ופרטים קונקרטיים (שמות, מקומות, מספרים, סיבות ותוצאות) כדי שאפשר יהיה לשאול שאלות הבנה והסקה. ${early?'כתוב בניקוד מלא.':'בלי ניקוד.'} תוכן מתאים לגיל. החזר JSON בלבד: {"title":"כותרת","story":"הטקסט המלא של הקטע"}`);
+  st=String((r&&(r.story||r.text||r.content))||'').trim();
+  if(r&&r.title&&st)st=String(r.title).trim()+'\n\n'+st;
+  if(st.length<80)throw new Error('empty');
+ }catch(e){T.loading=false;T.err='לא הצלחתי ליצור קטע קריאה. נסה שוב. '+aiErr(e);render();return}
+ T.loading=false;render();
+ S.mats[SUBJ]=st;$('mat').value=st;
+ window._stMode=1;window._stG=gr;
+ try{await gen()}finally{window._stG=''}
+ if(T.qs&&T.qs.length){T.story=st;render()}
+}
 async function gen(){
+ if(window._stMode)window._stMode=0;else T.story='';
  const text=$('mat').value.trim(),n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
  S.mats[SUBJ]=text;T.n=n;T.no=no;save();
  if(text.length<8){T.err='כתוב חומר ללימוד (אפשר גם משפט אחד).';render();return}
@@ -887,7 +909,7 @@ async function gen(){
  const total=n+no;
  if(appOn()){await genViaApp(text,n,no);return}
  try{
-  if(text.length<2500&&total<=25){/* חומר קצר: בקשה אחת במקום שתיים (מהיר יותר) */
+  if((text.length<2500||window._stG)&&total<=25){/* חומר קצר: בקשה אחת במקום שתיים (מהיר יותר) */
    const r=await aiJson(ONEPROMPT(text,n,no));
    let a=normQs(r).filter(okQ);const sn=new Set();a=a.filter(x=>sn.has(x.q)?false:(sn.add(x.q),true));
    if(a.length>total)a=a.slice(0,total);if(!a.length)throw new Error('empty');
@@ -1005,7 +1027,7 @@ function testView(){
  if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">בדרך כלל 10–30 שניות</div></div>';return}
  if(T.qs.length){document.body.classList.add('tbg');
   const sk=T.skipped||0,tot=Math.max(0,T.qs.length-sk);
-  const hdr=tag=>`<div class="thd"><img src="${IM[SUBJ]||''}" alt=""><div><small>המבחן ייערך ב${esc(SUBJ)}</small><b>${esc(SUBJ)}</b>${T.src?`<small>${srcLbl(T.src)}</small>`:''}${(T.src=='local'&&T.why)?`<small dir="ltr" style="user-select:text;-webkit-user-select:text;opacity:.95;word-break:break-all">${esc(T.why).slice(0,300)}</small>`:''}</div><span class="ttag">${tag}</span></div><div class="tpb"><i style="width:${Math.round(100*Math.min(T.i,T.qs.length)/T.qs.length)}%"></i></div>`;
+  const hdr=tag=>`<div class="thd"><img src="${IM[SUBJ]||''}" alt=""><div><small>המבחן ייערך ב${esc(SUBJ)}</small><b>${esc(SUBJ)}</b>${T.src?`<small>${srcLbl(T.src)}</small>`:''}${(T.src=='local'&&T.why)?`<small dir="ltr" style="user-select:text;-webkit-user-select:text;opacity:.95;word-break:break-all">${esc(T.why).slice(0,300)}</small>`:''}</div><span class="ttag">${tag}</span></div><div class="tpb"><i style="width:${Math.round(100*Math.min(T.i,T.qs.length)/T.qs.length)}%"></i></div>${T.story?`<details class="tstory" open><summary>📖 הסיפור (לחץ כדי לסגור)</summary><div>${esc(T.story)}</div></details>`:''}`;
   if(T.i>=T.qs.length){
    const first=T.savedFor!==T.qs;
    if(first){T.savedFor=T.qs;if(tot)rec('test',T.score,tot,SUBJ)}
@@ -1042,8 +1064,8 @@ function testView(){
  <div class="row"><div style="flex:1"><label class="mute" for="n">שאלות אמריקאיות</label><input id="n" type="number" min="0" max="30" value="${T.n}" inputmode="numeric"></div>
  <div style="flex:1"><label class="mute" for="no">שאלות פתוחות</label><input id="no" type="number" min="0" max="15" value="${T.no}" inputmode="numeric"></div></div>
  ${(!hasAI()&&AIST==='app')?'<div class="card" style="background:color-mix(in srgb,#10b981 14%,transparent);margin:8px 0"><b>🤝 משתמש באפליקציית AI שבטלפון</b><p class="mute" style="margin:4px 0 8px">בלחיצה על "צור מבחן" תפתח את Gemini / ChatGPT (אם אין לך, תתבקש להתקין). רוצה בלי זה? הדבק מפתח חינמי פעם אחת.</p><button class="btn sec" id="gokey">הגדר מפתח AI</button></div>':''}
- <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button></div>${savedCard()}`;
- $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;
+ <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button><div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cfd6e6"><label style="font-weight:800">📖 בלי חומר? בחר כיתה וקבל קטע קריאה ומבחן עליו</label><select id="grade" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="א">כיתה א׳</option><option value="ב">כיתה ב׳</option><option value="ג">כיתה ג׳</option><option value="ד">כיתה ד׳</option><option value="ה">כיתה ה׳</option><option value="ו">כיתה ו׳</option><option value="ז">כיתה ז׳</option><option value="ח">כיתה ח׳</option><option value="ט">כיתה ט׳</option><option value="י">כיתה י׳</option><option value="י״א">כיתה י״א</option><option value="י״ב">כיתה י״ב</option></select><button class="btn" id="mkst" style="margin-top:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)">📖 תן לי קטע קריאה ומבחן</button></div></div>${savedCard()}`;
+ $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;$('mkst').onclick=genStory;try{$('grade').value=S.grade||'ה'}catch(e){}
  const hint=()=>{const t=$('mat').value.trim(),h=$('hint');if(!h)return;if(t.length<8){h.textContent='';return}const m=minNeeded(t),tot=(+$('n').value||0)+(+$('no').value||0);
   h.textContent='ככל שיש יותר חומר צריך יותר שאלות. בלחיצה על צור מבחן האפליקציה תמנה את כל נושאי החומר ותגיד כמה שאלות צריך כדי לכסות את כולם (הערכה כרגע: לפחות '+m+').';h.style.color=tot>=m?'var(--mute)':'var(--bad)'};
  ['mat','n','no'].forEach(i=>$(i).addEventListener('input',hint));hint();if($('gokey'))$('gokey').onclick=()=>{showSet=true;render()};
@@ -1236,7 +1258,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.30';window.VER=VER;function navDraw(){
+const VER='2.32';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
