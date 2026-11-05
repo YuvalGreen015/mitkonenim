@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.35 | קוד עדכון V-NEST-DQMC -->
+<!-- מתכוננים | גרסה 2.36 | קוד עדכון V-UGNN-AMZN -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -209,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-NEST-DQMC";   /* קוד העדכון של גרסה 2.35. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.35";
+window.UPDATE_CODE = "V-UGNN-AMZN";   /* קוד העדכון של גרסה 2.36. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.36";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -595,7 +595,7 @@ function aiAppDlg(prompt,files){
  });
 }
 const aiJsonA=(p,f)=>aiJson(p,f);
-const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}. שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
+const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
 async function genViaApp(text,n,no){
  const total=n+no;
  try{
@@ -852,7 +852,7 @@ async function aiQs(text,topics,idxs,n,no,extra){
  const list=idxs.map(i=>i+': '+topics[i]).join('\n');
  return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
 }
-const ENNOTE=t=>(SUBJ=='אנגלית'&&/\b(am|is|are|has|have)\b/i.test(t))?'\nחשוב מאוד (אנגלית): החומר עוסק במשפטי תיאור עם am/is/are ועם have/has. שאל אך ורק על המבנים האלה (בחירת הצורה הנכונה, משפט שלילי, שאלת כן/לא, השלמה). חובה לכתוב משפטים חדשים לגמרי משלך, עם נושאים, שמות ומילים אחרים. אסור להעתיק או לחזור על משפטים ודוגמאות מהחומר, אסור לשאול על נושאי דקדוק אחרים, והאנגלית תהיה פשוטה ברמת תלמיד כיתה ג-ה.':'';
+const ENNOTE=t=>(!window._stG&&SUBJ=='אנגלית'&&/\b(am|is|are|has|have)\b/i.test(t))?'\nחשוב מאוד (אנגלית): החומר עוסק במשפטי תיאור עם am/is/are ועם have/has. שאל אך ורק על המבנים האלה (בחירת הצורה הנכונה, משפט שלילי, שאלת כן/לא, השלמה). חובה לכתוב משפטים חדשים לגמרי משלך, עם נושאים, שמות ומילים אחרים. אסור להעתיק או לחזור על משפטים ודוגמאות מהחומר, אסור לשאול על נושאי דקדוק אחרים, והאנגלית תהיה פשוטה ברמת תלמיד כיתה ג-ה.':'';
 function normQs(r){
  let arr=Array.isArray(r)?r:null;
  if(!arr&&r&&typeof r=='object'){const ks=['questions','test','exam','items','quiz','data','שאלות'];for(const k of ks)if(Array.isArray(r[k])){arr=r[k];break}
@@ -880,15 +880,16 @@ function normQs(r){
 }
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
 async function genStory(){
- const n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0)),gr=$('grade').value||'ה';
- S.grade=gr;T.n=n;T.no=no;save();T.loading=true;T.err='';T.story='';render();
- const early='אבגדהו'.includes(gr)&&gr.length==1;
- const wc={'א':'60 עד 90','ב':'90 עד 130','ג':'130 עד 180','ד':'170 עד 230','ה':'220 עד 300','ו':'250 עד 330','ז':'300 עד 400','ח':'350 עד 450','ט':'400 עד 500'}[gr]||'450 עד 600';
- const kinds=['סיפור','קטע מידעי (על נושא מעניין מהטבע, מההיסטוריה או מהחיים)','כתבה קצרה','סיפור עם מסר','קטע על אדם מעניין או מקום'];
+ const n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0)),gr=$('grade').value||'ה',ln=$('tlen').value||'m',EN=SUBJ=='אנגלית';
+ S.grade=gr;S.tlen=ln;T.n=n;T.no=no;save();T.loading=true;T.err='';T.story='';render();
+ const early=!EN&&'אבגדהו'.includes(gr)&&gr.length==1;
+ const base={'א':[60,90],'ב':[90,130],'ג':[130,180],'ד':[170,230],'ה':[220,300],'ו':[250,330],'ז':[300,400],'ח':[350,450],'ט':[400,500]}[gr]||[450,600];
+ const f={s:.5,m:1,l:1.6}[ln]||1,rd=x=>Math.max(40,Math.round(x*f/10)*10),wc=Math.min(rd(base[0]),420)+' עד '+Math.min(rd(base[1]),480);
+ const kinds=EN?['a story','an informational text about nature, history or everyday life','a short news article','a story with a message','a text about an interesting person or place']:['סיפור','קטע מידעי (על נושא מעניין מהטבע, מההיסטוריה או מהחיים)','כתבה קצרה','סיפור עם מסר','קטע על אדם מעניין או מקום'];
  const kind=kinds[Math.floor(Math.random()*kinds.length)];
  let st='';
  try{
-  const r=await aiJson(`כתוב בעברית קטע קריאה מקורי מסוג: ${kind}, מתאים לתלמיד כיתה ${gr} לפי תוכנית הלימודים של משרד החינוך בישראל בעברית (רמת אוצר מילים, אורך משפטים ונושאים מתאימים). אורך: ${wc} מילים. יש כותרת, מבנה ברור, ופרטים קונקרטיים (שמות, מקומות, מספרים, סיבות ותוצאות) כדי שאפשר יהיה לשאול שאלות הבנה והסקה. ${early?'כתוב בניקוד מלא.':'בלי ניקוד.'} תוכן מתאים לגיל. החזר JSON בלבד: {"title":"כותרת","story":"הטקסט המלא של הקטע"}`);
+  const r=await aiJson(EN?`Write an original reading passage in ENGLISH ONLY (no Hebrew words at all), type: ${kind}, suitable for an Israeli student in grade ${gr} according to the Israeli Ministry of Education English curriculum (vocabulary, sentence length and topics matching that level). Length: ${wc} words. Include a title, a clear structure and concrete details (names, places, numbers, causes and results) so that comprehension and inference questions can be asked. Age-appropriate content. Return JSON only: {"title":"title in English","story":"the full passage in English"}`:`כתוב בעברית קטע קריאה מקורי מסוג: ${kind}, מתאים לתלמיד כיתה ${gr} לפי תוכנית הלימודים של משרד החינוך בישראל בעברית (רמת אוצר מילים, אורך משפטים ונושאים מתאימים). אורך: ${wc} מילים. יש כותרת, מבנה ברור, ופרטים קונקרטיים (שמות, מקומות, מספרים, סיבות ותוצאות) כדי שאפשר יהיה לשאול שאלות הבנה והסקה. ${early?'כתוב בניקוד מלא.':'בלי ניקוד.'} תוכן מתאים לגיל. החזר JSON בלבד: {"title":"כותרת","story":"הטקסט המלא של הקטע"}`);
   st=String((r&&(r.story||r.text||r.content))||'').trim();
   if(r&&r.title&&st)st=String(r.title).trim()+'\n\n'+st;
   if(st.length<80)throw new Error('empty');
@@ -1065,8 +1066,8 @@ function testView(){
  <div class="row"><div style="flex:1"><label class="mute" for="n">שאלות אמריקאיות</label><input id="n" type="number" min="0" max="30" value="${T.n}" inputmode="numeric"></div>
  <div style="flex:1"><label class="mute" for="no">שאלות פתוחות</label><input id="no" type="number" min="0" max="15" value="${T.no}" inputmode="numeric"></div></div>
  ${(!hasAI()&&AIST==='app')?'<div class="card" style="background:color-mix(in srgb,#10b981 14%,transparent);margin:8px 0"><b>🤝 משתמש באפליקציית AI שבטלפון</b><p class="mute" style="margin:4px 0 8px">בלחיצה על "צור מבחן" תפתח את Gemini / ChatGPT (אם אין לך, תתבקש להתקין). רוצה בלי זה? הדבק מפתח חינמי פעם אחת.</p><button class="btn sec" id="gokey">הגדר מפתח AI</button></div>':''}
- <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button><div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cfd6e6"><label style="font-weight:800">📖 בחר כיתה וקבל קטע קריאה ומבחן עליו (גם אם משאירים את התיבה ריקה ולוחצים "צור מבחן")</label><select id="grade" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="א">כיתה א׳</option><option value="ב">כיתה ב׳</option><option value="ג">כיתה ג׳</option><option value="ד">כיתה ד׳</option><option value="ה">כיתה ה׳</option><option value="ו">כיתה ו׳</option><option value="ז">כיתה ז׳</option><option value="ח">כיתה ח׳</option><option value="ט">כיתה ט׳</option><option value="י">כיתה י׳</option><option value="י״א">כיתה י״א</option><option value="י״ב">כיתה י״ב</option></select><button class="btn" id="mkst" style="margin-top:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)">📖 תן לי קטע קריאה ומבחן</button></div></div>${savedCard()}`;
- $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;$('mkst').onclick=genStory;try{$('grade').value=S.grade||'ה'}catch(e){}
+ <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button><div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cfd6e6"><label style="font-weight:800">📖 בחר כיתה וקבל קטע קריאה ומבחן עליו (גם אם משאירים את התיבה ריקה ולוחצים "צור מבחן")</label><select id="grade" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="א">כיתה א׳</option><option value="ב">כיתה ב׳</option><option value="ג">כיתה ג׳</option><option value="ד">כיתה ד׳</option><option value="ה">כיתה ה׳</option><option value="ו">כיתה ו׳</option><option value="ז">כיתה ז׳</option><option value="ח">כיתה ח׳</option><option value="ט">כיתה ט׳</option><option value="י">כיתה י׳</option><option value="י״א">כיתה י״א</option><option value="י״ב">כיתה י״ב</option></select><select id="tlen" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="s">קטע קצר</option><option value="m">קטע בינוני</option><option value="l">קטע ארוך</option></select><button class="btn" id="mkst" style="margin-top:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)">📖 תן לי קטע קריאה ומבחן</button></div></div>${savedCard()}`;
+ $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;$('mkst').onclick=genStory;try{$('grade').value=S.grade||'ה';$('tlen').value=S.tlen||'m'}catch(e){}
  const hint=()=>{const t=$('mat').value.trim(),h=$('hint');if(!h)return;if(t.length<8){h.textContent='';return}const m=minNeeded(t),tot=(+$('n').value||0)+(+$('no').value||0);
   h.textContent='ככל שיש יותר חומר צריך יותר שאלות. בלחיצה על צור מבחן האפליקציה תמנה את כל נושאי החומר ותגיד כמה שאלות צריך כדי לכסות את כולם (הערכה כרגע: לפחות '+m+').';h.style.color=tot>=m?'var(--mute)':'var(--bad)'};
  ['mat','n','no'].forEach(i=>$(i).addEventListener('input',hint));hint();if($('gokey'))$('gokey').onclick=()=>{showSet=true;render()};
@@ -1259,7 +1260,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.35';window.VER=VER;function navDraw(){
+const VER='2.36';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
