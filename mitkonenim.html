@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.24 | קוד עדכון V-N5HT-Q3QW -->
+<!-- מתכוננים | גרסה 2.25 | קוד עדכון V-R2NN-9SAB -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -207,8 +207,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-N5HT-Q3QW";   /* קוד העדכון של גרסה 2.24. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.24";
+window.UPDATE_CODE = "V-R2NN-9SAB";   /* קוד העדכון של גרסה 2.25. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.25";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -443,8 +443,8 @@ async function aiProxy(prompt,files){
 }
 const hasAI=()=>!!(getKey()||getProxy());
 /* >>> מפתח Google (מתחיל ב-AIza) נכנס כאן, בין הגרשיים. כל עוד ריק: AI חינמי <<< */
-const DEFAULT_KEY='AQ.Ab8RN6K0rCiUwIncAQY-8uVb9o5wn-si09hnQiDKXONWxvH4oA';
-try{if(!localStorage.getItem('gkey_p224')){localStorage.removeItem('gkey');localStorage.setItem('gkey_p224','1')}}catch(e){}
+const DEFAULT_KEY='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';
+try{if(!localStorage.getItem('gkey_p225')){localStorage.removeItem('gkey');localStorage.setItem('gkey_p225','1')}}catch(e){}
 const getKey=()=>{try{return localStorage.getItem('gkey')||DEFAULT_KEY}catch(e){return DEFAULT_KEY}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
 async function pollOne(prompt,files,ms,model){
@@ -1198,7 +1198,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.24';window.VER=VER;function navDraw(){
+const VER='2.25';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
