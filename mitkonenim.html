@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.34 | קוד עדכון V-THUB-8FRR -->
+<!-- מתכוננים | גרסה 2.35 | קוד עדכון V-NEST-DQMC -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -209,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-THUB-8FRR";   /* קוד העדכון של גרסה 2.34. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.34";
+window.UPDATE_CODE = "V-NEST-DQMC";   /* קוד העדכון של גרסה 2.35. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.35";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -513,7 +513,7 @@ async function aiOA(key,prompt){
  const lim=gr?9000:30000;let last=new Error('http');
  for(const model of models){
   let res;
-  try{res=await fetch(url,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+key},body:JSON.stringify({model,temperature:.6,max_tokens:gr?6000:12000,messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:prompt.length>lim+3000?prompt.slice(0,lim)+'\n(החומר נחתך)':prompt}]})})}
+  try{res=await fetch(url,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+key},body:JSON.stringify({model,temperature:.6,max_tokens:gr?4000:12000,messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:prompt.length>lim+3000?prompt.slice(0,lim)+'\n(החומר נחתך)':prompt}]})})}
   catch(e){const x=new Error('net');x.detail=String(e&&e.message||e);throw x}
   if(res.status==401||res.status==403){const x=new Error('badkey');throw x}
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
@@ -1259,7 +1259,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.34';window.VER=VER;function navDraw(){
+const VER='2.35';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
