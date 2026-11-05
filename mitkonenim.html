@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.25 | קוד עדכון V-R2NN-9SAB -->
+<!-- מתכוננים | גרסה 2.26 | קוד עדכון V-9QH8-PP7G -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -207,8 +207,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-R2NN-9SAB";   /* קוד העדכון של גרסה 2.25. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.25";
+window.UPDATE_CODE = "V-9QH8-PP7G";   /* קוד העדכון של גרסה 2.26. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.26";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -495,9 +495,19 @@ async function aiGem(prompt,files){
  }
  const fx=new Error(last);if(lastD)fx.detail=lastD;throw fx;
 }
+let _GM=null;
+async function groqModels(key){
+ if(_GM)return _GM;
+ try{const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{authorization:'Bearer '+key}});
+  if(r.ok){const j=await r.json(),ids=(j.data||[]).filter(m=>m.active!==false).map(m=>m.id).filter(id=>!/whisper|guard|tts|playai|orpheus|embed|distil|compound|safeguard|vision|prompt/i.test(id));
+   const sc=id=>(/70b|120b|405b|maverick|scout|kimi|qwen3-32b|gpt-oss/i.test(id)?0:/versatile|instant|llama|qwen/i.test(id)?1:2);
+   ids.sort((a,b)=>sc(a)-sc(b));if(ids.length){_GM=ids.slice(0,6);return _GM}}
+  else if(r.status==401||r.status==403){const x=new Error('badkey');throw x}}catch(e){if(e&&e.message=='badkey')throw e}
+ return ['llama-3.3-70b-versatile','openai/gpt-oss-20b','llama-3.1-8b-instant'];
+}
 async function aiOA(key,prompt){
  const gr=/^gsk_/.test(key),url=gr?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
- const models=gr?['llama-3.3-70b-versatile','llama-3.1-8b-instant']:['openai/gpt-oss-20b:free','meta-llama/llama-3.3-70b-instruct:free','google/gemma-3-27b-it:free'];
+ const models=gr?await groqModels(key):['openai/gpt-oss-20b:free','meta-llama/llama-3.3-70b-instruct:free','google/gemma-3-27b-it:free'];
  const lim=gr?9000:30000;let last=new Error('http');
  for(const model of models){
   let res;
@@ -1004,7 +1014,7 @@ function testView(){
  <div class="row"><div style="flex:1"><label class="mute" for="n">שאלות אמריקאיות</label><input id="n" type="number" min="0" max="30" value="${T.n}" inputmode="numeric"></div>
  <div style="flex:1"><label class="mute" for="no">שאלות פתוחות</label><input id="no" type="number" min="0" max="15" value="${T.no}" inputmode="numeric"></div></div>
  ${(!hasAI()&&AIST==='app')?'<div class="card" style="background:color-mix(in srgb,#10b981 14%,transparent);margin:8px 0"><b>🤝 משתמש באפליקציית AI שבטלפון</b><p class="mute" style="margin:4px 0 8px">בלחיצה על "צור מבחן" תפתח את Gemini / ChatGPT (אם אין לך, תתבקש להתקין). רוצה בלי זה? הדבק מפתח חינמי פעם אחת.</p><button class="btn sec" id="gokey">הגדר מפתח AI</button></div>':''}
- <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad)">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button></div>${savedCard()}`;
+ <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button></div>${savedCard()}`;
  $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;
  const hint=()=>{const t=$('mat').value.trim(),h=$('hint');if(!h)return;if(t.length<8){h.textContent='';return}const m=minNeeded(t),tot=(+$('n').value||0)+(+$('no').value||0);
   h.textContent='ככל שיש יותר חומר צריך יותר שאלות. בלחיצה על צור מבחן האפליקציה תמנה את כל נושאי החומר ותגיד כמה שאלות צריך כדי לכסות את כולם (הערכה כרגע: לפחות '+m+').';h.style.color=tot>=m?'var(--mute)':'var(--bad)'};
@@ -1198,7 +1208,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.25';window.VER=VER;function navDraw(){
+const VER='2.26';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
