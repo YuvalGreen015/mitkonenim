@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.27 | קוד עדכון V-SFDV-F7BF -->
+<!-- מתכוננים | גרסה 2.28 | קוד עדכון V-XYXR-4BL9 -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -207,8 +207,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-SFDV-F7BF";   /* קוד העדכון של גרסה 2.27. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.27";
+window.UPDATE_CODE = "V-XYXR-4BL9";   /* קוד העדכון של גרסה 2.28. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.28";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -516,6 +516,7 @@ async function aiOA(key,prompt){
   if(res.status==401||res.status==403){const x=new Error('badkey');throw x}
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+  window.LASTRAW=model+': '+String(t).replace(/\s+/g,' ').slice(0,350);
   try{return jparse(t)}catch(e){last=e}
  }
  throw last;
@@ -934,6 +935,7 @@ async function gen(){
  T.loading=false;render();
 }
 function useLocal(text,n,no,e){
+ if(e&&!e.detail&&window.LASTRAW)e.detail='תשובת AI: '+window.LASTRAW;
  const total=n+no;
  try{
   const mn=minNeeded(text);
@@ -1233,7 +1235,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.27';window.VER=VER;function navDraw(){
+const VER='2.28';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
