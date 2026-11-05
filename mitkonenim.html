@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.28 | קוד עדכון V-XYXR-4BL9 -->
+<!-- מתכוננים | גרסה 2.30 | קוד עדכון V-B36R-PCDB -->
 <html lang="he" dir="rtl">
 <head>
+<script src="ai.js"></script>
 <meta charset="utf-8">
 <title>מתכוננים</title>
 <link rel="apple-touch-icon" data-img="apple-touch-icon.png">
@@ -207,8 +208,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-XYXR-4BL9";   /* קוד העדכון של גרסה 2.28. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.28";
+window.UPDATE_CODE = "V-B36R-PCDB";   /* קוד העדכון של גרסה 2.30. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.30";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -443,8 +444,8 @@ async function aiProxy(prompt,files){
 }
 const hasAI=()=>!!(getKey()||getProxy());
 /* >>> מפתח Google (מתחיל ב-AIza) נכנס כאן, בין הגרשיים. כל עוד ריק: AI חינמי <<< */
-const DEFAULT_KEY='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';
-try{if(!localStorage.getItem('gkey_p225')){localStorage.removeItem('gkey');localStorage.setItem('gkey_p225','1')}}catch(e){}
+const DEFAULT_KEY=String(window.AI_KEY||'').trim();/* המפתח נמצא בקובץ נפרד: ai.js */
+try{if(!localStorage.getItem('gkey_p230')){localStorage.removeItem('gkey');localStorage.setItem('gkey_p230','1')}}catch(e){}
 const getKey=()=>{try{return localStorage.getItem('gkey')||DEFAULT_KEY}catch(e){return DEFAULT_KEY}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
 async function pollOne(prompt,files,ms,model){
@@ -500,7 +501,7 @@ async function groqModels(key){
  if(_GM)return _GM;
  try{const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{authorization:'Bearer '+key}});
   if(r.ok){const j=await r.json(),ids=(j.data||[]).filter(m=>m.active!==false).map(m=>m.id).filter(id=>!/whisper|guard|tts|playai|orpheus|embed|distil|compound|safeguard|vision|prompt/i.test(id));
-   const sc=id=>(/70b|120b|405b|maverick|scout|kimi|qwen3-32b|gpt-oss/i.test(id)?0:/versatile|instant|llama|qwen/i.test(id)?1:2);
+   const sc=id=>(/llama-3\.3-70b/i.test(id)?-1:/70b|120b|405b|maverick|scout|kimi|qwen3-32b|gpt-oss/i.test(id)?0:/versatile|instant|llama|qwen/i.test(id)?1:2);
    ids.sort((a,b)=>sc(a)-sc(b));if(ids.length){_GM=ids.slice(0,6);return _GM}}
   else if(r.status==401||r.status==403){const x=new Error('badkey');throw x}}catch(e){if(e&&e.message=='badkey')throw e}
  return ['llama-3.3-70b-versatile','openai/gpt-oss-20b','llama-3.1-8b-instant'];
@@ -517,7 +518,7 @@ async function aiOA(key,prompt){
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
   const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
   window.LASTRAW=model+': '+String(t).replace(/\s+/g,' ').slice(0,350);
-  try{return jparse(t)}catch(e){last=e}
+  try{const pr=jparse(t);if((Array.isArray(pr)&&!pr.length)||(pr&&!Array.isArray(pr)&&!Object.keys(pr).length)){last=new Error('empty');continue}return pr}catch(e){last=e}
  }
  throw last;
 }
@@ -1235,7 +1236,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.28';window.VER=VER;function navDraw(){
+const VER='2.30';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
