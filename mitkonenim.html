@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.26 | קוד עדכון V-9QH8-PP7G -->
+<!-- מתכוננים | גרסה 2.27 | קוד עדכון V-SFDV-F7BF -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -207,8 +207,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-9QH8-PP7G";   /* קוד העדכון של גרסה 2.26. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.26";
+window.UPDATE_CODE = "V-SFDV-F7BF";   /* קוד העדכון של גרסה 2.27. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.27";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -597,7 +597,7 @@ async function genViaApp(text,n,no){
  const total=n+no;
  try{
   const r=await aiApp(ONEPROMPT(text,n,no));
-  let a=(Array.isArray(r)?r:r.questions||[]).filter(okQ);
+  let a=normQs(r).filter(okQ);
   const seen=new Set();a=a.filter(x=>seen.has(x.q)?false:(seen.add(x.q),true));
   while(a.length>total){const cnt={};a.forEach(x=>{cnt[x.t]=(cnt[x.t]||0)+1});const k=Object.keys(cnt).sort((p,q)=>cnt[q]-cnt[p])[0];if(cnt[k]<2)break;const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1)}
   if(a.length>total)a=a.slice(0,total);
@@ -850,6 +850,31 @@ async function aiQs(text,topics,idxs,n,no,extra){
  return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
 }
 const ENNOTE=t=>(SUBJ=='אנגלית'&&/\b(am|is|are|has|have)\b/i.test(t))?'\nחשוב מאוד (אנגלית): החומר עוסק במשפטי תיאור עם am/is/are ועם have/has. שאל אך ורק על המבנים האלה (בחירת הצורה הנכונה, משפט שלילי, שאלת כן/לא, השלמה). חובה לכתוב משפטים חדשים לגמרי משלך, עם נושאים, שמות ומילים אחרים. אסור להעתיק או לחזור על משפטים ודוגמאות מהחומר, אסור לשאול על נושאי דקדוק אחרים, והאנגלית תהיה פשוטה ברמת תלמיד כיתה ג-ה.':'';
+function normQs(r){
+ let arr=Array.isArray(r)?r:null;
+ if(!arr&&r&&typeof r=='object'){const ks=['questions','test','exam','items','quiz','data','שאלות'];for(const k of ks)if(Array.isArray(r[k])){arr=r[k];break}
+  if(!arr){for(const k in r)if(Array.isArray(r[k])&&r[k].length&&typeof r[k][0]=='object'){arr=r[k];break}}
+  if(!arr&&(r.q||r.question))arr=[r]}
+ return (arr||[]).map(x=>{
+  if(!x||typeof x!='object')return null;
+  const y=Object.assign({},x);
+  y.q=y.q||y.question||y.question_text||y.text||y['שאלה']||'';
+  let o=y.options||y.choices||y.answers||y.answer_options||y['תשובות'];
+  if(o&&!Array.isArray(o)&&typeof o=='object')o=Object.keys(o).sort().map(k=>o[k]);
+  if(Array.isArray(o))y.options=o.map(v=>typeof v=='object'&&v?String(v.text||v.t||v.option||''):String(v)).map(v=>v.replace(/^\s*[א-ד]['\u05f3]?\s*[.)\-:]\s*/,'').replace(/^\s*[A-Da-d]\s*[.)\-:]\s+/,''));
+  if(y.model==null)y.model=y.expected||y.expected_answer||y.correct_answer_text||(y.options?null:y.answer);
+  if(y.type==null||!/^(mc|open)$/.test(y.type))y.type=(Array.isArray(y.options)&&y.options.length>1)?'mc':'open';
+  if(y.type=='mc'&&Array.isArray(y.options)){
+   let a=y.answer!=null?y.answer:(y.correct!=null?y.correct:(y.correct_answer!=null?y.correct_answer:y.correct_option));
+   let i=-1;
+   if(typeof a=='number')i=a;
+   else if(typeof a=='string'){const t=a.trim();if(/^\d+$/.test(t))i=+t;else{const L='אבגד'.indexOf(t[0]);const E='abcd'.indexOf(t[0].toLowerCase());if(t.length<=2&&L>=0)i=L;else if(t.length<=2&&E>=0)i=E;else i=y.options.findIndex(v=>String(v).trim()==t)}}
+   if(i>=y.options.length&&i-1<y.options.length&&i>=1&&!x.__z)i=i; 
+   if(i<0||i>=y.options.length)return null;
+   y.answer=i}
+  y.why=y.why||y.explanation||y.reason||'';
+  return y}).filter(Boolean);
+}
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
 async function gen(){
  const text=$('mat').value.trim(),n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
@@ -862,7 +887,7 @@ async function gen(){
  try{
   if(text.length<2500&&total<=25){/* חומר קצר: בקשה אחת במקום שתיים (מהיר יותר) */
    const r=await aiJson(ONEPROMPT(text,n,no));
-   let a=(Array.isArray(r)?r:r.questions||[]).filter(okQ);const sn=new Set();a=a.filter(x=>sn.has(x.q)?false:(sn.add(x.q),true));
+   let a=normQs(r).filter(okQ);const sn=new Set();a=a.filter(x=>sn.has(x.q)?false:(sn.add(x.q),true));
    if(a.length>total)a=a.slice(0,total);if(!a.length)throw new Error('empty');
    T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
    if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
@@ -883,13 +908,13 @@ async function gen(){
   const rs=[];/* אחת אחרי השנייה (במקביל המכסה החינמית של Google נחסמת ורק קבוצה אחת מצליחה), עם ניסיון חוזר */
   for(const pl of plan){let st=null;for(let k=0;k<3&&!st;k++){try{st={status:'fulfilled',value:await aiQs(text,topics,pl.g,pl.mc,pl.no)}}catch(e){st=k==2?{status:'rejected',reason:e}:null;if(!st)await new Promise(z=>setTimeout(z,k?7000:3500))}}rs.push(st)}
   if(rs.every(x=>x.status=='rejected'))throw rs[0].reason;
-  let a=[];rs.forEach(x=>{if(x.status=='fulfilled'){const r=x.value;a=a.concat((Array.isArray(r)?r:r.questions||[]).filter(okQ))}});
+  let a=[];rs.forEach(x=>{if(x.status=='fulfilled'){const r=x.value;a=a.concat(normQs(r).filter(okQ))}});
   const cov=()=>new Set(a.map(x=>+x.t));
   let miss=all.filter(i=>!cov().has(i));
   for(let tries=0;miss.length&&tries<3;tries++){
    try{
     const r2=await aiQs(text,topics,miss,Math.ceil(miss.length*.6),Math.floor(miss.length*.4),'שאלה אחת בדיוק על כל נושא ברשימה.');
-    a=a.concat((Array.isArray(r2)?r2:r2.questions||[]).filter(okQ));
+    a=a.concat(normQs(r2).filter(okQ));
    }catch(e){await new Promise(z=>setTimeout(z,5000))}
    miss=all.filter(i=>!cov().has(i));
   }
@@ -1208,7 +1233,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.26';window.VER=VER;function navDraw(){
+const VER='2.27';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
