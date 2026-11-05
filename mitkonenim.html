@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.21 | קוד עדכון V-ZLV2-4SSF -->
+<!-- מתכוננים | גרסה 2.24 | קוד עדכון V-N5HT-Q3QW -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -207,8 +207,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-ZLV2-4SSF";   /* קוד העדכון של גרסה 2.21. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.21";
+window.UPDATE_CODE = "V-N5HT-Q3QW";   /* קוד העדכון של גרסה 2.24. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.24";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -443,7 +443,8 @@ async function aiProxy(prompt,files){
 }
 const hasAI=()=>!!(getKey()||getProxy());
 /* >>> מפתח Google (מתחיל ב-AIza) נכנס כאן, בין הגרשיים. כל עוד ריק: AI חינמי <<< */
-const DEFAULT_KEY='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';
+const DEFAULT_KEY='AQ.Ab8RN6K0rCiUwIncAQY-8uVb9o5wn-si09hnQiDKXONWxvH4oA';
+try{if(!localStorage.getItem('gkey_p224')){localStorage.removeItem('gkey');localStorage.setItem('gkey_p224','1')}}catch(e){}
 const getKey=()=>{try{return localStorage.getItem('gkey')||DEFAULT_KEY}catch(e){return DEFAULT_KEY}};
 const setKey=k=>{try{k?localStorage.setItem('gkey',k):localStorage.removeItem('gkey')}catch(e){}};
 async function pollOne(prompt,files,ms,model){
@@ -818,6 +819,7 @@ function localTest(text,n,no){
     if(!isOpen&&key)q=mcOf(s,key,pool,allW);
     if(!q)q=openFill(s)}
   }
+  if(q&&q.type=='mc'&&(!q.options||q.options.some(o=>String(o).trim().length<2)||String(q.q).trim().length<6))q=null;
   if(q&&!out.some(z=>z.q==q.q))out.push(q);
  }
  return out;
@@ -1196,7 +1198,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.21';window.VER=VER;function navDraw(){
+const VER='2.24';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
