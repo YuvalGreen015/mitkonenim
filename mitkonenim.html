@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.41 | קוד עדכון V-5YT6-MSYV -->
+<!-- מתכוננים | גרסה 2.43 | קוד עדכון V-8YB2-AY6S -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -209,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-5YT6-MSYV";   /* קוד העדכון של גרסה 2.41. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.41";
+window.UPDATE_CODE = "V-8YB2-AY6S";   /* קוד העדכון של גרסה 2.43. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.43";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -319,6 +319,7 @@ let saveWarned=0;
 const save=()=>{try{exSyncSoon()}catch(e){}try{localStorage.setItem('study',JSON.stringify(S))}catch(e){if(!saveWarned){saveWarned=1;try{toast('לא הצלחתי לשמור (אין מקום בדפדפן או מצב פרטי). הנתונים עלולים להימחק.')}catch(x){}}}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mx=s=>esc(s).replace(/[\d(√][\d\s.,+\-×÷*\/=():²³√%]*[\d)²³%]/g,m=>/[+\-×÷*\/=]/.test(m)?'<span dir="ltr" style="unicode-bidi:isolate">'+m+'</span>':m);
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function render(){
  document.body.classList.add('tbg');
@@ -860,6 +861,52 @@ async function aiQs(text,topics,idxs,n,no,extra){
  return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
 }
 const ENNOTE=t=>(!window._stG&&SUBJ=='אנגלית'&&/\b(am|is|are|has|have)\b/i.test(t))?'\nחשוב מאוד (אנגלית): החומר עוסק במשפטי תיאור עם am/is/are ועם have/has. שאל אך ורק על המבנים האלה (בחירת הצורה הנכונה, משפט שלילי, שאלת כן/לא, השלמה). חובה לכתוב משפטים חדשים לגמרי משלך, עם נושאים, שמות ומילים אחרים. אסור להעתיק או לחזור על משפטים ודוגמאות מהחומר, אסור לשאול על נושאי דקדוק אחרים, והאנגלית תהיה פשוטה ברמת תלמיד כיתה ג-ה.':'';
+/* בדיקת תשובות חשבון: מחשבים תרגילים פשוטים בעצמנו ומתקנים תשובה שגויה של ה-AI */
+const _gcd=(a,b)=>{a=a<0n?-a:a;b=b<0n?-b:b;while(b){[a,b]=[b,a%b]}return a||1n};
+const _fr=(n,d)=>{if(d<0n){n=-n;d=-d}const g=_gcd(n,d);return{n:n/g,d:d/g}};
+function _num(t){
+ let m;
+ if(m=/^(\d+)\s+(\d+)\/(\d+)$/.exec(t)){const w=BigInt(m[1]),a=BigInt(m[2]),b=BigInt(m[3]);if(b==0n)return null;return _fr(w*b+a,b)}
+ if(m=/^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/.exec(t)){const A=_dec(m[1]),B=_dec(m[2]);if(B.n==0n)return null;return _fr(A.n*B.d,A.d*B.n)}
+ if(m=/^\d+(?:\.\d+)?$/.exec(t))return _dec(t);
+ return null;
+}
+function _dec(t){const p=t.split('.');if(p.length==1)return _fr(BigInt(p[0]),1n);return _fr(BigInt(p[0]+p[1]),10n**BigInt(p[1].length))}
+function _calc(src){
+ const s=src.replace(/−/g,'-').replace(/\*/g,'×').replace(/(\d)\s*:\s*(\d)/g,'$1÷$2');
+ const tk=[];const re=/\s*(\d+\s+\d+\/\d+|\d+(?:\.\d+)?\/\d+(?:\.\d+)?|\d+(?:\.\d+)?|[+\-×÷()])/y;let m,pos=0;
+ while(pos<s.length){re.lastIndex=pos;m=re.exec(s);if(!m){if(/^\s*$/.test(s.slice(pos)))break;return null}tk.push(m[1]);pos=re.lastIndex}
+ let i=0;
+ const prim=()=>{const t=tk[i];if(t==null)throw 0;if(t=='('){i++;const v=add();if(tk[i]!=')')throw 0;i++;return v}if(t=='-'){i++;const v=prim();return{n:-v.n,d:v.d}}const v=_num(t);if(!v)throw 0;i++;return v};
+ const mul=()=>{let v=prim();while(tk[i]=='×'||tk[i]=='÷'){const o=tk[i++],w=prim();if(o=='×')v=_fr(v.n*w.n,v.d*w.d);else{if(w.n==0n)throw 0;v=_fr(v.n*w.d,v.d*w.n)}}return v};
+ const add=()=>{let v=mul();while(tk[i]=='+'||tk[i]=='-'){const o=tk[i++],w=mul();v=o=='+'?_fr(v.n*w.d+w.n*v.d,v.d*w.d):_fr(v.n*w.d-w.n*v.d,v.d*w.d)}return v};
+ try{const v=add();if(i!=tk.length)return null;return v}catch(e){return null}
+}
+function _fmt(v,dec){
+ if(v.d==1n)return String(v.n);
+ if(dec){const x=Number(v.n)/Number(v.d);return String(+x.toFixed(6))}
+ return v.n+'/'+v.d;
+}
+function mathFix(y){
+ try{
+  const q=String(y.q||'');
+  const re=/[\d(][\d\s.,+\-−×÷*:\/()]*[\d)]/g;let m,found=null;
+  while((m=re.exec(q))){if(/[+\-−×÷*:()]/.test(m[0])||/\d\/\d/.test(m[0])){if(/[+\-−×÷*:]/.test(m[0])){found=m;break}}}
+  if(!found)return y;
+  const rest=(q.slice(0,found.index)+' '+q.slice(found.index+found[0].length)).replace(/[\s.:?,!"']+/g,' ').trim();
+  if(!/^((חשב|חשבו|פתור|פתרו|מצא|מצאו|מה|מהו|מהי|הוא|היא|התוצאה|הערך|של|התרגיל|תרגיל|כמה|זה|שווה|את|הבא|הבאה|בצע|בצעו|הפעולה|הביטוי|ביטוי|סכום|הסכום|ההפרש|המכפלה|המנה)\s*)*$/.test(rest))return y;
+  const v=_calc(found[0].trim());if(!v)return y;
+  const dec=/\d\.\d/.test(found[0]);
+  const same=t=>{const w=_num(String(t).replace(/[,،]/g,'.').trim());return w&&w.n==v.n&&w.d==v.d};
+  if(y.type=='open'){if(!same(y.model)){y.model=_fmt(v,dec);y.why=''}return y}
+  if(y.type=='mc'&&Array.isArray(y.options)){
+   const hit=y.options.map((o,i)=>same(o)?i:-1).filter(i=>i>=0);
+   if(hit.length!=1)return null;
+   if(y.answer!==hit[0]){y.answer=hit[0];y.why='התשובה: '+y.options[hit[0]]}
+   return y}
+  return y;
+ }catch(e){return y}
+}
 function deTex(x){
  if(typeof x!='string'||!/[\\$]/.test(x))return x;
  let t=x;
@@ -893,7 +940,7 @@ function normQs(r){
    y.answer=i}
   y.why=y.why||y.explanation||y.reason||'';
   y.q=deTex(y.q);y.why=deTex(y.why);if(y.model!=null)y.model=deTex(String(y.model));if(Array.isArray(y.options))y.options=y.options.map(deTex);
-  return y}).filter(Boolean);
+  return mathFix(y)}).filter(Boolean);
 }
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
 async function genStory(){
@@ -1083,9 +1130,9 @@ function testView(){
   if(q.type=='open'){
    const f=T.fb,math=SUBJ=='מתמטיקה'&&/^[\d\s.,\/\-]+$/.test(String(q.model).trim()),dis=f?'disabled':'';
    let fbh='';
-   if(f&&f.shown){fbh=`<div class="tmsg tneu" style="text-align:right"><b>תשובה מצופה:</b> ${esc(String(q.model))}</div><p style="font-weight:700;margin:12px 0 0">איך הלך לך?</p><div class="trow"><button class="tbtn r" data-s="0">לא ידעתי</button><button class="tbtn y" data-s="0.5">חלקית</button><button class="tbtn" data-s="1">ידעתי</button></div>`}
-   else if(f){const c=f.score==1?'tok':f.score==0?'tbad':'tneu';fbh=`<div class="tmsg ${c}">${f.unchecked?'':f.score==1?'נכון! ✓ ':f.score==.5?'נכון חלקית ':(/^כמעט/.test(f.text)?'':'לא נכון ')}${esc(f.text)}</div><p class="mute" style="color:#5d6b85"><b>תשובה מצופה:</b> ${esc(String(q.model))}</p><div class="trow"><button class="tbtn" id="nx">${last}</button></div>`}
-   v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${esc(String(q.q))}</div>
+   if(f&&f.shown){fbh=`<div class="tmsg tneu" style="text-align:right"><b>תשובה מצופה:</b> ${mx(String(q.model))}</div><p style="font-weight:700;margin:12px 0 0">איך הלך לך?</p><div class="trow"><button class="tbtn r" data-s="0">לא ידעתי</button><button class="tbtn y" data-s="0.5">חלקית</button><button class="tbtn" data-s="1">ידעתי</button></div>`}
+   else if(f){const c=f.score==1?'tok':f.score==0?'tbad':'tneu';fbh=`<div class="tmsg ${c}">${f.unchecked?'':f.score==1?'נכון! ✓ ':f.score==.5?'נכון חלקית ':(/^כמעט/.test(f.text)?'':'לא נכון ')}${mx(f.text)}</div><p class="mute" style="color:#5d6b85"><b>תשובה מצופה:</b> ${mx(String(q.model))}</p><div class="trow"><button class="tbtn" id="nx">${last}</button></div>`}
+   v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${mx(String(q.q))}</div>
    <label>✏️ דרך הפתרון (לא חובה)</label><textarea id="ow" rows="2" placeholder="אפשר להשאיר ריק" ${dis}>${esc(T.way||'')}</textarea>
    <label>🎯 תשובה</label>${math?`<input id="oa" class="ta" inputmode="none" readonly placeholder="לדוגמה 1/2" value="${esc(T.ans)}">${f?'':'<div class="tkp" id="kp"></div>'}`:`<textarea id="oa" rows="3" placeholder="כתוב את תשובתך" ${dis}>${esc(T.ans)}</textarea>`}
    ${f?'':'<div class="trow"><button class="tbtn" id="gr">בדוק ✨</button><button class="tbtn sec" id="sk">דלג</button></div>'}${fbh}</div></div>`;
@@ -1096,9 +1143,9 @@ function testView(){
    else{$('gr').onclick=()=>gradeOpen(q);$('sk').onclick=()=>{T.skipped=(T.skipped||0)+1;next()}}
    return}
   const ans=+q.answer,p=T.pick;
-  v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${esc(String(q.q))}</div><div class="topts">
-  ${q.options.map((o,i)=>`<button class="topt ${p!==null?(i===ans?'right':i===p?'wrong':''):''}" data-i="${i}" ${p!==null?'disabled':''}><span class="tl">${'אבגד'[i]||i+1}</span>${esc(String(o))}</button>`).join('')}</div>
-  ${p!==null?`<div class="tmsg ${p===ans?'tok':'tbad'}">${p===ans?'נכון! ✓':'לא נכון'}${q.why?' · '+esc(String(q.why)):''}</div><div class="trow"><button class="tbtn" id="nx">${last}</button></div>`:''}</div></div>`;
+  v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${mx(String(q.q))}</div><div class="topts">
+  ${q.options.map((o,i)=>`<button class="topt ${p!==null?(i===ans?'right':i===p?'wrong':''):''}" data-i="${i}" ${p!==null?'disabled':''}><span class="tl">${'אבגד'[i]||i+1}</span>${mx(String(o))}</button>`).join('')}</div>
+  ${p!==null?`<div class="tmsg ${p===ans?'tok':'tbad'}">${p===ans?'נכון! ✓':'לא נכון'}${q.why?' · '+mx(String(q.why)):''}</div><div class="trow"><button class="tbtn" id="nx">${last}</button></div>`:''}</div></div>`;
   v.querySelectorAll('.topt').forEach(b=>b.onclick=()=>{T.pick=+b.dataset.i;const ok=T.pick===ans;if(ok)T.score++;render();if(ok)confetti()});
   if(p!==null)$('nx').onclick=next;
   return}
@@ -1301,7 +1348,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.41';window.VER=VER;function navDraw(){
+const VER='2.43';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
