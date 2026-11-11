@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.43 | קוד עדכון V-8YB2-AY6S -->
+<!-- מתכוננים | גרסה 2.44 | קוד עדכון V-FCYX-F56F -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -203,14 +203,14 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 .kc .kmsg{margin-top:12px;font-weight:800;font-size:14px;text-align:center;min-height:18px;text-shadow:0 1px 0 rgba(0,0,0,.25);color:#fff}
 #gear{width:42px;height:42px;padding:0;border:0;border-radius:11px;background:#fff;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.22);line-height:0}#gear svg{width:30px;height:34px;display:block}#gear:active{transform:scale(.94)}
 </style>
-<script src="01_images.js"></script>
+<script src="images.js"></script>
 <script>
 /* ---- מתכוננים: ספירה ב-Firebase. ההגדרה של Firebase נכנסת רק בשורה FB_CONFIG למטה. ---- */
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-8YB2-AY6S";   /* קוד העדכון של גרסה 2.43. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.43";
+window.UPDATE_CODE = "V-FCYX-F56F";   /* קוד העדכון של גרסה 2.44. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.44";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -285,7 +285,7 @@ window.ANALYTICS_URL = "";
 })();
 
 </script>
-<script>(function(){/* אם קובץ התמונות לא נטען: מנסים שמות אחרים */["images.js","img.js"].forEach(function(n){if(!(window.IMG&&window.IMG["tile-1.jpg"]))document.write('<script src="'+n+'"><\/script>')})})();</script>
+<script>(function(){/* אם קובץ התמונות לא נטען: מנסים שמות אחרים */["01_images.js","img.js"].forEach(function(n){if(!(window.IMG&&window.IMG["tile-1.jpg"]))document.write('<script src="'+n+'"><\/script>')})})();</script>
 <script>
 window.IMG_VER=window.IMG_VER||'1.96';window.IMG=window.IMG||{};
 ['tile-exams.jpg','apple-touch-icon.png','favicon.png','icon-192.png','icon-512.png','logo.jpg','subj-english.jpg','subj-hebrew.jpg','subj-history.jpg','subj-math.jpg','subj-science.jpg','subj-tanakh.jpg','tile-1.jpg','tile-2.jpg','tile-4.jpg','tile-5.jpg','tile-podcast.jpg','trophy.png','upload-file.png','upload-image.png','upload-word.png'].forEach(function(n){if(!IMG[n]&&!/^tile-(exams|homework)/.test(n))IMG[n]='images/'+n});
@@ -319,6 +319,7 @@ let saveWarned=0;
 const save=()=>{try{exSyncSoon()}catch(e){}try{localStorage.setItem('study',JSON.stringify(S))}catch(e){if(!saveWarned){saveWarned=1;try{toast('לא הצלחתי לשמור (אין מקום בדפדפן או מצב פרטי). הנתונים עלולים להימחק.')}catch(x){}}}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isTopic=t=>{t=String(t||'').trim();return t.length>=3&&t.length<=40&&!/[\n.!?:;]/.test(t)&&t.split(/\s+/).length<=6};
 const mx=s=>esc(s).replace(/[\d(√][\d\s.,+\-×÷*\/=():²³√%]*[\d)²³%]/g,m=>/[+\-×÷*\/=]/.test(m)?'<span dir="ltr" style="unicode-bidi:isolate">'+m+'</span>':m);
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function render(){
@@ -619,17 +620,17 @@ async function genViaApp(text,n,no){
   T.err=(e&&e.message=='cancel')?'':(e&&e.message=='parse'||e&&e.message=='empty')?'לא קיבלתי שאלות תקינות מה-AI. נסה שוב.':'משהו השתבש: '+((e&&e.message)||'?')}
  T.loading=false;render();
 }
-const aiErr=e=>{const m=({nokey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',badkey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',net:'לא הצלחתי להתחבר לשרת של Google. ייתכן שאין אינטרנט, או שסינון/הדפדפן חוסמים את הכתובת.',limit:'חרגת ממכסת הבקשות החינמית. נסה שוב עוד דקה.',cancel:'ביטלת את הבקשה.'}[e&&e.message])||'לא הצלחתי ליצור מבחן. נסה שוב.';return(e&&e.message=='nokey'||e&&e.message=='badkey')?m:m+' [פירוט: '+((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'')+']'};
+const aiErr=e=>{const m=({nokey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',badkey:'ה-AI לא זמין כרגע. נסה שוב עוד רגע.',net:'לא הצלחתי להתחבר לשרת ה-AI. ייתכן שאין אינטרנט, או שסינון/הדפדפן חוסמים את הכתובת.',limit:'חרגת ממכסת הבקשות החינמית. נסה שוב עוד דקה.',cancel:'ביטלת את הבקשה.'}[e&&e.message])||'לא הצלחתי ליצור מבחן. נסה שוב.';return(e&&e.message=='nokey'||e&&e.message=='badkey')?m:m+' [פירוט: '+((e&&e.message)||'?')+(e&&e.detail?' - '+e.detail:'')+']'};
 
 /* ---- מבחנים שמורים (ללמוד גם בלי אינטרנט) ---- */
 function saveTest(qs,src){T.src=src||'';T.why='';try{window.trackFeature&&trackFeature(src=='ai'?'test_made_ai':'test_made_local')}catch(e){}
  S.tests=S.tests||{};const l=S.tests[SUBJ]=S.tests[SUBJ]||[];
- l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs))});
+ l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs)),story:T.story||''});
  if(l.length>10)l.length=10;save();
 }
 function startSaved(id){
  const t=((S.tests||{})[SUBJ]||[]).find(x=>x.id==id);if(!t)return;
- T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs));T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
+ T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs));T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
 }
 function savedCard(){
  const l=(S.tests||{})[SUBJ]||[];if(!l.length)return '';
@@ -897,11 +898,13 @@ function mathFix(y){
   if(!/^((חשב|חשבו|פתור|פתרו|מצא|מצאו|מה|מהו|מהי|הוא|היא|התוצאה|הערך|של|התרגיל|תרגיל|כמה|זה|שווה|את|הבא|הבאה|בצע|בצעו|הפעולה|הביטוי|ביטוי|סכום|הסכום|ההפרש|המכפלה|המנה)\s*)*$/.test(rest))return y;
   const v=_calc(found[0].trim());if(!v)return y;
   const dec=/\d\.\d/.test(found[0]);
-  const same=t=>{const w=_num(String(t).replace(/[,،]/g,'.').trim());return w&&w.n==v.n&&w.d==v.d};
+  const rd=t=>{t=String(t).replace(/[,،]/g,'.').trim();const pm=/^(\d+(?:\.\d+)?)\s*%$/.exec(t);if(pm){const w=_num(pm[1]);return w?_fr(w.n,w.d*100n):null}return _num(t)};
+  const same=t=>{const w=rd(t);return w&&w.n==v.n&&w.d==v.d};
   if(y.type=='open'){if(!same(y.model)){y.model=_fmt(v,dec);y.why=''}return y}
   if(y.type=='mc'&&Array.isArray(y.options)){
    const hit=y.options.map((o,i)=>same(o)?i:-1).filter(i=>i>=0);
-   if(hit.length!=1)return null;
+   if(hit.length>1)return null;
+   if(hit.length==0){return y.options.some(o=>rd(o)==null)?y:null}
    if(y.answer!==hit[0]){y.answer=hit[0];y.why='התשובה: '+y.options[hit[0]]}
    return y}
   return y;
@@ -962,7 +965,7 @@ async function genStory(){
  S.mats[SUBJ]=st;$('mat').value=st;
  window._stMode=1;window._stG=gr;
  try{await gen()}finally{window._stG='';S.mats[SUBJ]='';save()}
- if(T.qs&&T.qs.length){T.story=st;T.reading=true;T.started=false;render()}
+ if(T.qs&&T.qs.length){T.story=st;T.reading=true;T.started=false;try{const l0=(S.tests||{})[SUBJ];if(l0&&l0[0]){l0[0].story=st;save()}}catch(e){}render()}
 }
 const CURR=(gr,sub)=>{
  const L='אבגדהוזחט'.indexOf(gr),hi=gr=='י'||gr=='י״א'||gr=='י״ב';
@@ -983,7 +986,7 @@ async function gen(){
  if(window._stMode)window._stMode=0;else{T.story='';T.reading=false}
  const text=$('mat').value.trim(),n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
  S.mats[SUBJ]=text;T.n=n;T.no=no;save();
- if($('grade')&&text.length>=3&&text.length<60&&!/\n/.test(text)&&SUBJ!='עברית'&&!(SUBJ=='אנגלית'&&/^[A-Za-z .,'-]+$/.test(text))){await genCurr(text);return}
+ if($('grade')&&isTopic(text)&&!(SUBJ=='אנגלית'&&/^[A-Za-z .,'-]+$/.test(text))){await genCurr(text);return}
  if(text.length<8){if($('grade')){await(SUBJ=='עברית'?genStory():genCurr());return}T.err='כתוב חומר ללימוד (אפשר גם משפט אחד).';render();return}
  if(n+no<1){T.err='בחר לפחות שאלה אחת.';render();return}
  T.loading=true;T.err='';render();
@@ -1078,11 +1081,14 @@ function confetti(force){if(S.cfOn===false&&!force)return;const ch=(CFS[S.cfStyl
 const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
 function fracCheck(ans,model){
  if(SUBJ!='מתמטיקה')return null;
- const P=x=>{const m=String(x).replace(/\s/g,'').match(/^(-?\d+)\/(\d+)$/);return m?[+m[1],+m[2]]:null};
+ const P=x=>{x=String(x).trim();let m=x.match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+  if(m){const w=+m[1],n=+m[2],d=+m[3];if(!d)return null;const sg=(w<0||/^-/.test(x))?-1:1;return[sg*(Math.abs(w)*d+n),d,gcd(n,d)]}
+  m=x.replace(/\s/g,'').match(/^(-?\d+)\/(\d+)$/);return m&&+m[2]?[+m[1],+m[2],gcd(+m[1],+m[2])]:null};
  const a=P(ans),b=P(model);
  if(!a||!b||!a[1]||!b[1])return null;
- const k=gcd(a[0],a[1]);
+ if(!b[0]&&!a[0])return null;
  if(a[0]*b[1]!==b[0]*a[1])return{score:0,text:'הערך שגוי.'};
+ const k=a[2];
  if(k>1)return{score:0,text:'כמעט! אפשר לצמצם: '+(a[0]/k)+'/'+(a[1]/k)+'. תשובה שלא צומצמה לא נחשבת נכונה.'};
  return{score:1,text:'נכון, וגם צומצם.'};
 }
@@ -1156,7 +1162,7 @@ function testView(){
  <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button>${(SUBJ=='עברית'||SUBJ=='אנגלית')?`<div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cfd6e6"><label style="font-weight:800">📖 קטע קריאה ומבחן עליו${SUBJ=='אנגלית'?' (באנגלית)':''}</label><select id="tlen" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="s">קטע קצר</option><option value="m">קטע בינוני</option><option value="l">קטע ארוך</option></select><label class="mute" for="qn" style="display:block;margin-top:10px">מספר שאלות</label><input id="qn" type="number" min="1" max="20" value="8" inputmode="numeric" style="width:100%;margin-top:4px"><button class="btn" id="mkst" style="margin-top:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)">📖 תן לי קטע קריאה ומבחן</button></div>`:''}</div>${savedCard()}`;
  $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;if($('mkst'))$('mkst').onclick=genStory;try{$('grade').value=S.grade||'ה';if($('tlen'))$('tlen').value=S.tlen||'m';if($('qn'))$('qn').value=S.qn||8}catch(e){}$('grade').onchange=()=>{S.grade=$('grade').value;save()};
  const hint=()=>{const t=$('mat').value.trim(),h=$('hint');if(!h)return;if(t.length<8){h.textContent='אפשר להשאיר ריק (שאלות לפי תוכנית הכיתה), או לכתוב רק נושא קצר, למשל "בראשית פרק א", והאפליקציה תכין שאלות עליו.';h.style.color='var(--mute)';return}
-  if(t.length<60&&!/\n/.test(t)&&SUBJ!='עברית'){h.textContent='נושא קצר: ה-AI יכין שאלות לפי מה שהוא יודע על הנושא (ייתכנו טעויות). לחומר מדויק של הספר, הדביקו את הטקסט.';h.style.color='var(--mute)';return}const m=minNeeded(t),tot=(+$('n').value||0)+(+$('no').value||0);
+  if(isTopic(t)){h.textContent='נושא קצר: ה-AI יכין שאלות לפי מה שהוא יודע על הנושא (ייתכנו טעויות). לחומר מדויק של הספר, הדביקו את הטקסט.';h.style.color='var(--mute)';return}const m=minNeeded(t),tot=(+$('n').value||0)+(+$('no').value||0);
   h.textContent='ככל שיש יותר חומר צריך יותר שאלות. בלחיצה על צור מבחן האפליקציה תמנה את כל נושאי החומר ותגיד כמה שאלות צריך כדי לכסות את כולם (הערכה כרגע: לפחות '+m+').';h.style.color=tot>=m?'var(--mute)':'var(--bad)'};
  ['mat','n','no'].forEach(i=>$(i).addEventListener('input',hint));hint();if($('gokey'))$('gokey').onclick=()=>{showSet=true;render()};
  addUpload('mat');
@@ -1348,7 +1354,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.43';window.VER=VER;function navDraw(){
+const VER='2.44';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1673,7 +1679,7 @@ async function readFileText(f){
  }
  throw new Error('type');
 }
-const upErr=e=>({olddoc:'זה קובץ Word ישן (doc). שמור אותו כ-docx או כ-PDF ונסה שוב.',big:'הקובץ גדול מדי (מעל 15MB).',type:'סוג הקובץ לא נתמך. אפשר PDF, תמונה, txt או docx.',docx:'לא הצלחתי לקרוא את קובץ ה-Word.',read:'לא הצלחתי לפתוח את הקובץ.'}[e&&e.message])||aiErr(e);
+const upErr=e=>({nofiles:'המפתח של ה-AI קורא רק טקסט, לא תמונות ו-PDF. שמור את החומר כקובץ Word (docx) או txt, או העתק את הטקסט והדבק אותו.',olddoc:'זה קובץ Word ישן (doc). שמור אותו כ-docx או כ-PDF ונסה שוב.',big:'הקובץ גדול מדי (מעל 15MB).',type:'סוג הקובץ לא נתמך. אפשר PDF, תמונה, txt או docx.',docx:'לא הצלחתי לקרוא את קובץ ה-Word.',read:'לא הצלחתי לפתוח את הקובץ.'}[e&&e.message])||aiErr(e);
 function addUpload(id){
  const ta=$(id);if(!ta)return;
  ta.insertAdjacentHTML('afterend',`<button type="button" class="upb" id="upb-${id}">📎 העלה קובץ או תמונה</button><div class="upm" id="upm-${id}"></div>`);
