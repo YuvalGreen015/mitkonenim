@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.44 | קוד עדכון V-FCYX-F56F -->
+<!-- מתכוננים | גרסה 2.45 | קוד עדכון V-HECV-GXG2 -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -209,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-FCYX-F56F";   /* קוד העדכון של גרסה 2.44. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.44";
+window.UPDATE_CODE = "V-HECV-GXG2";   /* קוד העדכון של גרסה 2.45. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.45";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -604,7 +604,7 @@ function aiAppDlg(prompt,files){
  });
 }
 const aiJsonA=(p,f)=>aiJson(p,f);
-const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._cG?` אין חומר לימוד מהתלמיד: צור שאלות תרגול לפי תוכנית הלימודים של כיתה ${window._cG} במקצוע ${SUBJ} בישראל, על הנושאים: ${window._cH}. רמת הקושי מתאימה בדיוק לכיתה (לא קלה מדי ולא קשה מדי), השאלות מגוונות ולא חוזרות על עצמן, והן כוללות את סוגי התרגילים האופייניים לכיתה. אם אינך בטוח בעובדה, אל תשאל עליה: שאל רק על עובדות מדויקות.${SUBJ=='אנגלית'?' שאלת תרגום כוללת את המשפט המלא בשאלה (למשל: תרגם לעברית: Dad walked to the shop), ובשאלה מעברית לאנגלית האפשרויות באנגלית.':''} אם יש מתמטיקה: כתוב את התרגילים עם המספרים בתוך השאלה.`:''}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''} כתוב נוסחאות ושברים בטקסט פשוט בלבד (למשל 2/5 או 3 2/5 או 7×8), בלי LaTeX ובלי סימני \\ או $.\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
+const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. בכל שאלה פתוחה, שדה model חייב לענות בדיוק על מה שהשאלה שואלת (אם נשאל על גזירות, התשובה היא הגזירות עצמן ולא נושא קרוב אחר), ולכלול את כל הפרטים שהשאלה מבקשת. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._cG?` אין חומר לימוד מהתלמיד: צור שאלות תרגול לפי תוכנית הלימודים של כיתה ${window._cG} במקצוע ${SUBJ} בישראל, על הנושאים: ${window._cH}. רמת הקושי מתאימה בדיוק לכיתה (לא קלה מדי ולא קשה מדי), השאלות מגוונות ולא חוזרות על עצמן, והן כוללות את סוגי התרגילים האופייניים לכיתה. אם אינך בטוח בעובדה, אל תשאל עליה: שאל רק על עובדות מדויקות.${SUBJ=='אנגלית'?' שאלת תרגום כוללת את המשפט המלא בשאלה (למשל: תרגם לעברית: Dad walked to the shop), ובשאלה מעברית לאנגלית האפשרויות באנגלית.':''} אם יש מתמטיקה: כתוב את התרגילים עם המספרים בתוך השאלה.`:''}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''} כתוב נוסחאות ושברים בטקסט פשוט בלבד (למשל 2/5 או 3 2/5 או 7×8), בלי LaTeX ובלי סימני \\ או $.\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
 async function genViaApp(text,n,no){
  const total=n+no;
  try{
@@ -614,7 +614,7 @@ async function genViaApp(text,n,no){
   while(a.length>total){const cnt={};a.forEach(x=>{cnt[x.t]=(cnt[x.t]||0)+1});const k=Object.keys(cnt).sort((p,q)=>cnt[q]-cnt[p])[0];if(cnt[k]<2)break;const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1)}
   if(a.length>total)a=a.slice(0,total);
   if(!a.length)throw new Error('empty');
-  T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
+  a=await verifyQs(a);T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
   if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
  }catch(e){if(e&&e.message=='local'){AIST='search';useLocal(text,n,no,e);return}
   T.err=(e&&e.message=='cancel')?'':(e&&e.message=='parse'||e&&e.message=='empty')?'לא קיבלתי שאלות תקינות מה-AI. נסה שוב.':'משהו השתבש: '+((e&&e.message)||'?')}
@@ -919,6 +919,25 @@ function deTex(x){
   .replace(/\\[()\[\]]/g,'').replace(/\\left|\\right|\\[(),;:!\[\]]/g,m=>/[()]/.test(m[1]||'')?m[1]:'').replace(/\$+/g,'').replace(/\\/g,'');
  return t.replace(/\s{2,}/g,' ').trim();
 }
+/* בדיקה שהתשובה המצופה אכן עונה על השאלה (פתוחות, לא במתמטיקה: שם mathFix) */
+async function verifyQs(a){
+ try{
+  if(SUBJ=='מתמטיקה'||!hasAI())return a;
+  const idx=[];a.forEach((x,i)=>{if(x.type=='open'&&x.model&&!x.exact)idx.push(i)});
+  if(!idx.length)return a;
+  const items=idx.map(i=>({i,q:String(a[i].q),model:String(a[i].model)}));
+  const r=await aiJson('אתה בודק שאלות מבחן במקצוע '+SUBJ+'. לכל שאלה פתוחה בדוק אם "model" (התשובה המצופה) עונה בדיוק על מה שהשאלה שואלת: אם השאלה על גזירות, התשובה צריכה להיות גזירות, ולא על נושא קרוב אחר (למשל התנגדות, סיבות או תוצאות). אם התשובה לא עונה על השאלה, תקן אותה לתשובה נכונה שעונה על השאלה, ורק אם אינך בטוח בתשובה נכונה השאר fixed ריק. אל תשנה תשובה שכבר עונה על השאלה.\n'+JSON.stringify(items)+'\nהחזר JSON בלבד: {"results":[{"i":מספר,"ok":true או false,"fixed":"תשובה מתוקנת או ריק"}]}');
+  const rs=(r&&Array.isArray(r.results))?r.results:(Array.isArray(r)?r:[]);
+  const drop=new Set();
+  rs.forEach(x=>{
+   const i=+x.i;if(!idx.includes(i)||x.ok!==false)return;
+   const f=String(x.fixed||'').trim();
+   if(f.length>=2)a[i].model=deTex(f);else drop.add(i);
+  });
+  if(drop.size&&a.length-drop.size>=1)a=a.filter((x,i)=>!drop.has(i));
+ }catch(e){}
+ return a;
+}
 function normQs(r){
  let arr=Array.isArray(r)?r:null;
  if(!arr&&r&&typeof r=='object'){const ks=['questions','test','exam','items','quiz','data','שאלות'];for(const k of ks)if(Array.isArray(r[k])){arr=r[k];break}
@@ -1003,7 +1022,7 @@ async function gen(){
      const sn2=new Set(a.map(x=>x.q));normQs(r2).filter(okQ).forEach(x=>{if(!sn2.has(x.q)){sn2.add(x.q);a.push(x)}})}catch(e){break}
    }
    if(a.length>total)a=a.slice(0,total);if(!a.length)throw new Error('empty');
-   T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
+   a=await verifyQs(a);T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
    if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
    T.loading=false;render();return;
   }
@@ -1040,7 +1059,7 @@ async function gen(){
    const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1);
   }
   if(!a.length)throw new Error('empty');
-  T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;
+  a=await verifyQs(a);T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;
   if(miss.length)toast('לא הצלחתי ליצור שאלות על '+miss.length+' נושאים. נסה שוב.');
  }catch(e){
     useLocal(text,n,no,e);return
@@ -1110,7 +1129,7 @@ async function gradeOpen(q){
  if(q.num){const lc=localCheck(ans,q.model);if(lc){T.fb=lc;T.score+=lc.score;render();if(lc.score==1)confetti();return}}
  if(!hasAI()){const lg=localGrade(ans,q.model);if(lg){T.fb=lg;T.score+=lg.score;render();if(lg.score==1)confetti();return}}
  T.busy=true;$('gr').disabled=true;$('gr').textContent='בודק…';
- try{const r=await aiJson(`בדוק תשובת תלמיד לשאלה פתוחה במקצוע ${SUBJ}.\nשאלה: ${q.q}\nתשובה מצופה: ${q.model}\nתשובת התלמיד: ${ans}${way?'\nדרך הפתרון שהתלמיד כתב: '+way:''}\nהציון נקבע לפי התשובה הסופית. דרך הפתרון אופציונלית: אם היא קיימת, התייחס אליה במשוב. במתמטיקה, שבר שאפשר לצמצם ולא צומצם הוא שגוי.\nהחזר JSON בלבד: {"score":0 או 0.5 או 1,"feedback":"משוב קצר בעברית: מה נכון ומה חסר"}`);
+ try{const r=await aiJson(`אתה מורה הוגן ב${SUBJ}. בדוק תשובת תלמיד לשאלה פתוחה.\nשאלה: ${q.q}\nתשובה לדוגמה (רק כהכוונה, ייתכנו תשובות נכונות אחרות ובנוסח אחר): ${q.model}\nתשובת התלמיד: ${ans}${way?'\nדרך הפתרון שהתלמיד כתב: '+way:''}\nכללים:\n1. שפוט לפי מה שהשאלה שואלת, לא לפי הדמיון לתשובה לדוגמה.\n2. אם מה שהתלמיד כתב נכון ועונה על מה שנשאל, הציון 1. גם אם הנוסח שונה, וגם אם הנקודות שונות או פחות מהדוגמה, כל עוד השאלה לא ביקשה אותן.\n3. אם התשובה לדוגמה לא עונה על השאלה, התעלם ממנה ושפוט לפי השאלה וידע נכון.\n4. ציון 0.5 רק אם השאלה ביקשה כמה דברים (למשל "ציין שלוש") ודבר ממה שהתבקש חסר או שגוי. כתוב במשוב בדיוק מה חסר.\n5. ציון 0 אם התשובה שגויה או לא עונה על השאלה.\n6. במתמטיקה, שבר שאפשר לצמצם ולא צומצם הוא שגוי. דרך הפתרון אופציונלית, התייחס אליה במשוב.\n7. המשוב קצר ובקול של מורה: משפט או שניים. אם הציון 1 אל תכתוב "חלקית" ואל תציין מה חסר.\nהחזר JSON בלבד: {"score":0 או 0.5 או 1,"feedback":"משוב קצר בעברית"}`);
   const sc=[0,0.5,1].includes(+r.score)?+r.score:0;
   T.fb={score:sc,text:deTex(String(r.feedback||''))};T.score+=sc;
  }catch(e){const lg=localGrade(ans,q.model);if(lg){T.fb=lg;T.score+=lg.score}else T.fb={shown:1}}
@@ -1354,7 +1373,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.44';window.VER=VER;function navDraw(){
+const VER='2.45';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
