@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.45 | קוד עדכון V-HECV-GXG2 -->
+<!-- מתכוננים | גרסה 2.47 | קוד עדכון V-QX4P-N8LB -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -209,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-HECV-GXG2";   /* קוד העדכון של גרסה 2.45. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.45";
+window.UPDATE_CODE = "V-QX4P-N8LB";   /* קוד העדכון של גרסה 2.47. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.47";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -604,7 +604,7 @@ function aiAppDlg(prompt,files){
  });
 }
 const aiJsonA=(p,f)=>aiJson(p,f);
-const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. בכל שאלה פתוחה, שדה model חייב לענות בדיוק על מה שהשאלה שואלת (אם נשאל על גזירות, התשובה היא הגזירות עצמן ולא נושא קרוב אחר), ולכלול את כל הפרטים שהשאלה מבקשת. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._cG?` אין חומר לימוד מהתלמיד: צור שאלות תרגול לפי תוכנית הלימודים של כיתה ${window._cG} במקצוע ${SUBJ} בישראל, על הנושאים: ${window._cH}. רמת הקושי מתאימה בדיוק לכיתה (לא קלה מדי ולא קשה מדי), השאלות מגוונות ולא חוזרות על עצמן, והן כוללות את סוגי התרגילים האופייניים לכיתה. אם אינך בטוח בעובדה, אל תשאל עליה: שאל רק על עובדות מדויקות.${SUBJ=='אנגלית'?' שאלת תרגום כוללת את המשפט המלא בשאלה (למשל: תרגם לעברית: Dad walked to the shop), ובשאלה מעברית לאנגלית האפשרויות באנגלית.':''} אם יש מתמטיקה: כתוב את התרגילים עם המספרים בתוך השאלה.`:''}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''} כתוב נוסחאות ושברים בטקסט פשוט בלבד (למשל 2/5 או 3 2/5 או 7×8), בלי LaTeX ובלי סימני \\ או $.\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
+const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. כתוב בעברית תקנית וללא שגיאות כתיב (למשל "איזה מהבאים", לא "איזה מהבנים"). בכל שאלה פתוחה, שדה model חייב לענות בדיוק על מה שהשאלה שואלת (אם נשאל על גזירות, התשובה היא הגזירות עצמן ולא נושא קרוב אחר), ולכלול את כל הפרטים שהשאלה מבקשת. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._cG?` אין חומר לימוד מהתלמיד: צור שאלות תרגול לפי תוכנית הלימודים של כיתה ${window._cG} במקצוע ${SUBJ} בישראל, על הנושאים: ${window._cH}. רמת הקושי מתאימה בדיוק לכיתה (לא קלה מדי ולא קשה מדי), השאלות מגוונות ולא חוזרות על עצמן, והן כוללות את סוגי התרגילים האופייניים לכיתה. אם אינך בטוח בעובדה, אל תשאל עליה: שאל רק על עובדות מדויקות.${SUBJ=='אנגלית'?' שאלת תרגום כוללת את המשפט המלא בשאלה (למשל: תרגם לעברית: Dad walked to the shop), ובשאלה מעברית לאנגלית האפשרויות באנגלית.':''} אם יש מתמטיקה: כתוב את התרגילים עם המספרים בתוך השאלה.`:''}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''} כתוב נוסחאות ושברים בטקסט פשוט בלבד (למשל 2/5 או 3 2/5 או 7×8), בלי LaTeX ובלי סימני \\ או $.\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
 async function genViaApp(text,n,no){
  const total=n+no;
  try{
@@ -630,7 +630,7 @@ function saveTest(qs,src){T.src=src||'';T.why='';try{window.trackFeature&&trackF
 }
 function startSaved(id){
  const t=((S.tests||{})[SUBJ]||[]).find(x=>x.id==id);if(!t)return;
- T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs));T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
+ T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs)).map(x=>{x.q=fixHe(x.q);return x});T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
 }
 function savedCard(){
  const l=(S.tests||{})[SUBJ]||[];if(!l.length)return '';
@@ -910,6 +910,8 @@ function mathFix(y){
   return y;
  }catch(e){return y}
 }
+/* תיקון שגיאות כתיב נפוצות של ה-AI: "איזה מהבנים" במקום "איזה מהבאים" */
+function fixHe(t){return typeof t=='string'?t.replace(/(איזה|איזו|אילו|אלו)(\s+)מהבנים/g,'$1$2מהבאים'):t}
 function deTex(x){
  if(typeof x!='string'||!/[\\$]/.test(x))return x;
  let t=x;
@@ -961,7 +963,7 @@ function normQs(r){
    if(i<0||i>=y.options.length)return null;
    y.answer=i}
   y.why=y.why||y.explanation||y.reason||'';
-  y.q=deTex(y.q);y.why=deTex(y.why);if(y.model!=null)y.model=deTex(String(y.model));if(Array.isArray(y.options))y.options=y.options.map(deTex);
+  y.q=fixHe(deTex(y.q));y.why=fixHe(deTex(y.why));if(y.model!=null)y.model=fixHe(deTex(String(y.model)));if(Array.isArray(y.options))y.options=y.options.map(v=>fixHe(deTex(v)));
   return mathFix(y)}).filter(Boolean);
 }
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
@@ -1373,7 +1375,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.45';window.VER=VER;function navDraw(){
+const VER='2.47';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1458,7 +1460,7 @@ function xPrep(dataUrl){return new Promise(res=>{const im=new Image();im.onload=
  const d=g.getImageData(0,0,c.width,c.height),px=d.data,h=new Array(256).fill(0);
  for(let i=0;i<px.length;i+=4){const y=(px[i]*.299+px[i+1]*.587+px[i+2]*.114)|0;px[i]=y;h[y]++}
  const n=px.length/4;let lo=0,hi=255,acc=0;for(let i=0;i<256;i++){acc+=h[i];if(acc>=n*.02){lo=i;break}}acc=0;for(let i=255;i>=0;i--){acc+=h[i];if(acc>=n*.02){hi=i;break}}
- const k=hi>lo+20?255/(hi-lo):1;
+ const k=hi>lo+20?255/(hi-lo):1;if(!(hi>lo+20))lo=0;
  for(let i=0;i<px.length;i+=4){const v=Math.max(0,Math.min(255,((px[i]-lo)*k)|0));px[i]=px[i+1]=px[i+2]=v}
  g.putImageData(d,0,0);res(c.toDataURL('image/png'))}catch(e){res(dataUrl)}};im.onerror=()=>res(dataUrl);im.src=dataUrl})}
 async function exOCR(dataUrl){
@@ -1685,20 +1687,73 @@ async function docxText(f){
  }
  throw new Error('docx');
 }
+/* קריאת תמונה ו-PDF במכשיר עצמו (בלי AI): PDF דרך pdf.js, תמונות וסריקות דרך OCR */
+const TESS_URL='https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js',PDFJS_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',PDFW_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let UPM=null;const upMsg=t=>{if(UPM)UPM.textContent=t};
+const fileDataUrl=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=()=>rej(new Error('read'));r.readAsDataURL(f)});
+async function ocrPages(urls){
+ const EN=SUBJ=='אנגלית',lang=EN?'eng':'heb';
+ if(!window.Tesseract){upMsg('טוען את מנוע הקריאה (פעם ראשונה, כמה שניות)…');await xLoad(TESS_URL)}
+ const w=await Tesseract.createWorker(lang,1,{langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/'+lang+'@1.0.0/4.0.0_best_int'});
+ try{
+  const out=[];
+  for(let i=0;i<urls.length;i++){
+   upMsg('קורא טקסט מהתמונה'+(urls.length>1?' ('+(i+1)+' מתוך '+urls.length+')':'')+'…');
+   const img=await xPrep(urls[i]);
+   await w.setParameters({tessedit_pageseg_mode:'3'});
+   const r=await w.recognize(img);out.push(String(r.data.text||'').trim());
+  }
+  return out.join('\n\n').trim();
+ }finally{try{await w.terminate()}catch(e){}}
+}
+async function pdfRead(f){
+ if(!window.pdfjsLib){
+  upMsg('טוען את קורא ה-PDF…');await xLoad(PDFJS_URL);
+  const wt=await (await fetch(PDFW_URL)).text();
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([wt],{type:'text/javascript'}));
+ }
+ const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+ const np=doc.numPages;let txt='';
+ for(let i=1;i<=Math.min(np,60);i++){
+  upMsg('קורא PDF, עמוד '+i+' מתוך '+np+'…');
+  const pg=await doc.getPage(i),tc=await pg.getTextContent();
+  txt+=tc.items.map(it=>it.str+(it.hasEOL?'\n':'')).join('')+'\n\n';
+ }
+ txt=txt.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+ if(txt.replace(/\s/g,'').length>=30*Math.min(np,60)*0.5&&txt.replace(/\s/g,'').length>=60)return txt;
+ /* PDF סרוק (תמונות): מציירים כל עמוד ומריצים OCR, עד 8 עמודים */
+ const urls=[];
+ for(let i=1;i<=Math.min(np,8);i++){
+  upMsg('מכין עמוד '+i+' לקריאה…');
+  const pg=await doc.getPage(i),vp=pg.getViewport({scale:2}),c=document.createElement('canvas');
+  c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);await pg.render({canvasContext:g,viewport:vp}).promise;
+  urls.push(c.toDataURL('image/png'));
+ }
+ return await ocrPages(urls);
+}
+const keyReadsFiles=()=>{const k=(typeof getKey=='function'&&getKey())||'';return !!k&&!/^gsk_|^sk-or-/.test(k)};
 async function readFileText(f){
  const n=f.name.toLowerCase();
  if(/\.(txt|md|csv)$/.test(n)||(f.type||'').startsWith('text/'))return await f.text();
  if(n.endsWith('.docx'))return await docxText(f);
  if(n.endsWith('.doc'))throw new Error('olddoc');
- if(f.type=='application/pdf'||n.endsWith('.pdf')||(f.type||'').startsWith('image/')){
+ const isPdf=f.type=='application/pdf'||n.endsWith('.pdf'),isImg=(f.type||'').startsWith('image/');
+ if(isPdf||isImg){
   if(f.size>15*1024*1024)throw new Error('big');
-  const data=await b64(f),mime=f.type||(n.endsWith('.pdf')?'application/pdf':'image/jpeg');
-  const r=await aiJsonA('קרא את הקובץ המצורף (מסמך או תמונה של חומר לימוד, ייתכן בכתב יד) והעתק ממנו את כל הטקסט הלימודי כפי שהוא, בסדר הנכון, בלי להוסיף הסברים משלך. התעלם מכותרות עמוד, מספרי עמודים והערות מורה. החזר JSON בלבד: {"text":"הטקסט"}',[{mime,data}]);
-  return String(r.text||'');
+  if(keyReadsFiles()){
+   try{
+    const data=await b64(f),mime=f.type||(isPdf?'application/pdf':'image/jpeg');
+    const r=await aiJsonA('קרא את הקובץ המצורף (מסמך או תמונה של חומר לימוד, ייתכן בכתב יד) והעתק ממנו את כל הטקסט הלימודי כפי שהוא, בסדר הנכון, בלי להוסיף הסברים משלך. התעלם מכותרות עמוד, מספרי עמודים והערות מורה. החזר JSON בלבד: {"text":"הטקסט"}',[{mime,data}]);
+    const t=String(r.text||'').trim();if(t)return t;
+   }catch(e){}
+  }
+  try{return isPdf?await pdfRead(f):await ocrPages([await fileDataUrl(f)])}
+  catch(e){throw new Error(e&&e.message=='load'?'loadlib':'ocr')}
  }
  throw new Error('type');
 }
-const upErr=e=>({nofiles:'המפתח של ה-AI קורא רק טקסט, לא תמונות ו-PDF. שמור את החומר כקובץ Word (docx) או txt, או העתק את הטקסט והדבק אותו.',olddoc:'זה קובץ Word ישן (doc). שמור אותו כ-docx או כ-PDF ונסה שוב.',big:'הקובץ גדול מדי (מעל 15MB).',type:'סוג הקובץ לא נתמך. אפשר PDF, תמונה, txt או docx.',docx:'לא הצלחתי לקרוא את קובץ ה-Word.',read:'לא הצלחתי לפתוח את הקובץ.'}[e&&e.message])||aiErr(e);
+const upErr=e=>({nofiles:'המפתח של ה-AI קורא רק טקסט, לא תמונות ו-PDF. שמור את החומר כקובץ Word (docx) או txt, או העתק את הטקסט והדבק אותו.',olddoc:'זה קובץ Word ישן (doc). שמור אותו כ-docx או כ-PDF ונסה שוב.',big:'הקובץ גדול מדי (מעל 15MB).',type:'סוג הקובץ לא נתמך. אפשר PDF, תמונה, txt או docx.',docx:'לא הצלחתי לקרוא את קובץ ה-Word.',read:'לא הצלחתי לפתוח את הקובץ.',loadlib:'כדי לקרוא PDF או תמונה צריך אינטרנט (פעם ראשונה לפחות). בדוק חיבור ונסה שוב.',ocr:'לא הצלחתי לקרוא טקסט מהקובץ. נסה תמונה ישרה וברורה, או הדבק את הטקסט.'}[e&&e.message])||aiErr(e);
 function addUpload(id){
  const ta=$(id);if(!ta)return;
  ta.insertAdjacentHTML('afterend',`<button type="button" class="upb" id="upb-${id}">📎 העלה קובץ או תמונה</button><div class="upm" id="upm-${id}"></div>`);
@@ -1711,7 +1766,7 @@ function upSheet(id){
  <button class="o" data-a=".pdf,.txt,.md,.csv,application/pdf,text/plain"><img src="${IMG['upload-file.png']}" alt="">קבצים<br>בטלפון</button>
  <button class="o" data-a="image/*"><img src="${IMG['upload-image.png']}" alt="">גלריה</button>
  <button class="o" data-a=".docx,.doc"><img src="${IMG['upload-word.png']}" alt="">Docs<br>(Word)</button></div>
- <div class="n">נתמכים: PDF, תמונה, טקסט (txt, md) ו-Word (docx). PDF ותמונות דורשים מפתח ואינטרנט.</div></div>`;
+ <div class="n">נתמכים: PDF, תמונה, טקסט (txt, md) ו-Word (docx). PDF ותמונות נקראים במכשיר ודורשים אינטרנט. כתב יד לא תמיד נקרא טוב.</div></div>`;
  ov.onclick=e=>{if(e.target===ov)ov.remove()};
  document.body.appendChild(ov);
  ov.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
@@ -1720,7 +1775,7 @@ function upSheet(id){
  });
 }
 async function upRun(id,files){
- const ta=$(id),m=$('upm-'+id);if(!ta||!m||!files.length)return;
+ const ta=$(id),m=$('upm-'+id);if(!ta||!m||!files.length)return;UPM=m;
  let add=0;
  for(const f of files){
   m.className='upm';m.textContent='קורא את '+f.name+'…';
