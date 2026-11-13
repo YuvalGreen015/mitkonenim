@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.47 | קוד עדכון V-QX4P-N8LB -->
+<!-- מתכוננים | גרסה 2.48 | קוד עדכון V-C5RW-JZ3A -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -209,8 +209,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-QX4P-N8LB";   /* קוד העדכון של גרסה 2.47. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.47";
+window.UPDATE_CODE = "V-C5RW-JZ3A";   /* קוד העדכון של גרסה 2.48. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.48";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1375,7 +1375,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.47';window.VER=VER;function navDraw(){
+const VER='2.48';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
@@ -1787,6 +1787,8 @@ async function upRun(id,files){
   }catch(e){m.className='upm er';m.textContent=f.name+': '+(e&&e.message=='empty'?'לא נמצא טקסט בקובץ.':upErr(e));break}
  }
  if(add>1){m.className='upm ok';m.textContent='✓ נוספו '+add+' קבצים'}
+ /* בחומר לימוד שהועלה: יוצרים מיד שאלות על הטקסט */
+ if(add&&id=='mat'&&ta.value.trim().length>=20&&typeof gen=='function'&&!T.loading){try{toast('קראתי את הטקסט, יוצר שאלות עליו…')}catch(e){}gen()}
 }
 function homeView(){
  const EMO={4:'📝',1:'🗂️',2:'🎧',5:'🏆',6:'🎙️'};
