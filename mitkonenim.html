@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.51 | קוד עדכון V-Y8ZD-M2KC -->
+<!-- מתכוננים | גרסה 2.54 | קוד עדכון V-UHTK-U3G2 -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -114,6 +114,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 .tstory{margin:12px 16px;background:#fff8e6;border:1px solid #f1d48a;border-radius:14px;padding:10px 14px;color:#4a3a10;text-align:right}.tstory summary{font-weight:800;cursor:pointer}.tstory div{white-space:pre-wrap;line-height:1.7;margin-top:8px;font-size:15px}
 .tmsg{margin-top:14px;padding:14px;border-radius:16px;font-weight:700;text-align:center;font-size:16px;animation:tpop .4s}
 .tok{background:#e6fbf3;color:#0b7a58}.tbad{background:#ffecec;color:#c02c2c}.tneu{background:#eef1f7;color:#5d6b85}
+.whw{position:relative;width:150px;margin:8px auto}.wh{height:120px;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-radius:16px;background:#f3f6fd;overscroll-behavior:contain;outline:none}.wh::-webkit-scrollbar{display:none}.wp{height:40px}.wi{height:40px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;font-size:20px;color:#8a94ab;cursor:pointer;user-select:none;-webkit-user-select:none}.wi.sel{font-size:28px;font-weight:800;color:#2a6df4}.whs{position:absolute;left:6px;right:6px;top:40px;height:40px;border-top:2px solid #2a6df4;border-bottom:2px solid #2a6df4;pointer-events:none;z-index:1;border-radius:6px}
+.texp{margin-top:12px;text-align:right}.te{padding:8px 10px;border-radius:12px;margin:6px 0;background:#f3f6fd;font-size:14px;line-height:1.45;color:#27324a}.te.r{background:#e6fbf3;color:#0b6a4d}.te.w{background:#ffecec;color:#a52626}
 .tbig{font-size:54px;text-align:center;margin:10px 0}
 @keyframes tpop{0%{transform:scale(.9)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
 @keyframes tshake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
@@ -209,8 +211,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-Y8ZD-M2KC";   /* קוד העדכון של גרסה 2.51. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.51";
+window.UPDATE_CODE = "V-UHTK-U3G2";   /* קוד העדכון של גרסה 2.54. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "2.54";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -604,7 +606,7 @@ function aiAppDlg(prompt,files){
  });
 }
 const aiJsonA=(p,f)=>aiJson(p,f);
-const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. כתוב בעברית תקנית וללא שגיאות כתיב (למשל "איזה מהבאים", לא "איזה מהבנים"). בכל שאלה פתוחה, שדה model חייב לענות בדיוק על מה שהשאלה שואלת (אם נשאל על גזירות, התשובה היא הגזירות עצמן ולא נושא קרוב אחר), ולכלול את כל הפרטים שהשאלה מבקשת. שאלות פתוחות צריכות להיות ממוקדות עם תשובה קצרה וברורה (עובדה אחת עד שלוש נקודות, בניסוח פשוט כמו שתלמיד היה כותב), לא שאלות כלליות לדיון ולא תשובות מורכבות ומנופחות. אל תשאל שאלה שמניחה דבר שלא היה נכון (כמו "איזו זכות הייתה ל..." כשלא הייתה), והתשובה המצופה לעולם לא מתחילה ב"לא" או "אין": נסח את השאלה כך שיש לה תשובה חיובית אחת ברורה מתוך החומר. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._cG?` אין חומר לימוד מהתלמיד: צור שאלות תרגול לפי תוכנית הלימודים של כיתה ${window._cG} במקצוע ${SUBJ} בישראל, על הנושאים: ${window._cH}. רמת הקושי מתאימה בדיוק לכיתה (לא קלה מדי ולא קשה מדי), השאלות מגוונות ולא חוזרות על עצמן, והן כוללות את סוגי התרגילים האופייניים לכיתה. אם אינך בטוח בעובדה, אל תשאל עליה: שאל רק על עובדות מדויקות.${SUBJ=='אנגלית'?' שאלת תרגום כוללת את המשפט המלא בשאלה (למשל: תרגם לעברית: Dad walked to the shop), ובשאלה מעברית לאנגלית האפשרויות באנגלית.':''} אם יש מתמטיקה: כתוב את התרגילים עם המספרים בתוך השאלה.`:''}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''} כתוב נוסחאות ושברים בטקסט פשוט בלבד (למשל 2/5 או 3 2/5 או 7×8), בלי LaTeX ובלי סימני \\ או $.\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
+const ONEPROMPT=(text,n,no)=>`המקצוע: ${SUBJ}. צור מבחן בעברית על בסיס תוכן הלימוד שלהלן בלבד. קרא את כל החומר מההתחלה ועד הסוף (גם את סופו), חלק אותו לנושאים, ופזר את השאלות כך שכל נושא, הגדרה וכלל ייבדקו לפחות פעם אחת. אל תשאל פעמיים על אותו נושא. כתוב בעברית תקנית וללא שגיאות כתיב (למשל "איזה מהבאים", לא "איזה מהבנים"). בכל שאלה פתוחה, שדה model חייב לענות בדיוק על מה שהשאלה שואלת (אם נשאל על גזירות, התשובה היא הגזירות עצמן ולא נושא קרוב אחר), ולכלול את כל הפרטים שהשאלה מבקשת. שאלות פתוחות צריכות להיות ממוקדות עם תשובה קצרה וברורה (עובדה אחת עד שלוש נקודות, בניסוח פשוט כמו שתלמיד היה כותב), לא שאלות כלליות לדיון ולא תשובות מורכבות ומנופחות. אל תשאל שאלה שמניחה דבר שלא היה נכון (כמו "איזו זכות הייתה ל..." כשלא הייתה), והתשובה המצופה לעולם לא מתחילה ב"לא" או "אין": נסח את השאלה כך שיש לה תשובה חיובית אחת ברורה מתוך החומר. שדה "t" בכל שאלה הוא מספר הנושא (לפי סדר הופעתו בחומר, מ-0). אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}${window._cG?` אין חומר לימוד מהתלמיד: צור שאלות תרגול לפי תוכנית הלימודים של כיתה ${window._cG} במקצוע ${SUBJ} בישראל, על הנושאים: ${window._cH}. רמת הקושי מתאימה בדיוק לכיתה (לא קלה מדי ולא קשה מדי), השאלות מגוונות ולא חוזרות על עצמן, והן כוללות את סוגי התרגילים האופייניים לכיתה. אם אינך בטוח בעובדה, אל תשאל עליה: שאל רק על עובדות מדויקות.${SUBJ=='אנגלית'?' שאלת תרגום כוללת את המשפט המלא בשאלה (למשל: תרגם לעברית: Dad walked to the shop), ובשאלה מעברית לאנגלית האפשרויות באנגלית.':''} אם יש מתמטיקה: כתוב את התרגילים עם המספרים בתוך השאלה.`:''}${window._stG?` החומר הוא קטע קריאה לכיתה ${window._stG}.${SUBJ=='אנגלית'?' הקטע באנגלית, ולכן כל השאלות, האפשרויות, התשובות המצופות וההסברים חייבים להיות באנגלית בלבד (בלי עברית בכלל). שאלות הבנה והסקה, וגם שאלות שפה: אוצר מילים בהקשר, מילה נרדפת או הפוכה, זמן הפועל, דקדוק, צורת רבים, בחירת המילה הנכונה.':''} שאל שאלות הבנה (מה, מי, למה, הסקה, דעה) וגם שאלות לשון (משמעות מילה בהקשר, שורש, זמן הפועל, מילה נרדפת או הפוכה, כתיב, ניקוד). כל שאלה חייבת להתבסס על הקטע: צטט בתוך השאלה את המשפט או המילה הרלוונטיים מהקטע, כך שהשאלה ברורה ומובנת. אסור לשאול שאלות כלליות שאינן קשורות לקטע.`:''} כתוב נוסחאות ושברים בטקסט פשוט בלבד (למשל 2/5 או 3 2/5 או 7×8), בלי LaTeX ובלי סימני \\ או $.\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"משפט אחד: למה התשובה הנכונה נכונה","exp":["עד 12 מילים: למה א נכונה או שגויה","...ב","...ג","...ד"]} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ו-exp מסביר לכל אפשרות, לפי הסדר, למה היא נכונה או למה היא שגויה. כל ארבע האפשרויות שונות זו מזו ובאורך ובפירוט דומים (הפרש של עד כ-25% במילים), האפשרות הנכונה אינה הארוכה או המפורטת ביותר והשגויות נשמעות סבירות, רק אחת נכונה, ההסבר חייב להתאים בדיוק לאפשרות שסומנה, ואסור לחזור על אותה שאלה או על אותה תשובה בשאלות שונות. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה","why":"הסבר קצר למה זו התשובה"}.\n\nהחומר:\n${text.slice(0,30000)}`;
 async function genViaApp(text,n,no){
  const total=n+no;
  try{
@@ -614,7 +616,7 @@ async function genViaApp(text,n,no){
   while(a.length>total){const cnt={};a.forEach(x=>{cnt[x.t]=(cnt[x.t]||0)+1});const k=Object.keys(cnt).sort((p,q)=>cnt[q]-cnt[p])[0];if(cnt[k]<2)break;const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1)}
   if(a.length>total)a=a.slice(0,total);
   if(!a.length)throw new Error('empty');
-  a=await verifyQs(a,text);T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
+  a=cleanQs(a,[]);a=await verifyQs(a,text);if(!a.length)throw new Error('empty');T.qs=shuffle(finalQs(a));saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
   if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
  }catch(e){if(e&&e.message=='local'){AIST='search';useLocal(text,n,no,e);return}
   T.err=(e&&e.message=='cancel')?'':(e&&e.message=='parse'||e&&e.message=='empty')?'לא קיבלתי שאלות תקינות מה-AI. נסה שוב.':'משהו השתבש: '+((e&&e.message)||'?')}
@@ -625,12 +627,12 @@ const aiErr=e=>{const m=({nokey:'ה-AI לא זמין כרגע. נסה שוב ע�
 /* ---- מבחנים שמורים (ללמוד גם בלי אינטרנט) ---- */
 function saveTest(qs,src){T.src=src||'';T.why='';try{window.trackFeature&&trackFeature(src=='ai'?'test_made_ai':'test_made_local')}catch(e){}
  S.tests=S.tests||{};const l=S.tests[SUBJ]=S.tests[SUBJ]||[];
- l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs)),story:T.story||''});
+ l.unshift({id:Date.now(),src:src||'',qs:JSON.parse(JSON.stringify(qs)),story:T.story||''});T.sid=l[0].id;
  if(l.length>10)l.length=10;save();
 }
 function startSaved(id){
  const t=((S.tests||{})[SUBJ]||[]).find(x=>x.id==id);if(!t)return;
- T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs)).map(x=>{x.q=fixHe(x.q);return x});T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
+ T.sid=t.id;T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs)).filter(x=>!x.bad).map(x=>{x.q=fixHe(x.q);return x});T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
 }
 function savedCard(){
  const l=(S.tests||{})[SUBJ]||[];if(!l.length)return '';
@@ -859,7 +861,7 @@ async function aiTopics(text){
 }
 async function aiQs(text,topics,idxs,n,no,extra){
  const list=idxs.map(i=>i+': '+topics[i]).join('\n');
- return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"הסבר קצר"} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ופזר את מיקומה. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
+ return await aiJson(`המקצוע: ${SUBJ}. כל השאלות חייבות להיות בנושא המקצוע הזה ובחומר שלהלן בלבד. צור מבחן בעברית על בסיס תוכן הלימוד בלבד. להלן רשימה ממוספרת של כל הנושאים בחומר:\n${list}\n\nחובה: לפחות שאלה אחת על כל נושא ברשימה, ושדה "t" בכל שאלה הוא מספר הנושא שהיא בודקת. ${extra||'אם יש יותר שאלות מנושאים, חלק את השאלות העודפות בין הנושאים באופן שווה, בלי כפילויות.'} אם המקצוע הוא מתמטיקה, כל שאלה פתוחה היא תרגיל שתשובתו הסופית קצרה (מספר או שבר מצומצם), ושדה model מכיל רק את התשובה הסופית. סה"כ ${n} שאלות אמריקאיות ו-${no} שאלות פתוחות, בסדר מעורב. ${SKIPINFO}${ENNOTE(text)}\nהחזר JSON בלבד: מערך. שאלה אמריקאית: {"type":"mc","t":0,"q":"השאלה","options":["א","ב","ג","ד"],"answer":0,"why":"משפט אחד: למה התשובה הנכונה נכונה","exp":["עד 12 מילים: למה א נכונה או שגויה","...ב","...ג","...ד"]} כש-answer הוא אינדקס (0-3) של התשובה הנכונה, ו-exp מסביר לכל אפשרות, לפי הסדר, למה היא נכונה או למה היא שגויה. כל ארבע האפשרויות שונות זו מזו ובאורך ובפירוט דומים (הפרש של עד כ-25% במילים), האפשרות הנכונה אינה הארוכה או המפורטת ביותר והשגויות נשמעות סבירות, רק אחת נכונה, ההסבר חייב להתאים בדיוק לאפשרות שסומנה, ואסור לחזור על אותה שאלה או על אותה תשובה בשאלות שונות. שאלה פתוחה: {"type":"open","t":0,"q":"השאלה","model":"תשובה מצופה קצרה ומלאה","why":"הסבר קצר למה זו התשובה"}.\n\nהחומר:\n${text.slice(0,30000)}`);
 }
 const ENNOTE=t=>(!window._stG&&SUBJ=='אנגלית'&&/\b(am|is|are|has|have)\b/i.test(t))?'\nחשוב מאוד (אנגלית): החומר עוסק במשפטי תיאור עם am/is/are ועם have/has. שאל אך ורק על המבנים האלה (בחירת הצורה הנכונה, משפט שלילי, שאלת כן/לא, השלמה). חובה לכתוב משפטים חדשים לגמרי משלך, עם נושאים, שמות ומילים אחרים. אסור להעתיק או לחזור על משפטים ודוגמאות מהחומר, אסור לשאול על נושאי דקדוק אחרים, והאנגלית תהיה פשוטה ברמת תלמיד כיתה ג-ה.':'';
 /* בדיקת תשובות חשבון: מחשבים תרגילים פשוטים בעצמנו ומתקנים תשובה שגויה של ה-AI */
@@ -921,29 +923,152 @@ function deTex(x){
   .replace(/\\[()\[\]]/g,'').replace(/\\left|\\right|\\[(),;:!\[\]]/g,m=>/[()]/.test(m[1]||'')?m[1]:'').replace(/\$+/g,'').replace(/\\/g,'');
  return t.replace(/\s{2,}/g,' ').trim();
 }
-/* בדיקה שהתשובה המצופה אכן עונה על השאלה (פתוחות, לא במתמטיקה: שם mathFix) */
+/* ---- כפילויות, בלבול בתשובות והסברים ---- */
+const BATCH=8,MAXQ=100;
+const qKey=t=>String(t||'').toLowerCase().replace(/[֑-ׇ]/g,'').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+const qToks=t=>new Set(qKey(t).split(' ').filter(w=>w.length>=2||/\d/.test(w)));
+const jac=(x,y)=>{let i=0;x.forEach(w=>{if(y.has(w))i++});const u=x.size+y.size-i;return u?i/u:0};
+const ansText=q=>q.type=='open'?String(q.model||''):(Array.isArray(q.options)?String(q.options[q.answer]||''):'');
+function isDup(q,list){
+ if(SUBJ=='מתמטיקה'){const k=String(q.q).replace(/\s+/g,'');return list.some(o=>String(o.q).replace(/\s+/g,'')===k)}
+ const w=qToks(q.q),k=qKey(q.q),ak=qKey(ansText(q));
+ return list.some(o=>{if(qKey(o.q)===k)return true;const j=jac(w,qToks(o.q));if(j>=.85)return true;if(ak.length>=4&&ak===qKey(ansText(o))&&j>=.4)return true;return false});
+}
+/* מסיר כפילויות (בתוך הרשימה ולעומת קיימות) ושאלות עם אפשרויות חוזרות או ריקות */
+function cleanQs(a,existing){
+ const out=[];
+ for(const q of a){
+  if(q.type!='open'&&Array.isArray(q.options)){
+   const ks=q.options.map(qKey);
+   if(ks.some(x=>!x)||new Set(ks).size<ks.length)continue;
+  }
+  if(isDup(q,(existing||[]).concat(out)))continue;
+  out.push(q);
+ }
+ return out;
+}
+const _POS=/כל התשובות|אף (אחת|תשובה|אחד)|שתי התשובות|שני ה|כולן|א ו-?ב|ב ו-?ג|all of the above|none of the above|both/i;
+/* מערבב את סדר האפשרויות כדי שהתשובה הנכונה לא תהיה תמיד באותו מקום */
+function shuffleOpts(q){
+ if(q.type=='open'||!Array.isArray(q.options)||q.options.length<2||!Number.isInteger(q.answer)||q.answer<0||q.answer>=q.options.length)return q;
+ if(q.options.some(o=>_POS.test(String(o)))||q.options.every(o=>/^\s*[-\d.,\/%\s]+\S*\s*$/.test(String(o))))return q;
+ const order=shuffle(q.options.map((_,i)=>i));
+ q.options=order.map(i=>q.options[i]);if(Array.isArray(q.exp)&&q.exp.length==order.length)q.exp=order.map(i=>q.exp[i]);q.answer=order.indexOf(q.answer);return q;
+}
+const finalQs=a=>a.map(shuffleOpts);
+const whyHits=(q,i)=>{const w=qToks(q.why||'');let c=0;qToks(q.options[i]).forEach(t=>{if(w.has(t))c++});return c};
+/* בדיקת כל שאלה: תשובה נכונה באמת, שאלה תקינה, כתיב, הסבר. בקבוצות של עד 15 */
+/* ---- איזון אורך אפשרויות, גלגל מספרים ודיווח על שאלה ---- */
+function imbalance(q){
+ if(!q||q.type=='open'||!Array.isArray(q.options)||q.options.length<3)return false;
+ const L=q.options.map(o=>String(o).trim().length),c=L[q.answer];if(!(c>=0))return false;
+ const ot=L.filter((_,i)=>i!==q.answer),avg=ot.reduce((x,y)=>x+y,0)/ot.length;
+ if(avg<10&&c<10)return false;
+ return c>1.35*avg||(c>Math.max(...ot)*1.2&&c>avg*1.15)||(avg>=12&&c<avg*.6);
+}
+const wheelHTML=(id,max)=>`<div class="whw"><div class="whs"></div><div class="wh" id="${id}" tabindex="0" aria-label="בחירת מספר שאלות"><div class="wp"></div>${Array.from({length:max},(_,i)=>`<div class="wi" data-v="${i+1}">${i+1}</div>`).join('')}<div class="wp"></div></div></div>`;
+function wheelInit(id,max,val,onChange){
+ const el=$(id);if(!el)return;const H=40;let cur=0;
+ const mark=v=>{if(v===cur)return;cur=v;el.querySelectorAll('.wi').forEach(x=>x.classList.toggle('sel',+x.dataset.v===v));onChange(v)};
+ const go=(v,smooth)=>{const top=(v-1)*H;if(el.scrollTo)el.scrollTo({top,behavior:smooth?'smooth':'auto'});else el.scrollTop=top};
+ el.addEventListener('scroll',()=>{if(el.isConnected)mark(Math.max(1,Math.min(max,Math.round(el.scrollTop/H)+1)))},{passive:true});
+ el.addEventListener('click',e=>{const it=e.target.closest('.wi');if(it)go(+it.dataset.v,true)});
+ el.addEventListener('keydown',e=>{if(e.key=='ArrowUp'||e.key=='ArrowDown'){e.preventDefault();go(Math.max(1,Math.min(max,cur+(e.key=='ArrowUp'?-1:1))),true)}});
+ val=Math.max(1,Math.min(max,Math.round(+val)||1));go(val,false);mark(val);
+ requestAnimationFrame(()=>{if(cur===val&&Math.round(el.scrollTop/H)+1!==val)go(val,false)});
+}
+const RPR={wrong_answer:'התשובה שסומנה כנכונה שגויה',bad_question:'השאלה לא ברורה, לא נכונה או חסרה',typo:'טעות כתיב או ניסוח',obvious:'התשובה הנכונה בולטת וקל לנחש',other:'בעיה אחרת'};
+function openReport(){
+ if(T.busy||T.fixing||!T.qs[T.i])return;
+ const o=document.createElement('div');o.id='rpm';o.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(5,15,40,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px';
+ o.innerHTML=`<div style="background:#fff;color:#142039;border-radius:22px;padding:16px;width:100%;max-width:460px;direction:rtl;max-height:92vh;overflow:auto"><p style="font-weight:800;font-size:18px;margin:0 0 10px">🚩 מה הבעיה בשאלה?</p>${Object.keys(RPR).map(k=>`<button class="btn sec" data-r="${k}" style="margin-bottom:8px">${RPR[k]}</button>`).join('')}<input id="rpt" placeholder="אפשר לכתוב פרטים (לא חובה)" style="width:100%;margin:2px 0 10px"><button class="btn sec" id="rpx">ביטול</button></div>`;
+ document.body.appendChild(o);
+ const close=()=>o.remove();
+ o.querySelector('#rpx').onclick=close;o.onclick=e=>{if(e.target===o)close()};
+ o.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const d=o.querySelector('#rpt').value.trim();close();doReport(b.dataset.r,d)});
+}
+async function fixQuestion(q,reason,detail){
+ if(!hasAI()){
+  if(reason!='typo')return null;
+  const c=JSON.parse(JSON.stringify(q));c.q=fixHe(c.q);if(c.model!=null)c.model=fixHe(String(c.model));if(c.why)c.why=fixHe(c.why);if(Array.isArray(c.options))c.options=c.options.map(fixHe);
+  return JSON.stringify(c)!==JSON.stringify(q)?c:null;
+ }
+ const mat=String(S.mats[SUBJ]||'').slice(0,3500);
+ const o={type:q.type,q:q.q};if(q.type=='open')o.model=q.model;else{o.options=q.options;o.answer=q.answer}if(q.why)o.why=q.why;
+ const pr='אתה מורה מקצועי ב'+SUBJ+'. תלמיד דיווח על בעיה בשאלה במבחן. סוג הבעיה: '+RPR[reason]+'.'+(detail?' הערת התלמיד: '+detail+'.':'')+(T.pick!=null&&q.type!='open'?' התלמיד בחר באפשרות מספר '+T.pick+' (מתחילים מ-0).':(T.ans?' התלמיד ענה: '+T.ans+'.':''))+'\nהשאלה: '+JSON.stringify(o)+(mat?'\nחומר הלימוד: '+mat:'')+'\nתקן את השאלה כך שתהיה תקינה: שאלה ברורה ושלמה, נכונה עובדתית (לפי החומר אם יש), בעברית תקנית. '+(q.type=='open'?'model = תשובה מצופה קצרה וברורה, why = הסבר קצר.':'בדיוק 4 אפשרויות באורך ובפירוט דומים (הפרש עד כ-25%), רק אחת נכונה, answer = מספר האפשרות הנכונה (מ-0), why = משפט אחד למה הנכונה נכונה, exp = מערך של 4 הסברים קצרים (עד 12 מילים), אחד לכל אפשרות לפי הסדר, למה היא נכונה או שגויה.')+' אל תשנה את הנושא. אם אי אפשר לתקן בבטחה, החזר {"drop":true}.\nהחזר JSON בלבד.';
+ let r;try{r=await aiJson(pr)}catch(e){return null}
+ if(!r||typeof r!='object'||r.drop===true)return null;
+ let nq=normQs([Object.assign({},r,{type:q.type})]).filter(okQ)[0];
+ if(!nq)return null;
+ if(isDup(nq,T.qs.filter((_,i)=>i!==T.i)))return null;
+ try{nq=(await verifyQs([nq],mat))[0]}catch(e){return null}
+ return nq?shuffleOpts(nq):null;
+}
+async function doReport(reason,detail){
+ const q=T.qs[T.i];if(!q||T.busy||T.fixing)return;
+ const rep={d:Date.now(),subj:SUBJ,grade:S.grade||'',reason,detail,q:JSON.parse(JSON.stringify(q)),pick:T.pick,ans:T.ans,fixed:false};
+ (S.reports=S.reports||[]).unshift(rep);if(S.reports.length>60)S.reports.length=60;save();
+ const undo=()=>{if(q.type=='open'){if(T.fb&&!T.fb.shown)T.score-=(T.fb.score||0)}else if(T.pick!==null&&T.pick===+q.answer)T.score-=1};
+ T.fixing=true;render();
+ let nq=null;try{nq=await fixQuestion(q,reason,detail)}catch(e){}
+ T.fixing=false;undo();
+ const saved=()=>{try{return ((S.tests||{})[SUBJ]||[]).find(x=>x.id==T.sid)}catch(e){return null}};
+ if(nq){
+  nq.t=q.t;T.qs[T.i]=nq;T.pick=null;T.ans='';T.way='';T.fb=null;rep.fixed=true;rep.after=JSON.parse(JSON.stringify(nq));
+  const t=saved();if(t&&t.qs[T.i])t.qs[T.i]=JSON.parse(JSON.stringify(nq));
+  save();toast('✓ השאלה תוקנה. נסה אותה שוב');
+ }else{
+  const t=saved();if(t&&t.qs[T.i])t.qs[T.i].bad=1;
+  T.skipped=(T.skipped||0)+1;T.i++;T.pick=null;T.ans='';T.way='';T.fb=null;save();toast('לא הצלחתי לתקן, השאלה לא נספרת בציון');
+ }
+ render();
+}
+async function verifyChunk(a,idxs,mat,EN,drop){
+ const items=idxs.map(i=>{const x=a[i],o={i,q:String(x.q)};
+  if(x.type=='open'){if(x.model&&!x.exact)o.model=String(x.model)}
+  else if(Array.isArray(x.options)){o.options=x.options.map(String);const bl=imbalance(x);if(bl)o.bal=true;if(bl||!Array.isArray(x.exp))o.noexp=true}
+ if(x.why)o.why=String(x.why).slice(0,300);else o.nowhy=true;
+ return o});
+ const balSet=new Set(items.filter(o=>o.bal).map(o=>o.i));
+ const ctx=mat&&String(mat).length>40?'\nחומר הלימוד (התשובות חייבות להתאים אליו): '+String(mat).slice(0,3500):'';
+ const pr='אתה בודק שאלות מבחן במקצוע '+SUBJ+'. לכל פריט:\nא. שאלה פתוחה (יש בה "model"): (1) האם התשובה המצופה עונה בדיוק על מה שהשאלה שואלת, ולא על נושא קרוב אחר. (2) האם השאלה תקינה: היא לא מניחה דבר שאינו נכון (למשל "איזו זכות הייתה לנשים" כשלא הייתה להן זכות כזו), והתשובה לא מתחילה ב"לא" או "אין". (3) האם התשובה נכונה לפי החומר ולפי עובדות ידועות. אם יש בעיה, תקן את התשובה ל-fixed אם אפשר בבטחה בלי לשנות את השאלה, ואם אי אפשר השאר fixed ריק והשאלה תימחק. אל תשנה שאלה ותשובה שכבר תקינות.\n'
+ +(EN?'':'ב. הגהה לכל שאלה (גם אמריקאית): אם בשאלה או באפשרויות יש שגיאת כתיב, מילה שאינה קיימת בעברית או ניסוח שגוי (למשל "ברו" במקום "בורג", "מהבנים" במקום "מהבאים"), החזר בשדה qf את נוסח השאלה המתוקן ובשדה of את מערך האפשרויות המתוקן (באותו סדר ובאותו מספר). אל תשנה משמעות ואל תשכתב טקסט תקין. אם השאלה נגמרת באמצע משפט או במילה תלויה (למשל "נולד במאה ה-") או שהאפשרויות חוזרות על מילה שבסוף השאלה, נסח אותה מחדש כשאלה שלמה והתאם את האפשרויות.\n')
+ +'ג. שאלה אמריקאית (יש בה options): פתור בעצמך, בלי להניח שום דבר מראש, מהי האפשרות הנכונה, והחזר best עם מספרה (מ-0). אם אף אפשרות אינה נכונה החזר best=-1. אם יותר מאפשרות אחת נכונה החזר amb=true.\nד. הסבר: לפריט שיש בו nowhy=true כתוב ב-wf הסבר של משפט או שניים למה התשובה הנכונה נכונה (לאמריקאית: למה האפשרות best נכונה ולמה האחרות לא; לפתוחה: למה ה-model נכון).\nה. לשאלה אמריקאית עם noexp=true החזר ex: מערך של הסברים קצרים (עד 12 מילים כל אחד) בסדר האפשרויות, לכל אפשרות למה היא נכונה או למה היא שגויה, לפי האפשרות ש-best מסמן כנכונה.\nו. איזון: לפריט עם bal=true האפשרות הנכונה בולטת באורך או בפירוט ולכן קל לנחש. החזר of: כל האפשרויות מנוסחות מחדש באורך ובפירוט דומים (הפרש של עד כ-25%), באותו סדר ובאותו מספר, בלי לשנות איזו נכונה ובלי להפוך אפשרות שגויה לנכונה. קצר את הנכונה או פרט את השגויות בצורה סבירה.\n'
+ +ctx+'\n'+JSON.stringify(items)+'\nהחזר JSON בלבד: {"results":[{"i":מספר,"ok":true או false (רק לפתוחות),"fixed":"","qf":"(אופציונלי)","of":["(אופציונלי)"],"best":מספר (רק לאמריקאיות),"amb":false,"wf":"(רק אם nowhy)","ex":["(רק אם noexp)"]}]}';
+ let r;
+ for(let k=0;k<2;k++){try{r=await aiJson(pr);break}catch(e){if(e&&e.message=='cancel')throw e;if(k==1)throw e;await new Promise(z=>setTimeout(z,e&&e.message=='limit'?9000:1500))}}
+ const rs=(r&&Array.isArray(r.results))?r.results:(Array.isArray(r)?r:[]);
+ rs.forEach(x=>{
+  const i=+x.i;if(!idxs.includes(i))return;const q=a[i];
+  if(!EN&&typeof x.qf=='string'){const t=fixHe(deTex(x.qf.trim()));if(t.length>=3&&t.length<=String(q.q).length*2+30)q.q=t}
+  if((!EN||balSet.has(i))&&Array.isArray(x.of)&&Array.isArray(q.options)&&x.of.length==q.options.length&&x.of.every(v=>typeof v=='string'&&v.trim())){q.options=x.of.map(v=>fixHe(deTex(v.trim())));if(balSet.has(i))q.exp=null}
+  if(typeof x.wf=='string'&&x.wf.trim().length>=8&&!q.why)q.why=fixHe(deTex(x.wf.trim()));
+  if(q.type=='open'){
+   if(x.ok===false){const f=String(x.fixed||'').trim();if(f.length>=2)q.model=fixHe(deTex(f));else drop.add(i)}
+  }else if(Array.isArray(q.options)){
+   if(x.amb===true){drop.add(i);return}
+   if(x.best!=null&&x.best!==''&&Number.isInteger(+x.best)){
+    const bst=+x.best;
+    if(bst==-1)drop.add(i);
+    else if(bst>=0&&bst<q.options.length&&bst!==q.answer){
+     /* חולקים על הסימון: אם ההסבר תומך באפשרות של הבודק מתקנים אליה, אחרת מוחקים את השאלה */
+     if(whyHits(q,bst)>whyHits(q,q.answer)){q.answer=bst;q.exp=null}else drop.add(i);
+    }
+   }
+   if(!drop.has(i)&&!Array.isArray(q.exp)&&Array.isArray(x.ex)&&x.ex.length==q.options.length&&x.ex.every(v=>typeof v=='string'&&v.trim().length>1))q.exp=x.ex.map(v=>fixHe(deTex(v.trim())));
+  }
+ });
+}
 async function verifyQs(a,mat){
  try{
   if(SUBJ=='מתמטיקה'||!hasAI()||!a.length)return a;
-  const EN=SUBJ=='אנגלית';
-  const items=a.map((x,i)=>{const o={i,q:String(x.q)};if(x.type=='open'){if(x.model&&!x.exact)o.model=String(x.model)}else if(Array.isArray(x.options))o.options=x.options.map(String);return o});
-  const ctx=mat&&String(mat).length>40?'\nחומר הלימוד (התשובות חייבות להתאים אליו): '+String(mat).slice(0,4000):'';
-  const r=await aiJson('אתה בודק שאלות מבחן במקצוע '+SUBJ+'. לכל שאלה:\nא. שאלה פתוחה (יש בה "model"): (1) האם התשובה המצופה עונה בדיוק על מה שהשאלה שואלת, ולא על נושא קרוב אחר. (2) האם השאלה תקינה: היא לא מניחה דבר שאינו נכון (למשל "איזו זכות הייתה לנשים" כשלא הייתה להן זכות כזו), והתשובה לא מתחילה ב"לא" או "אין" או "לא היה". (3) האם התשובה נכונה לפי החומר ולפי עובדות ידועות. אם יש בעיה, תקן את התשובה ל-fixed אם אפשר לתקן בבטחה בלי לשנות את השאלה, ואם אי אפשר השאר fixed ריק והשאלה תימחק. אל תשנה שאלה ותשובה שכבר תקינות.\n'+(EN?'':'ב. הגהה לכל שאלה (גם אמריקאית): אם בשאלה או באפשרויות יש שגיאת כתיב, מילה שאינה קיימת בעברית או ניסוח שגוי (למשל "ברו" במקום "בורג", "מהבנים" במקום "מהבאים"), החזר בשדה qf את נוסח השאלה המתוקן ובשדה of את מערך האפשרויות המתוקן (באותו סדר ובאותו מספר). אל תשנה משמעות ואל תשכתב טקסט תקין, ואל תוסיף שדות אם אין מה לתקן.\n')+ctx+'\n'+JSON.stringify(items)+'\nהחזר JSON בלבד: {"results":[{"i":מספר,"ok":true או false (רק לפתוחות),"fixed":"תשובה מתוקנת או ריק","qf":"שאלה מתוקנת (אופציונלי)","of":["אפשרויות מתוקנות (אופציונלי)"]}]}');
-  const rs=(r&&Array.isArray(r.results))?r.results:(Array.isArray(r)?r:[]);
-  const drop=new Set();
-  rs.forEach(x=>{
-   const i=+x.i;if(!(i>=0&&i<a.length))return;const q=a[i];
-   if(!EN){
-    if(typeof x.qf=='string'){const t=fixHe(deTex(x.qf.trim()));if(t.length>=3&&t.length<=String(q.q).length*2+30)q.q=t}
-    if(Array.isArray(x.of)&&Array.isArray(q.options)&&x.of.length==q.options.length&&x.of.every(v=>typeof v=='string'&&v.trim()))q.options=x.of.map(v=>fixHe(deTex(v.trim())));
-   }
-   if(q.type=='open'&&x.ok===false){
-    const f=String(x.fixed||'').trim();
-    if(f.length>=2)q.model=fixHe(deTex(f));else drop.add(i);
-   }
-  });
-  if(drop.size&&a.length-drop.size>=1)a=a.filter((x,i)=>!drop.has(i));
- }catch(e){}
+  const EN=SUBJ=='אנגלית',drop=new Set(),CH=15;
+  for(let s0=0;s0<a.length;s0+=CH){
+   const idxs=[];for(let i=s0;i<Math.min(a.length,s0+CH);i++)idxs.push(i);
+   try{await verifyChunk(a,idxs,mat,EN,drop)}catch(e){if(e&&e.message=='cancel')throw e}
+  }
+  if(drop.size)a=a.filter((x,i)=>!drop.has(i));
+ }catch(e){if(e&&e.message=='cancel')throw e}
  return a;
 }
 function normQs(r){
@@ -969,12 +1094,13 @@ function normQs(r){
    if(i<0||i>=y.options.length)return null;
    y.answer=i}
   y.why=y.why||y.explanation||y.reason||'';
+  if(Array.isArray(y.exp)&&Array.isArray(y.options)&&y.exp.length==y.options.length&&y.exp.every(v=>typeof v=='string'&&v.trim().length>1))y.exp=y.exp.map(v=>fixHe(deTex(v.trim())));else delete y.exp;
   y.q=fixHe(deTex(y.q));y.why=fixHe(deTex(y.why));if(y.model!=null)y.model=fixHe(deTex(String(y.model)));if(Array.isArray(y.options))y.options=y.options.map(v=>fixHe(deTex(v)));
   return mathFix(y)}).filter(Boolean);
 }
 const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
 async function genStory(){
- const qt=$('qn')?Math.max(1,Math.min(20,+$('qn').value||8)):0,n=qt?Math.round(qt*.7):Math.max(0,Math.min(30,+$('n').value||0)),no=qt?qt-Math.round(qt*.7):Math.max(0,Math.min(15,+$('no').value||0)),gr=$('grade').value||'ה',ln=($('tlen')&&$('tlen').value)||'m',EN=SUBJ=='אנגלית';
+ const qt=$('qn')?Math.max(1,Math.min(20,+$('qn').value||8)):0,n=qt?Math.round(qt*.7):Math.max(0,Math.min(MAXQ,+$('n').value||0)),no=qt?qt-Math.round(qt*.7):Math.max(0,Math.min(MAXQ,+$('no').value||0)),gr=$('grade').value||'ה',ln=($('tlen')&&$('tlen').value)||'m',EN=SUBJ=='אנגלית';
  S.grade=gr;S.tlen=ln;if(qt)S.qn=qt;T.n=n;T.no=no;save();T.loading=true;T.err='';T.story='';render();
  const early=!EN&&'אבגדהו'.includes(gr)&&gr.length==1;
  const base={'א':[60,90],'ב':[90,130],'ג':[130,180],'ד':[170,230],'ה':[220,300],'ו':[250,330],'ז':[300,400],'ח':[350,450],'ט':[400,500]}[gr]||[450,600];
@@ -1002,76 +1128,80 @@ const CURR=(gr,sub)=>{
  return 'נושאי הליבה של המקצוע בכיתה '+gr+' לפי תוכנית הלימודים של משרד החינוך בישראל';
 };
 async function genCurr(topic){
- const gr=$('grade').value||'ה',n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
+ const gr=$('grade').value||'ה',n=Math.max(0,Math.min(MAXQ,+$('n').value||0)),no=Math.max(0,Math.min(MAXQ,+$('no').value||0));
  S.grade=gr;T.n=n;T.no=no;save();
  topic=String(topic||'').trim();const hint=topic?topic+' (נושא שהתלמיד בחר: שאל על התוכן המדויק של הנושא לפי ידע כללי נכון, בלי להמציא פרטים)':CURR(gr,SUBJ);
  $('mat').value='תרגול לפי תוכנית הלימודים של כיתה '+gr+' ב'+SUBJ+'. נושאים: '+hint;
  window._cG=gr;window._cH=hint;
  try{await gen()}finally{window._cG='';window._cH='';S.mats[SUBJ]='';save()}
 }
+/* יצירת מבחן בקבוצות קטנות (עד 10 שאלות בבקשה) עד 100 שאלות, עם הסרת כפילויות ובדיקת תשובות לכל קבוצה */
+async function genBatches(text,n,no,topics,first){
+ const total=n+no;let a=[],fails=0,rounds=0,lastErr=null;
+ const maxRounds=Math.ceil(total/BATCH)*2+5;
+ while(a.length<total&&rounds<maxRounds&&fails<4){
+  rounds++;
+  const hm=a.filter(x=>x.type!='open').length,ho=a.length-hm;
+  const needM=Math.max(0,n-hm),needO=Math.max(0,no-ho),need=needM+needO;
+  if(need<1)break;
+  const b=Math.min(rounds==1&&first?first:BATCH,need);
+  const bo=Math.min(needO,Math.round(b*needO/need)),bm=Math.min(needM,b-bo);
+  T.prog='יוצר שאלות… '+a.length+' מתוך '+total;if(T.loading)render();
+  const avoid=a.map(x=>String(x.q).slice(0,50)).join(' | ').slice(0,2000);
+  let r;
+  try{
+   if(topics){
+    const cov={};a.forEach(x=>{cov[+x.t]=(cov[+x.t]||0)+1});
+    const sub=topics.map((_,i)=>i).sort((p,q)=>(cov[p]||0)-(cov[q]||0)||p-q).slice(0,Math.max(1,Math.min(topics.length,b)));
+    r=await aiQs(text,topics,sub,bm,bo,'שאלה אחת לפחות על כל נושא ברשימה (כל שאלה על נושא אחר)'+(avoid?'. שאלות שכבר נוצרו, אל תחזור עליהן ואל תשאל את אותו הדבר בניסוח אחר: '+avoid:'.'));
+   }else{
+    r=await aiJson(ONEPROMPT(text,bm,bo)+(avoid?'\nשאלות שכבר נוצרו (אל תחזור עליהן ואל תשאל את אותו הדבר בניסוח אחר, כתוב שאלות חדשות ושונות): '+avoid:''));
+   }
+  }catch(e){
+   if(e&&e.message=='cancel')throw e;
+   lastErr=e;fails++;await new Promise(z=>setTimeout(z,e&&e.message=='limit'?12000:2500));continue;
+  }
+  let nq=cleanQs(normQs(r).filter(okQ),a);
+  try{nq=await verifyQs(nq,text)}catch(e){if(e&&e.message=='cancel')throw e}
+  nq=cleanQs(nq,a);
+  if(!nq.length){fails++;await new Promise(z=>setTimeout(z,1500));continue}
+  fails=0;a=a.concat(nq);
+  if(a.length<total)await new Promise(z=>setTimeout(z,1000));
+ }
+ if(!a.length)throw lastErr||new Error('empty');
+ const mc=a.filter(x=>x.type!='open'),op=a.filter(x=>x.type=='open');
+ let out=mc.slice(0,n).concat(op.slice(0,no));
+ if(out.length<total)out=out.concat(mc.slice(n).concat(op.slice(no)).slice(0,total-out.length));
+ return out;
+}
 async function gen(){
  if(window._stMode)window._stMode=0;else{T.story='';T.reading=false}
- const text=$('mat').value.trim(),n=Math.max(0,Math.min(30,+$('n').value||0)),no=Math.max(0,Math.min(15,+$('no').value||0));
+ const text=$('mat').value.trim(),n=Math.max(0,Math.min(MAXQ,+$('n').value||0)),no=Math.max(0,Math.min(MAXQ,+$('no').value||0));
  S.mats[SUBJ]=text;T.n=n;T.no=no;save();
  if($('grade')&&isTopic(text)&&!(SUBJ=='אנגלית'&&/^[A-Za-z .,'-]+$/.test(text))){await genCurr(text);return}
  if(text.length<8){if($('grade')){await(SUBJ=='עברית'?genStory():genCurr());return}T.err='כתוב חומר ללימוד (אפשר גם משפט אחד).';render();return}
  if(n+no<1){T.err='בחר לפחות שאלה אחת.';render();return}
+ if(n+no>MAXQ){T.err='המקסימום הוא '+MAXQ+' שאלות בסך הכל (אמריקאיות + פתוחות). כרגע בחרת '+(n+no)+'. הקטן את המספר.';render();return}
  T.loading=true;T.err='';render();
  const total=n+no;
  if(appOn()){await genViaApp(text,n,no);return}
  try{
-  if((text.length<2500||window._stG)&&total<=25){/* חומר קצר: בקשה אחת במקום שתיים (מהיר יותר) */
-   const r=await aiJson(ONEPROMPT(text,n,no));
-   let a=normQs(r).filter(okQ);const sn=new Set();a=a.filter(x=>sn.has(x.q)?false:(sn.add(x.q),true));
-   for(let tr=0;tr<2&&a.length<total&&a.length>0;tr++){
-    const hm=a.filter(x=>x.type=='mc').length,ho=a.length-hm,rn=Math.max(0,n-hm),ro=Math.max(0,no-ho);
-    if(rn+ro<1)break;
-    try{const r2=await aiJson(ONEPROMPT(text,rn,ro)+'\nשאלות שכבר נוצרו (אל תחזור עליהן, כתוב שאלות חדשות ושונות): '+a.map(x=>x.q).join(' | ').slice(0,1500));
-     const sn2=new Set(a.map(x=>x.q));normQs(r2).filter(okQ).forEach(x=>{if(!sn2.has(x.q)){sn2.add(x.q);a.push(x)}})}catch(e){break}
-   }
-   if(a.length>total)a=a.slice(0,total);if(!a.length)throw new Error('empty');
-   a=await verifyQs(a,text);T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
-   if(a.length<total)toast('ה-AI החזיר '+a.length+' שאלות מתוך '+total);
-   T.loading=false;render();return;
+  const shortMat=(text.length<2500||window._stG)&&total<=25;
+  let topics=null;
+  if(!shortMat){
+   topics=await aiTopics(text);
+   if(!topics.length)throw new Error('empty');
+   if(total<topics.length){const L0=topics.length;topics=Array.from({length:total},(_,i)=>topics[Math.floor(i*L0/total)])}
   }
-  const topics=await aiTopics(text);
-  if(!topics.length)throw new Error('empty');
-  if(total<topics.length){
-   T.err=`בחומר שכתבת יש ${topics.length} נושאים נפרדים. כדי לקבל שאלות על כל החומר צריך לפחות ${topics.length} שאלות בסך הכל (אמריקאיות + פתוחות). כרגע בחרת ${total}. הגדל את מספר השאלות.`;
-   T.loading=false;render();return;
-  }
-  const all=topics.map((x,i)=>i);
-  const CH=8,groups=[];for(let i=0;i<all.length;i+=CH)groups.push(all.slice(i,i+CH));
-  let extra=total-all.length;
-  const plan=groups.map((g,gi)=>{const e=Math.floor(extra/groups.length)+(gi<extra%groups.length?1:0);return{g,t:g.length+e}});
-  let noLeft=no;
-  plan.forEach((pl,gi)=>{pl.no=gi==plan.length-1?noLeft:Math.min(noLeft,Math.round(pl.t*no/total));noLeft-=pl.no;pl.mc=pl.t-pl.no});
-  const rs=[];/* אחת אחרי השנייה (במקביל המכסה החינמית של Google נחסמת ורק קבוצה אחת מצליחה), עם ניסיון חוזר */
-  for(const pl of plan){let st=null;for(let k=0;k<3&&!st;k++){try{st={status:'fulfilled',value:await aiQs(text,topics,pl.g,pl.mc,pl.no)}}catch(e){st=k==2?{status:'rejected',reason:e}:null;if(!st)await new Promise(z=>setTimeout(z,k?7000:3500))}}rs.push(st)}
-  if(rs.every(x=>x.status=='rejected'))throw rs[0].reason;
-  let a=[];rs.forEach(x=>{if(x.status=='fulfilled'){const r=x.value;a=a.concat(normQs(r).filter(okQ))}});
-  const cov=()=>new Set(a.map(x=>+x.t));
-  let miss=all.filter(i=>!cov().has(i));
-  for(let tries=0;miss.length&&tries<3;tries++){
-   try{
-    const r2=await aiQs(text,topics,miss,Math.ceil(miss.length*.6),Math.floor(miss.length*.4),'שאלה אחת בדיוק על כל נושא ברשימה.');
-    a=a.concat(normQs(r2).filter(okQ));
-   }catch(e){await new Promise(z=>setTimeout(z,5000))}
-   miss=all.filter(i=>!cov().has(i));
-  }
-  const seen=new Set();a=a.filter(x=>seen.has(x.q)?false:(seen.add(x.q),true));
-  while(a.length>total){
-   const cnt={};a.forEach(x=>{cnt[x.t]=(cnt[x.t]||0)+1});
-   const k=Object.keys(cnt).sort((p,q)=>cnt[q]-cnt[p])[0];
-   if(cnt[k]<2)break;
-   const j=a.map((x,i)=>String(x.t)==k?i:-1).filter(i=>i>=0).pop();a.splice(j,1);
-  }
-  if(!a.length)throw new Error('empty');
-  a=await verifyQs(a,text);T.qs=shuffle(a);saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;
-  if(miss.length)toast('לא הצלחתי ליצור שאלות על '+miss.length+' נושאים. נסה שוב.');
+  const a=await genBatches(text,n,no,topics,shortMat?total:0);
+  T.qs=shuffle(finalQs(a));saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
+  if(a.length<total)toast('נוצרו '+a.length+' שאלות מתוך '+total+' (ה-AI לא הצליח ליצור שאלות תקינות ושונות נוספות). אפשר ללחוץ שוב על צור מבחן.');
  }catch(e){
-    useLocal(text,n,no,e);return
+  T.prog='';
+  if(e&&e.message=='cancel'){T.err='';T.loading=false;render();return}
+  useLocal(text,n,no,e);return
  }
+ T.prog='';
  T.loading=false;render();
 }
 function useLocal(text,n,no,e){
@@ -1146,7 +1276,8 @@ async function gradeOpen(q){
 function testView(){
  const v=$('v');document.body.classList.add('tbg');
  if(T.qs.length&&T.tq!==T.qs){T.tq=T.qs;T.t0=Date.now();T.dur=0}
- if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">בדרך כלל 10–30 שניות</div></div>';return}
+ if(T.fixing){v.innerHTML='<div class="card"><div class="big">🛠 מתקן את השאלה…</div><div class="mute" style="text-align:center">זה לוקח כמה שניות</div></div>';return}
+ if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">'+(T.prog?esc(T.prog):'בדרך כלל 10–30 שניות')+'</div><div class="mute" style="text-align:center;margin-top:6px">מבחן גדול נוצר בקבוצות ולוקח כמה דקות</div></div>';return}
  if(T.reading&&T.story&&T.qs.length){document.body.classList.add('tbg');v.innerHTML=`<div class="card"><div class="big">📖 קראו את הקטע</div><div class="mute" style="text-align:center">אחרי הקריאה יש ${T.qs.length} שאלות עליו</div><div class="tstory" style="margin:12px 0"><div style="margin:0;font-size:16px">${esc(T.story)}</div></div><button class="btn" id="rd">${T.started?'חזרה לשאלה ›':'התחל שאלות ›'}</button></div>`;$('rd').onclick=()=>{T.reading=false;T.started=true;render();window.scrollTo(0,0)};return}
  if(T.qs.length){document.body.classList.add('tbg');
   const sk=T.skipped||0,tot=Math.max(0,T.qs.length-sk);
@@ -1163,39 +1294,46 @@ function testView(){
    return}
   const q=T.qs[T.i],last=T.i+1<T.qs.length?'שאלה הבאה ›':'לציון 🏆';
   const next=()=>{T.i++;T.pick=null;T.ans='';T.way='';T.fb=null;render()};
-  const tag=`שאלה ${T.i+1}/${T.qs.length}`;
+  const tag=`שאלה ${T.i+1}/${T.qs.length}`,rpb='<div style="text-align:center;margin:12px 0 0"><button class="tbtn sec" id="rp" style="width:auto;padding:8px 16px;font-size:14px">🚩 דווח על שאלה</button></div>';
   if(q.type=='open'){
    const f=T.fb,math=SUBJ=='מתמטיקה'&&/^[\d\s.,\/\-]+$/.test(String(q.model).trim()),dis=f?'disabled':'';
    let fbh='';
-   if(f&&f.shown){fbh=`<div class="tmsg tneu" style="text-align:right"><b>תשובה מצופה:</b> ${mx(String(q.model))}</div><p style="font-weight:700;margin:12px 0 0">איך הלך לך?</p><div class="trow"><button class="tbtn r" data-s="0">לא ידעתי</button><button class="tbtn y" data-s="0.5">חלקית</button><button class="tbtn" data-s="1">ידעתי</button></div>`}
-   else if(f){const c=f.score==1?'tok':f.score==0?'tbad':'tneu';fbh=`<div class="tmsg ${c}">${f.unchecked?'':f.score==1?'נכון! ✓ ':f.score==.5?'נכון חלקית ':(/^כמעט/.test(f.text)?'':'לא נכון ')}${mx(f.text)}</div><p class="mute" style="color:#5d6b85"><b>תשובה מצופה:</b> ${mx(String(q.model))}</p><div class="trow"><button class="tbtn" id="nx">${last}</button><button class="tbtn sec" id="bq">🚩 השאלה לא תקינה</button></div>`}
+   if(f&&f.shown){fbh=`<div class="tmsg tneu" style="text-align:right"><b>תשובה מצופה:</b> ${mx(String(q.model))}${q.why?'<br><b>למה?</b> '+mx(String(q.why)):''}</div><p style="font-weight:700;margin:12px 0 0">איך הלך לך?</p><div class="trow"><button class="tbtn r" data-s="0">לא ידעתי</button><button class="tbtn y" data-s="0.5">חלקית</button><button class="tbtn" data-s="1">ידעתי</button></div>`}
+   else if(f){const c=f.score==1?'tok':f.score==0?'tbad':'tneu';fbh=`<div class="tmsg ${c}">${f.unchecked?'':f.score==1?'נכון! ✓ ':f.score==.5?'נכון חלקית ':(/^כמעט/.test(f.text)?'':'לא נכון ')}${mx(f.text)}</div><p class="mute" style="color:#5d6b85"><b>תשובה מצופה:</b> ${mx(String(q.model))}</p>${q.why?`<p class="mute" style="color:#5d6b85"><b>למה?</b> ${mx(String(q.why))}</p>`:''}<div class="trow"><button class="tbtn" id="nx">${last}</button></div>`}
    v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${mx(String(q.q))}</div>
    <label>✏️ דרך הפתרון (לא חובה)</label><textarea id="ow" rows="2" placeholder="אפשר להשאיר ריק" ${dis}>${esc(T.way||'')}</textarea>
    <label>🎯 תשובה</label>${math?`<input id="oa" class="ta" inputmode="none" readonly placeholder="לדוגמה 1/2" value="${esc(T.ans)}">${f?'':'<div class="tkp" id="kp"></div>'}`:`<textarea id="oa" rows="3" placeholder="כתוב את תשובתך" ${dis}>${esc(T.ans)}</textarea>`}
-   ${f?'':'<div class="trow"><button class="tbtn" id="gr">בדוק ✨</button><button class="tbtn sec" id="sk">דלג</button></div>'}${fbh}</div></div>`;
-   if(math&&!f){const KP=['1','2','3','4','5','6','7','8','9','/','0','.','-','⌫'];$('kp').innerHTML=KP.map(k=>`<button class="${k=='/'?'op':k=='⌫'?'del':''}" data-k="${k}">${k}</button>`).join('');
+   ${f?'':'<div class="trow"><button class="tbtn" id="gr">בדוק ✨</button><button class="tbtn sec" id="sk">דלג</button></div>'}${fbh}${rpb}</div></div>`;
+  if(math&&!f){const KP=['1','2','3','4','5','6','7','8','9','/','0','.','-','⌫'];$('kp').innerHTML=KP.map(k=>`<button class="${k=='/'?'op':k=='⌫'?'del':''}" data-k="${k}">${k}</button>`).join('');
     $('kp').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=$('oa');a.value=b.dataset.k=='⌫'?a.value.slice(0,-1):a.value+b.dataset.k}}
    if(f&&f.shown)v.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const s=+b.dataset.s;T.score+=s;if(s==1)confetti();next()});
-   else if(f){$('nx').onclick=next;if($('bq'))$('bq').onclick=()=>{T.score-=(f.score||0);T.skipped=(T.skipped||0)+1;toast('לא נספר בציון');next()}}
+   else if(f){$('nx').onclick=next}
    else{$('gr').onclick=()=>gradeOpen(q);$('sk').onclick=()=>{T.skipped=(T.skipped||0)+1;next()}}
-   return}
+  if($('rp'))$('rp').onclick=openReport;
+  return}
   const ans=+q.answer,p=T.pick;
   v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${mx(String(q.q))}</div><div class="topts">
   ${q.options.map((o,i)=>`<button class="topt ${p!==null?(i===ans?'right':i===p?'wrong':''):''}" data-i="${i}" ${p!==null?'disabled':''}><span class="tl">${'אבגד'[i]||i+1}</span>${mx(String(o))}</button>`).join('')}</div>
-  ${p!==null?`<div class="tmsg ${p===ans?'tok':'tbad'}">${p===ans?'נכון! ✓':'לא נכון'}${q.why?' · '+mx(String(q.why)):''}</div><div class="trow"><button class="tbtn" id="nx">${last}</button></div>`:''}</div></div>`;
+  ${p!==null?`<div class="tmsg ${p===ans?'tok':'tbad'}">${p===ans?'נכון! ✓':'לא נכון. התשובה הנכונה: '+mx(String(q.options[ans]))}</div>${q.why?`<div class="tmsg tneu" style="text-align:right"><b>למה?</b> ${mx(String(q.why))}</div>`:''}${(Array.isArray(q.exp)&&q.exp.length==q.options.length)?`<div class="texp">${q.options.map((o,i)=>`<div class="te ${i===ans?'r':i===p?'w':''}"><b>${'אבגד'[i]||i+1}. ${i===ans?'✓ נכונה':'✗ שגויה'}${i===p?' (בחרת)':''}:</b> ${mx(String(q.exp[i]))}</div>`).join('')}</div>`:''}<div class="trow"><button class="tbtn" id="nx">${last}</button></div>`:''}${rpb}</div></div>`;
   v.querySelectorAll('.topt').forEach(b=>b.onclick=()=>{T.pick=+b.dataset.i;const ok=T.pick===ans;if(ok)T.score++;render();if(ok)confetti()});
   if(p!==null)$('nx').onclick=next;
+  if($('rp'))$('rp').onclick=openReport;
   return}
  v.innerHTML=`<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><img class="gi" src="${IM[SUBJ]||''}" alt=""><p style="margin:0;font-size:20px;font-weight:800">המבחן ייערך ב${esc(SUBJ)}</p></div><div style="margin:6px 0 12px"><label style="font-weight:800" for="grade">🎓 כיתה</label><select id="grade" style="width:100%;margin-top:6px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="א">כיתה א׳</option><option value="ב">כיתה ב׳</option><option value="ג">כיתה ג׳</option><option value="ד">כיתה ד׳</option><option value="ה">כיתה ה׳</option><option value="ו">כיתה ו׳</option><option value="ז">כיתה ז׳</option><option value="ח">כיתה ח׳</option><option value="ט">כיתה ט׳</option><option value="י">כיתה י׳</option><option value="י״א">כיתה י״א</option><option value="י״ב">כיתה י״ב</option></select></div><p style="font-weight:600;margin-top:0">רשמו כאן את החומר</p><p class="mute" style="margin-top:-6px">(ללא הערות מהמורה או תאריך)</p><textarea id="mat" rows="9" placeholder="הדבק או כתוב כאן את כל חומר הלימוד"></textarea>
- <div class="row"><div style="flex:1"><label class="mute" for="n">שאלות אמריקאיות</label><input id="n" type="number" min="0" max="30" value="${T.n}" inputmode="numeric"></div>
- <div style="flex:1"><label class="mute" for="no">שאלות פתוחות</label><input id="no" type="number" min="0" max="15" value="${T.no}" inputmode="numeric"></div></div>
+ <label style="font-weight:800;display:block;margin-top:6px">🔢 כמה שאלות? (גללו למספר)</label>${wheelHTML('wh',100)}<input id="n" type="hidden" value="${T.n}"><input id="no" type="hidden" value="${T.no}">
+ <div class="mute" id="lim" style="margin:4px 0 0;text-align:center"></div>
  ${(!hasAI()&&AIST==='app')?'<div class="card" style="background:color-mix(in srgb,#10b981 14%,transparent);margin:8px 0"><b>🤝 משתמש באפליקציית AI שבטלפון</b><p class="mute" style="margin:4px 0 8px">בלחיצה על "צור מבחן" תפתח את Gemini / ChatGPT (אם אין לך, תתבקש להתקין). רוצה בלי זה? הדבק מפתח חינמי פעם אחת.</p><button class="btn sec" id="gokey">הגדר מפתח AI</button></div>':''}
- <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button>${(SUBJ=='עברית'||SUBJ=='אנגלית')?`<div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cfd6e6"><label style="font-weight:800">📖 קטע קריאה ומבחן עליו${SUBJ=='אנגלית'?' (באנגלית)':''}</label><select id="tlen" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="s">קטע קצר</option><option value="m">קטע בינוני</option><option value="l">קטע ארוך</option></select><label class="mute" for="qn" style="display:block;margin-top:10px">מספר שאלות</label><input id="qn" type="number" min="1" max="20" value="8" inputmode="numeric" style="width:100%;margin-top:4px"><button class="btn" id="mkst" style="margin-top:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)">📖 תן לי קטע קריאה ומבחן</button></div>`:''}</div>${savedCard()}`;
+ <div class="mute" id="hint" style="margin:4px 0 0"></div><div class="msg" style="color:var(--bad);overflow-wrap:anywhere;word-break:break-word;max-width:100%;font-size:14px;direction:rtl;text-align:right">${esc(T.err)}</div><button class="btn" id="mk">צור מבחן</button>${(SUBJ=='עברית'||SUBJ=='אנגלית')?`<div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cfd6e6"><label style="font-weight:800">📖 קטע קריאה ומבחן עליו${SUBJ=='אנגלית'?' (באנגלית)':''}</label><select id="tlen" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd"><option value="s">קטע קצר</option><option value="m">קטע בינוני</option><option value="l">קטע ארוך</option></select><label class="mute" style="display:block;margin-top:10px">מספר שאלות על הקטע (עד 20)</label>${wheelHTML('whq',20)}<input id="qn" type="hidden" value="8"><button class="btn" id="mkst" style="margin-top:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)">📖 תן לי קטע קריאה ומבחן</button></div>`:''}</div>${savedCard()}`;
  $('mat').value=S.mats[SUBJ]||'';$('mk').onclick=gen;if($('mkst'))$('mkst').onclick=genStory;try{$('grade').value=S.grade||'ה';if($('tlen'))$('tlen').value=S.tlen||'m';if($('qn'))$('qn').value=S.qn||8}catch(e){}$('grade').onchange=()=>{S.grade=$('grade').value;save()};
  const hint=()=>{const t=$('mat').value.trim(),h=$('hint');if(!h)return;if(t.length<8){h.textContent='אפשר להשאיר ריק (שאלות לפי תוכנית הכיתה), או לכתוב רק נושא קצר, למשל "בראשית פרק א", והאפליקציה תכין שאלות עליו.';h.style.color='var(--mute)';return}
   if(isTopic(t)){h.textContent='נושא קצר: ה-AI יכין שאלות לפי מה שהוא יודע על הנושא (ייתכנו טעויות). לחומר מדויק של הספר, הדביקו את הטקסט.';h.style.color='var(--mute)';return}const m=minNeeded(t),tot=(+$('n').value||0)+(+$('no').value||0);
-  h.textContent='ככל שיש יותר חומר צריך יותר שאלות. בלחיצה על צור מבחן האפליקציה תמנה את כל נושאי החומר ותגיד כמה שאלות צריך כדי לכסות את כולם (הערכה כרגע: לפחות '+m+').';h.style.color=tot>=m?'var(--mute)':'var(--bad)'};
- ['mat','n','no'].forEach(i=>$(i).addEventListener('input',hint));hint();if($('gokey'))$('gokey').onclick=()=>{showSet=true;render()};
+  h.textContent='האפליקציה תמנה את נושאי החומר ותחלק את השאלות ביניהם שווה בשווה.';h.style.color='var(--mute)'};
+ const lim=()=>{const L=$('lim');if(!L)return;const t=(+$('n').value||0)+(+$('no').value||0);L.textContent=t+' שאלות: '+(+$('n').value||0)+' אמריקאיות ו-'+(+$('no').value||0)+' פתוחות, מחולקות שווה בין הנושאים בחומר'+(t>25?'. מבחן גדול נוצר בקבוצות ולוקח כמה דקות.':'');L.style.color='var(--mute)'};
+ ['mat','n','no'].forEach(i=>$(i).addEventListener('input',hint));['n','no'].forEach(i=>$(i).addEventListener('input',lim));hint();lim();
+ const setTot=t=>{if(!$('n')||!$('no'))return;t=Math.max(1,Math.min(MAXQ,t));const n=Math.round(t*.7),no=t-n;$('n').value=n;$('no').value=no;T.n=n;T.no=no;$('n').dispatchEvent(new Event('input'))};
+ wheelInit('wh',100,Math.max(1,Math.min(MAXQ,(+T.n||0)+(+T.no||0)||8)),setTot);
+ if($('whq'))wheelInit('whq',20,+$('qn').value||8,t=>{if($('qn'))$('qn').value=t});
+ if($('gokey'))$('gokey').onclick=()=>{showSet=true;render()};
  addUpload('mat');
  v.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>startSaved(b.dataset.play));
  v.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{S.tests[SUBJ]=S.tests[SUBJ].filter(x=>x.id!=b.dataset.del);save();render()});
@@ -1344,6 +1482,7 @@ function settingsView(){
  <div id="mycode" dir="ltr" style="font:700 24px ui-monospace,monospace;text-align:center;letter-spacing:2px;margin:6px 0">${myCode()||'—'}</div>
  <p class="mute" style="margin:0 0 8px;text-align:center">הקוד האישי והייחודי שלך. נוצר אוטומטית.</p>
  <button class="btn sec" id="cpcode">העתק קוד</button></div>
+ <div class="card"><p style="font-weight:600;margin-top:0">🚩 דיווחים על שאלות (${(S.reports||[]).length})</p><p class="mute" style="margin:0 0 8px">כל דיווח נשמר כאן. אפשר להעתיק ולשלוח לי כדי שאתקן גם את הקוד.</p><button class="btn sec" id="rpcopy">העתק דיווחים</button><button class="btn sec" id="rpclr" style="margin-top:8px">נקה דיווחים</button></div>
  <div class="card"><p style="font-weight:600;margin-top:0">סגנון קול</p>
  <div class="row" style="margin-bottom:8px">${opt('female','בת')}${opt('male','בן')}</div>${opt('mine','🎙 הקול שלי')}
  <div style="height:8px"></div><button class="btn sec" id="demo">השמע דוגמה</button></div>
@@ -1374,6 +1513,7 @@ ${themeCard()}${voiceCard()}
  if($('hz')){$('hz').oninput=e=>{S.hz=+e.target.value;S.voice='mine';$('hzl').textContent=S.hz+' הרץ'};$('hz').onchange=()=>{save();speak(S.words[0]||'Hello')}}
  $('imgdiag').onclick=async()=>{$('imgrep').textContent='בודק...';$('imgrep').textContent=await window.imgDiag()};$('imgfix').onclick=()=>window.imgFix();
  $('demo').onclick=()=>speak(S.words[0]||'Hello');
+ if($('rpcopy'))$('rpcopy').onclick=async()=>{const ok=await copyTxt(JSON.stringify((S.reports||[]).slice(0,30),null,1));toast(ok?'הדיווחים הועתקו ✓':'לא הצלחתי להעתיק')};if($('rpclr'))$('rpclr').onclick=()=>{if(!confirm('למחוק את כל הדיווחים?'))return;S.reports=[];save();render()};
  if($('cpcode'))$('cpcode').onclick=async()=>{const ok=await copyTxt(myCode());toast(ok?'הקוד הועתק ✓':'לא הצלחתי להעתיק')};
  const ks=()=>{const on=!!(getKey()||getProxy()),e=$('kst');e.textContent=on?'מחובר ✓':'לא מחובר';e.classList.toggle('on',on)};
  $('aks').onclick=async()=>{setKey($('akey').value.trim());try{const px=$('aprx').value.trim();px?localStorage.setItem('aiproxy',px):localStorage.removeItem('aiproxy')}catch(e){}ks();if(!getKey()&&!getProxy()){$('akm').textContent='נמחק';return}
@@ -1385,7 +1525,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.51';window.VER=VER;function navDraw(){
+const VER='2.54';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
