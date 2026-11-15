@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 2.54 | קוד עדכון V-UHTK-U3G2 -->
+<!-- מתכוננים | גרסה 3.46 | קוד עדכון V-AQ7M-3KDF -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -212,8 +212,8 @@ body.tbg{background:var(--tbg,linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-M4YC-6GDS";   /* קוד העדכון של גרסה 2.59. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "2.59";
+window.UPDATE_CODE = "V-AQ7M-3KDF";   /* קוד העדכון של גרסה 3.46. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.46";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -336,6 +336,17 @@ let hp=0,hgn=0;
 function histSync(){try{const deep=tab||showSet;if(deep&&!hp){history.pushState({d:1},'');hp=1}else if(!deep&&hp){hp=0;hgn=1;history.back()}}catch(e){}}
 window.addEventListener('popstate',()=>{if(hgn){hgn=0;return}hp=0;if(tab||showSet){const b=$('nb');if(b)b.click()}});
 /* ---- מבחנים ---- */
+let askLog=[],askBusy=false;
+async function askAI(q){
+ const hist=askLog.slice(-2).map(x=>'שאלה: '+x.q+'\nתשובה: '+x.a).join('\n\n');
+ const sub=(typeof SUBJ=='string'&&SUBJ)?'התלמיד לומד כרגע: '+SUBJ+'. ':'';
+ const pr='אתה מורה סבלני שעונה לתלמיד/ה בישראל. '+sub+'ענה בעברית פשוטה וברורה, בקצרה (עד 6 משפטים). אם השאלה באנגלית, ענה בעברית והוסף את המילים באנגלית. אל תמציא עובדות: אם אינך בטוח, כתוב זאת במפורש. אם זו שאלת חשבון, הראה את שלבי הפתרון בקצרה.'+(hist?'\n\nשיחה קודמת:\n'+hist:'')+'\n\nשאלת התלמיד: '+q+'\n\nהחזר JSON בלבד בפורמט: {"answer":"התשובה כאן"}';
+ const r=await aiJson(pr);
+ let a=r&&(r.answer||r.text||r.a)||(typeof r=='string'?r:'')||(Array.isArray(r)&&r[0]&&(r[0].answer||r[0].text||r[0]))||'';
+ a=fixHe(deTex(String(a))).trim();
+ if(!a)throw new Error('parse');
+ return a;
+}
 function cardsView(){
  const v=$('v');
  if(mode=='quiz'){
@@ -348,10 +359,16 @@ function cardsView(){
   if(flip){$('yes').onclick=()=>{stat.ok++;queue.shift();flip=false;render()};$('no').onclick=()=>{stat.bad++;queue.push(queue.shift());flip=false;render()}}
   else $('show').onclick=()=>{flip=true;render()};
   return}
- v.innerHTML=`<div class="card"><textarea id="q" rows="2" placeholder="שאלה או מושג"></textarea><textarea id="a" rows="2" placeholder="תשובה"></textarea><button class="btn" id="add">הוסף פתקית</button></div>
+ v.innerHTML=`<div class="card"><div style="font-weight:800;margin-bottom:6px">🤖 שאל את ה-AI</div><textarea id="aq" rows="2" placeholder="כתוב כאן שאלה, וה-AI יענה"></textarea><button class="btn" id="ask">${askBusy?'חושב...':'שאל'}</button><div id="alog">${askLog.slice().reverse().map((x,i)=>`<div class="item" style="display:block;margin-top:10px"><div style="font-weight:700">❓ ${esc(x.q)}</div><div style="white-space:pre-wrap;margin-top:4px">${esc(x.a)}</div><button class="btn sec" data-sv="${askLog.length-1-i}" style="margin-top:6px">➕ שמור כפתקית</button></div>`).join('')}</div></div>
+ <div class="card"><textarea id="q" rows="2" placeholder="שאלה או מושג"></textarea><textarea id="a" rows="2" placeholder="תשובה"></textarea><button class="btn" id="add">הוסף פתקית</button></div>
  ${S.cards.length?`<button class="btn" id="go">תרגול (${S.cards.length} פתקיות)</button>`:`<p class="mute" style="text-align:center">הוסף פתקיות כדי להתחיל לתרגל</p>`}
  <div class="card" ${S.cards.length?'':'hidden'}>${S.cards.map((c,i)=>`<div class="item"><span>${esc(c.q)}</span><button data-i="${i}" aria-label="מחק">✕</button></div>`).join('')}</div>`;
  $('add').onclick=()=>{const q=$('q').value.trim(),a=$('a').value.trim();if(!q||!a)return;S.cards.push({q,a});save();render()};
+ $('ask').onclick=async()=>{const q=$('aq').value.trim();if(!q||askBusy)return;if(!hasAI()){toast('ה-AI לא זמין כרגע. נסה שוב עוד רגע.');return}
+  askBusy=true;$('ask').textContent='חושב...';
+  try{const a=await askAI(q);askLog.push({q,a});if(askLog.length>20)askLog.shift()}catch(e){toast(aiErr(e))}
+  askBusy=false;if(mode=='list'&&tab==1)render()};
+ v.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const x=askLog[+b.dataset.sv];if(!x)return;S.cards.push({q:x.q,a:x.a});save();toast('נשמר כפתקית ✅');render()});
  if(S.cards.length)$('go').onclick=()=>{queue=shuffle(S.cards);stat={ok:0,bad:0};flip=false;mode='quiz';render()};
  v.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{S.cards.splice(+b.dataset.i,1);save();render()});
 }
@@ -1570,7 +1587,7 @@ ${themeCard()}${voiceCard()}
  bindTheme(v);
 }
 /* ---- מסך בית ---- */
-const VER='2.54';window.VER=VER;function navDraw(){
+const VER=window.APP_VER||'?';window.VER=VER;function navDraw(){
  const n=$('nav');
  if(!tab&&!showSet){n.innerHTML='';return}
  n.innerHTML=`<button class="navb" id="nb">→ ${showSet?'חזרה':tab==3?'מקצועות':(tab==6&&P.cur)?'פודקאסטים':(tab==5&&GS)?'ציונים':'בית'}</button>`;
