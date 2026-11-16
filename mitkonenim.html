@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.47 | קוד עדכון V-H2NP-7XWC -->
+<!-- מתכוננים | גרסה 3.49 | קוד עדכון V-P6GL-2YVN -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-H2NP-7XWC";   /* קוד העדכון של גרסה 3.47. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.47";
+window.UPDATE_CODE = "V-P6GL-2YVN";   /* קוד העדכון של גרסה 3.49. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.49";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -651,7 +651,7 @@ function saveTest(qs,src){T.src=src||'';T.why='';try{window.trackFeature&&trackF
 }
 function startSaved(id){
  const t=((S.tests||{})[SUBJ]||[]).find(x=>x.id==id);if(!t)return;
- T.sid=t.id;T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs)).filter(x=>!x.bad).map(x=>{x.q=fixHe(x.q);return x});T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
+ T.sid=t.id;T.src=t.src||'';T.qs=JSON.parse(JSON.stringify(t.qs)).filter(x=>!x.bad&&(t.story||!DANGLE.test(String(x.q)))).map(x=>{x.q=fixHe(x.q);return x});T.story=t.story||'';T.reading=!!t.story;T.started=false;T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';render();
 }
 function savedCard(){
  const l=(S.tests||{})[SUBJ]||[];if(!l.length)return '';
@@ -949,6 +949,9 @@ function isDup(q,list){
  const w=qToks(q.q),k=qKey(q.q),ak=qKey(ansText(q));
  return list.some(o=>{if(qKey(o.q)===k)return true;const j=jac(w,qToks(o.q));if(j>=.85)return true;if(ak.length>=4&&ak===qKey(ansText(o))&&j>=.4)return true;return false});
 }
+/* זיכרון בין מבחנים: שאלות שכבר נוצרו במקצוע הזה, כדי שלא יחזרו שוב ושוב */
+function hist(){try{return ((S.seen||{})[SUBJ]||[]).map(x=>({q:x.q,type:'open',model:x.a||''}))}catch(e){return []}}
+function rememberQs(qs){try{S.seen=S.seen||{};const l=S.seen[SUBJ]=S.seen[SUBJ]||[];(qs||[]).forEach(q=>{if(q&&q.q)l.push({q:String(q.q).slice(0,160),a:ansText(q).slice(0,80)})});if(l.length>150)l.splice(0,l.length-150);save()}catch(e){}}
 /* מסיר כפילויות (בתוך הרשימה ולעומת קיימות) ושאלות עם אפשרויות חוזרות או ריקות */
 function cleanQs(a,existing){
  const out=[];
@@ -997,7 +1000,7 @@ function wheelInit(id,max,val,onChange){
  requestAnimationFrame(()=>{if(cur===val&&Math.round(el.scrollTop/H)+1!==val)go(val,false)});
  return{set:v=>{v=Math.max(1,Math.min(max,Math.round(+v)||1));go(v,false);mark(v);requestAnimationFrame(()=>{if(Math.round(el.scrollTop/H)+1!==v)go(v,false)})}};
 }
-const RPR={wrong_answer:'התשובה שסומנה כנכונה שגויה',bad_question:'השאלה לא ברורה, לא נכונה או חסרה',typo:'טעות כתיב או ניסוח',obvious:'התשובה הנכונה בולטת וקל לנחש',other:'בעיה אחרת'};
+const RPR={repeat:'השאלה הזו חוזרת, כבר ראיתי אותה',wrong_answer:'התשובה שסומנה כנכונה שגויה',bad_question:'השאלה לא ברורה, לא נכונה או חסרה',typo:'טעות כתיב או ניסוח',obvious:'התשובה הנכונה בולטת וקל לנחש',other:'בעיה אחרת'};
 function openReport(){
  if(T.busy||T.fixing||!T.qs[T.i])return;
  const o=document.createElement('div');o.id='rpm';o.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(5,15,40,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px';
@@ -1016,13 +1019,20 @@ async function fixQuestion(q,reason,detail){
  const mat=String(S.mats[SUBJ]||'').slice(0,3500);
  const o={type:q.type,q:q.q};if(q.type=='open')o.model=q.model;else{o.options=q.options;o.answer=q.answer}if(q.why)o.why=q.why;
  const pr='אתה מורה מקצועי ב'+SUBJ+'. תלמיד דיווח על בעיה בשאלה במבחן. סוג הבעיה: '+RPR[reason]+'.'+(detail?' הערת התלמיד: '+detail+'.':'')+(T.pick!=null&&q.type!='open'?' התלמיד בחר באפשרות מספר '+T.pick+' (מתחילים מ-0).':(T.ans?' התלמיד ענה: '+T.ans+'.':''))+'\nהשאלה: '+JSON.stringify(o)+(mat?'\nחומר הלימוד: '+mat:'')+'\nתקן את השאלה כך שתהיה תקינה: שאלה ברורה ושלמה, נכונה עובדתית (לפי החומר אם יש), בעברית תקנית. '+(q.type=='open'?'model = תשובה מצופה קצרה וברורה, why = הסבר קצר.':'בדיוק 4 אפשרויות באורך ובפירוט דומים (הפרש עד כ-25%), רק אחת נכונה, answer = מספר האפשרות הנכונה (מ-0), why = משפט אחד למה הנכונה נכונה, exp = מערך של 4 הסברים קצרים (עד 12 מילים), אחד לכל אפשרות לפי הסדר, למה היא נכונה או שגויה.')+' אל תשנה את הנושא. אם אי אפשר לתקן בבטחה, החזר {"drop":true}.\nהחזר JSON בלבד.';
- let r;try{r=await aiJson(pr)}catch(e){return null}
- if(!r||typeof r!='object'||r.drop===true)return null;
- let nq=normQs([Object.assign({},r,{type:q.type})]).filter(okQ)[0];
- if(!nq)return null;
- if(isDup(nq,T.qs.filter((_,i)=>i!==T.i)))return null;
- try{nq=(await verifyQs([nq],mat))[0]}catch(e){return null}
- return nq?shuffleOpts(nq):null;
+ const others=T.qs.filter((_,i)=>i!==T.i);
+ const avoidTxt=others.concat(reason=='repeat'?hist():[]).slice(-30).map(x=>String(x.q).slice(0,45)).join(' | ').slice(0,1800);
+ const extra=(reason=='repeat'?'\nהשאלה הזו כבר הופיעה. כתוב שאלה חדשה לגמרי על חלק אחר בחומר, עם נושא ותשובה נכונה שונים, ולא ניסוח אחר של אותה שאלה.':'')+(avoidTxt?'\nאל תיצור שאלה דומה לאלה: '+avoidTxt:'');
+ for(let at=0;at<2;at++){
+  let r=null;try{r=await aiJson(pr+extra)}catch(e){r=null}
+  if(!r||typeof r!='object'||Array.isArray(r)||r.drop===true){await new Promise(z=>setTimeout(z,1200));continue}
+  let nq=normQs([Object.assign({},r,{type:q.type})]).filter(okQ)[0];
+  if(!nq)continue;
+  if(isDup(nq,others.concat(reason=='repeat'?hist().concat([q]):[])))continue;
+  try{nq=(await verifyQs([nq],mat))[0]}catch(e){continue}
+  if(!nq)continue;
+  nq=shuffleOpts(nq);rememberQs([nq]);return nq;
+ }
+ return null;
 }
 async function doReport(reason,detail){
  const q=T.qs[T.i];if(!q||T.busy||T.fixing)return;
@@ -1118,7 +1128,10 @@ function normQs(r){
   y.q=fixHe(deTex(y.q));y.why=fixHe(deTex(y.why));if(y.model!=null)y.model=fixHe(deTex(String(y.model)));if(Array.isArray(y.options))y.options=y.options.map(v=>fixHe(deTex(v)));
   return mathFix(y)}).filter(Boolean);
 }
-const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1);
+/* שאלה שמתייחסת למשהו שלא מוצג (קטע 3, תמונה, טבלה...) אי אפשר לענות עליה. בקטע קריאה (סיפור) זה כן תקין */
+const DANGLE=/(?:ב|ל|מ|של|על)?קטע\s*(?:מספר\s*)?\d|בסעיף\s*\d|בשורה\s*\d|בפסקה\s*\d|(?:ב|ל|מ|על\s+|לפי\s+)ה?(?:תמונה|שרטוט|תרשים|איור|צילום)(?![א-ת])|(?:ב|מ|על\s+|לפי\s+)ה?(?:גרף|טבלה|מפה)\s+(?:שלפניך|הבאה?|שלהלן|שלמעלה|הנתונה?)|(?:בקטע|בטקסט|בקטע הקריאה)\s+(?:שלפניך|הבא|שלהלן|שלמעלה|הנתון)|לפי\s+הקטע\s+(?:שלפניך|הבא)|(?:the\s+)?(?:passage|text|picture|image|chart|table|paragraph)\s+(?:above|below)|in\s+(?:paragraph|passage|text|section)\s*\d/i;
+const okQ=x=>x&&x.q&&(x.type=='open'?x.model:Array.isArray(x.options)&&x.options.length>1)&&(window._stG||!DANGLE.test(String(x.q)));
+const NOREF='\nחשוב: כל שאלה חייבת להיות מובנת לגמרי בפני עצמה, בלי להסתמך על משהו שלא כתוב בשאלה. אסור להפנות לקטע, לתמונה, לסעיף, לטבלה, לתרשים או לשאלה אחרת (למשל אסור "בקטע 3" או "לפי התמונה"). אם צריך מידע, כתוב אותו בתוך השאלה.';
 async function genStory(){
  const qt=$('qn')?Math.max(1,Math.min(20,+$('qn').value||8)):0,n=qt?Math.round(qt*.7):Math.max(0,Math.min(MAXQ,+$('n').value||0)),no=qt?qt-Math.round(qt*.7):Math.max(0,Math.min(MAXQ,+$('no').value||0)),gr=$('grade').value||'ה',ln=($('tlen')&&$('tlen').value)||'m',EN=SUBJ=='אנגלית';
  S.grade=gr;S.tlen=ln;if(qt)S.qn=qt;T.n=n;T.no=no;save();T.loading=true;T.err='';T.story='';render();
@@ -1157,7 +1170,7 @@ async function genCurr(topic){
 }
 /* יצירת מבחן בקבוצות קטנות (עד 10 שאלות בבקשה) עד 100 שאלות, עם הסרת כפילויות ובדיקת תשובות לכל קבוצה */
 async function genBatches(text,n,no,topics,first){
- const total=n+no;let a=[],fails=0,rounds=0,lastErr=null;
+ const total=n+no;let a=[],fails=0,rounds=0,lastErr=null,useH=true,hfail=0;const H=hist();
  const maxRounds=Math.ceil(total/BATCH)*2+5;
  while(a.length<total&&rounds<maxRounds&&fails<4){
   rounds++;
@@ -1167,23 +1180,24 @@ async function genBatches(text,n,no,topics,first){
   const b=Math.min(rounds==1&&first?first:BATCH,need);
   const bo=Math.min(needO,Math.round(b*needO/need)),bm=Math.min(needM,b-bo);
   T.prog='יוצר שאלות… '+a.length+' מתוך '+total;if(T.loading)render();
-  const avoid=a.map(x=>String(x.q).slice(0,50)).join(' | ').slice(0,2000);
+  const avoid=a.map(x=>String(x.q).slice(0,50)).join(' | ').slice(0,1500)+(useH&&H.length?(a.length?' | ':'')+'(שאלות ממבחנים קודמים) '+H.slice(-25).map(x=>x.q.slice(0,45)).join(' | ').slice(0,1200):'');
   let r;
   try{
    if(topics){
     const cov={};a.forEach(x=>{cov[+x.t]=(cov[+x.t]||0)+1});
     const sub=topics.map((_,i)=>i).sort((p,q)=>(cov[p]||0)-(cov[q]||0)||p-q).slice(0,Math.max(1,Math.min(topics.length,b)));
-    r=await aiQs(text,topics,sub,bm,bo,'שאלה אחת לפחות על כל נושא ברשימה (כל שאלה על נושא אחר)'+(avoid?'. שאלות שכבר נוצרו, אל תחזור עליהן ואל תשאל את אותו הדבר בניסוח אחר: '+avoid:'.'));
+    r=await aiQs(text,topics,sub,bm,bo,'שאלה אחת לפחות על כל נושא ברשימה (כל שאלה על נושא אחר)'+(avoid?'. שאלות שכבר נוצרו, אל תחזור עליהן ואל תשאל את אותו הדבר בניסוח אחר: '+avoid:'.')+(window._stG?'':NOREF));
    }else{
-    r=await aiJson(ONEPROMPT(text,bm,bo)+(avoid?'\nשאלות שכבר נוצרו (אל תחזור עליהן ואל תשאל את אותו הדבר בניסוח אחר, כתוב שאלות חדשות ושונות): '+avoid:''));
+    r=await aiJson(ONEPROMPT(text,bm,bo)+(avoid?'\nשאלות שכבר נוצרו (אל תחזור עליהן ואל תשאל את אותו הדבר בניסוח אחר, כתוב שאלות חדשות ושונות): '+avoid:'')+(window._stG?'':NOREF));
    }
   }catch(e){
    if(e&&e.message=='cancel')throw e;
    lastErr=e;fails++;await new Promise(z=>setTimeout(z,e&&e.message=='limit'?12000:2500));continue;
   }
-  let nq=cleanQs(normQs(r).filter(okQ),a);
+  let nq=cleanQs(normQs(r).filter(okQ),a.concat(useH?H:[]));
+  if(!nq.length&&useH&&H.length){hfail++;if(hfail>=2)useH=false;await new Promise(z=>setTimeout(z,800));continue}/* כל השאלות כבר הופיעו: מנסים שוב, ואם זה חוזר פעמיים (חומר קטן) מוותרים על הסינון */
   try{nq=await verifyQs(nq,text)}catch(e){if(e&&e.message=='cancel')throw e}
-  nq=cleanQs(nq,a);
+  nq=cleanQs(nq,a.concat(useH?H:[]));
   if(!nq.length){fails++;await new Promise(z=>setTimeout(z,1500));continue}
   fails=0;a=a.concat(nq);
   if(a.length<total)await new Promise(z=>setTimeout(z,1000));
@@ -1192,6 +1206,7 @@ async function genBatches(text,n,no,topics,first){
  const mc=a.filter(x=>x.type!='open'),op=a.filter(x=>x.type=='open');
  let out=mc.slice(0,n).concat(op.slice(0,no));
  if(out.length<total)out=out.concat(mc.slice(n).concat(op.slice(no)).slice(0,total-out.length));
+ rememberQs(out);
  return out;
 }
 async function gen(){
