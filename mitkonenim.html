@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.49 | קוד עדכון V-P6GL-2YVN -->
+<!-- מתכוננים | גרסה 3.50 | קוד עדכון V-T4WB-7LHE -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-P6GL-2YVN";   /* קוד העדכון של גרסה 3.49. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.49";
+window.UPDATE_CODE = "V-T4WB-7LHE";   /* קוד העדכון של גרסה 3.50. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.50";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -413,11 +413,13 @@ function wordsView(){
   <button class="btn" id="chk">בדוק</button></div>
   <button class="btn sec" id="back">סיום</button>`;
   $('rep').onclick=()=>speak(cur);$('back').onclick=()=>{mode='list';render()};
+  let locked=false;/* מונע לחיצה כפולה (או Enter כפול) שסופרת את אותה מילה פעמיים ודולגת על מילה */
   const check=()=>{
-   if(done){done=false;queue.shift();render();return}
+   if(locked)return;
+   if(done){locked=true;done=false;queue.shift();render();return}
    const a=$('ans').value.trim();
   if(!a){$('m').style.color='var(--bad)';$('m').textContent='לא רשמת כלום, נסה שוב';return}
-   if(nz(a)===nz(cur)){stat.ok++;$('m').style.color='var(--ok)';$('m').textContent='נכון! ✓';done=false;queue.shift();setTimeout(render,700)}
+   if(nz(a)===nz(cur)){locked=true;stat.ok++;$('m').style.color='var(--ok)';$('m').textContent='נכון! ✓';done=false;queue.shift();setTimeout(render,700)}
    else{stat.bad++;done=true;$('m').style.color='var(--bad)';$('m').textContent='לא מדויק. כך כותבים:';$('chk').textContent='הבנתי, הבא';{const sp=$('rep');if(sp&&sp.classList.contains('spk')){const dw=document.createElement('div');dw.className='dword';dw.textContent=cur;sp.insertAdjacentElement('beforebegin',dw)}}}
   };
   $('chk').onclick=check;$('ans').onkeydown=e=>{if(e.key=='Enter')check()};
@@ -443,7 +445,20 @@ const fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
 const AI_MODELS=['gemini-2.5-flash','gemini-flash-latest','gemini-2.5-flash-lite','gemini-2.0-flash'];
 const DEFAULT_PROXY=String(window.AI_URL||'').trim();/* כתובת ה-Worker שלך (ראה הוראות). אפשר גם להדביק בהגדרות */
 /* קורא JSON סלחני: מנקה גדרות קוד, מוצא את גוש ה-JSON התקין הראשון גם אם יש טקסט מסביב */
-function jparse(t){
+/* תיקון JSON שבור של ה-AI: גרשיים לא מוברחים בתוך טקסט (למשל "ספר הישר" או תנ"ך), ירידות שורה בתוך מחרוזת, פסיק מיותר בסוף */
+function jrepair(t){
+ t=String(t||'').replace(/```[a-zA-Z]*/g,'');const st=t.search(/[\[{]/);if(st<0)return t;t=t.slice(st);
+ let o='',q=false;
+ for(let i=0;i<t.length;i++){const c=t[i];
+  if(!q){if(c=='"')q=true;o+=c;continue}
+  if(c=='\\'){o+=c+(t[i+1]||'');i++;continue}
+  if(c=='\n'||c=='\r'){o+='\\n';continue}
+  if(c=='"'){let j=i+1;while(j<t.length&&/\s/.test(t[j]))j++;const n=t[j];if(n===undefined||',}]:'.includes(n)){q=false;o+=c}else o+='\\"';continue}
+  o+=c}
+ return o.replace(/,(\s*[}\]])/g,'$1');
+}
+function jparse(t){try{return jparse0(t)}catch(e){const r=jrepair(t);if(r&&r!==String(t||'').trim()){try{return jparse0(r)}catch(e2){}}throw e}}
+function jparse0(t){
  t=String(t||'').replace(/```[a-zA-Z]*/g,'').trim();
  try{const v=JSON.parse(t);if(v&&typeof v=='object')return v}catch(e){}
  {const st=t.indexOf('[');if(st>=0&&(t.indexOf('{')<0||st<t.indexOf('{'))||/^\s*\[/.test(t)){
@@ -530,24 +545,30 @@ async function aiGem(prompt,files){
 let _GM=null;
 async function groqModels(key){
  if(_GM)return _GM;
- try{const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{authorization:'Bearer '+key}});
+ try{const r=await fetchT('https://api.groq.com/openai/v1/models',{headers:{authorization:'Bearer '+key}},15000);
   if(r.ok){const j=await r.json(),ids=(j.data||[]).filter(m=>m.active!==false).map(m=>m.id).filter(id=>!/whisper|guard|tts|playai|orpheus|embed|distil|compound|safeguard|vision|prompt/i.test(id));
    const sc=id=>(/llama-3\.3-70b/i.test(id)?-1:/70b|120b|405b|maverick|scout|kimi|qwen3-32b|gpt-oss/i.test(id)?0:/versatile|instant|llama|qwen/i.test(id)?1:2);
    ids.sort((a,b)=>sc(a)-sc(b));if(ids.length){_GM=ids.slice(0,6);return _GM}}
   else if(r.status==401||r.status==403){const x=new Error('badkey');throw x}}catch(e){if(e&&e.message=='badkey')throw e}
  return ['llama-3.3-70b-versatile','openai/gpt-oss-20b','llama-3.1-8b-instant'];
 }
+/* fetch עם הגבלת זמן: כשהאפליקציה לא בחלון הראשי (חלון צף / מסך מפוצל) הטלפון מקפיא את הרשת, והבקשה נתקעת לנצח. כאן היא נעצרת ומנסים שוב */
+window._acs=window._acs||new Set();window._tick=Date.now();
+function fetchT(url,opt,ms){const ac=new AbortController();window._acs.add(ac);window._tick=Date.now();
+ const tm=setTimeout(()=>{try{ac.abort()}catch(e){}window._acs.delete(ac)},ms||window.FETCH_MS||45000);
+ return fetch(url,Object.assign({},opt,{signal:ac.signal})).then(r=>{window._tick=Date.now();return r},e=>{clearTimeout(tm);window._acs.delete(ac);throw e})}
 async function aiOA(key,prompt){
  const gr=/^gsk_/.test(key),url=gr?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
  const models=gr?await groqModels(key):['openai/gpt-oss-20b:free','meta-llama/llama-3.3-70b-instruct:free','google/gemma-3-27b-it:free'];
  const lim=gr?9000:30000;let last=new Error('http');
  for(const model of models){
   let res;
-  try{res=await fetch(url,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+key},body:JSON.stringify({model,temperature:.6,max_tokens:gr?4000:12000,...(gr&&/gpt-oss/.test(model)?{reasoning_effort:'low'}:{}),messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:prompt.length>lim+3000?prompt.slice(0,lim)+'\n(החומר נחתך)':prompt}]})})}
+  try{res=await fetchT(url,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+key},body:JSON.stringify({model,temperature:.6,max_tokens:gr?4000:12000,...(gr&&/gpt-oss/.test(model)?{reasoning_effort:'low'}:{}),messages:[{role:'system',content:'החזר JSON תקין בלבד, בלי הסברים ובלי גדרות קוד.'},{role:'user',content:prompt.length>lim+3000?prompt.slice(0,lim)+'\n(החומר נחתך)':prompt}]})})}
   catch(e){const x=new Error('net');x.detail=String(e&&e.message||e);throw x}
   if(res.status==401||res.status==403){const x=new Error('badkey');throw x}
   if(!res.ok){let m='';try{m=(await res.text()).replace(/\s+/g,' ').slice(0,200)}catch(e){}last=new Error(res.status==429?'limit':'http'+res.status);last.detail=m;continue}
-  const j=await res.json(),t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+  let j;try{j=await res.json()}catch(e){const x=new Error('net');x.detail='timeout';throw x}
+  const t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
   window.LASTRAW=model+': '+String(t).replace(/\s+/g,' ').slice(0,350);
   try{const pr=jparse(t);if((Array.isArray(pr)&&!pr.length)||(pr&&!Array.isArray(pr)&&!Object.keys(pr).length)){last=new Error('empty');continue}return pr}catch(e){last=e}
  }
@@ -1004,11 +1025,14 @@ const RPR={repeat:'השאלה הזו חוזרת, כבר ראיתי אותה',wro
 function openReport(){
  if(T.busy||T.fixing||!T.qs[T.i])return;
  const o=document.createElement('div');o.id='rpm';o.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(5,15,40,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px';
- o.innerHTML=`<div style="background:#fff;color:#142039;border-radius:22px;padding:16px;width:100%;max-width:460px;direction:rtl;max-height:92vh;overflow:auto"><p style="font-weight:800;font-size:18px;margin:0 0 10px">🚩 מה הבעיה בשאלה?</p>${Object.keys(RPR).map(k=>`<button class="btn sec" data-r="${k}" style="margin-bottom:8px">${RPR[k]}</button>`).join('')}<input id="rpt" placeholder="אפשר לכתוב פרטים (לא חובה)" style="width:100%;margin:2px 0 10px"><button class="btn sec" id="rpx">ביטול</button></div>`;
+ o.innerHTML=`<div style="background:#fff;color:#142039;border-radius:22px;padding:16px;width:100%;max-width:460px;direction:rtl;max-height:92vh;overflow:auto"><p style="font-weight:800;font-size:18px;margin:0 0 8px">🚩 מה הבעיה בשאלה?</p><textarea id="rpt" rows="3" placeholder="כתוב כאן במילים שלך מה לא בסדר (לא חובה). ה-AI יקרא את זה ויתקן" style="width:100%;margin:0 0 10px;box-sizing:border-box"></textarea><div style="font-weight:700;font-size:14px;margin-bottom:6px">סוג הבעיה (בחר אחד):</div>${Object.keys(RPR).map(k=>`<button class="btn sec" data-r="${k}" style="margin-bottom:8px">${RPR[k]}</button>`).join('')}<button class="btn" id="rps" style="margin-top:4px" disabled>שלח ותקן</button><button class="btn sec" id="rpx" style="margin-top:8px">ביטול</button></div>`;
  document.body.appendChild(o);
- const close=()=>o.remove();
+ const close=()=>o.remove();let pick='';
+ const upd=()=>{const t=o.querySelector('#rpt').value.trim();o.querySelectorAll('[data-r]').forEach(b=>{const on=b.dataset.r==pick;b.style.outline=on?'3px solid #2a6df4':'';b.style.background=on?'#e3ecff':''});o.querySelector('#rps').disabled=!(pick||t)};
  o.querySelector('#rpx').onclick=close;o.onclick=e=>{if(e.target===o)close()};
- o.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const d=o.querySelector('#rpt').value.trim();close();doReport(b.dataset.r,d)});
+ o.querySelector('#rpt').addEventListener('input',upd);
+ o.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{pick=pick==b.dataset.r?'':b.dataset.r;upd()});
+ o.querySelector('#rps').onclick=()=>{const d=o.querySelector('#rpt').value.trim();const r=pick||'other';close();doReport(r,d)};
 }
 async function fixQuestion(q,reason,detail){
  if(!hasAI()){
@@ -1173,6 +1197,7 @@ async function genBatches(text,n,no,topics,first){
  const total=n+no;let a=[],fails=0,rounds=0,lastErr=null,useH=true,hfail=0;const H=hist();
  const maxRounds=Math.ceil(total/BATCH)*2+5;
  while(a.length<total&&rounds<maxRounds&&fails<4){
+  if(window._genSubj&&SUBJ!==window._genSubj)throw new Error('cancel');/* עברת למקצוע אחר באמצע: לא ממשיכים, אחרת השאלות יהיו על המקצוע השני */
   rounds++;
   const hm=a.filter(x=>x.type!='open').length,ho=a.length-hm;
   const needM=Math.max(0,n-hm),needO=Math.max(0,no-ho),need=needM+needO;
@@ -1217,7 +1242,7 @@ async function gen(){
  if(text.length<8){if($('grade')){await(SUBJ=='עברית'?genStory():genCurr());return}T.err='כתוב חומר ללימוד (אפשר גם משפט אחד).';render();return}
  if(n+no<1){T.err='בחר לפחות שאלה אחת.';render();return}
  if(n+no>MAXQ){T.err='המקסימום הוא '+MAXQ+' שאלות בסך הכל (אמריקאיות + פתוחות). כרגע בחרת '+(n+no)+'. הקטן את המספר.';render();return}
- T.loading=true;T.err='';render();
+ T.loading=true;T.err='';render();window._genSubj=SUBJ;
  const total=n+no;
  if(appOn()){await genViaApp(text,n,no);return}
  try{
@@ -1229,6 +1254,7 @@ async function gen(){
    if(total<topics.length){const L0=topics.length;topics=Array.from({length:total},(_,i)=>topics[Math.floor(i*L0/total)])}
   }
   const a=await genBatches(text,n,no,topics,shortMat?total:0);
+  if(window._genSubj&&SUBJ!==window._genSubj){T.loading=false;T.prog='';render();return}
   T.qs=shuffle(finalQs(a));saveTest(T.qs,'ai');T.i=0;T.score=0;T.pick=null;T.ans='';T.way='';T.skipped=0;T.fb=null;T.err='';
   if(a.length<total)toast('נוצרו '+a.length+' שאלות מתוך '+total+' (ה-AI לא הצליח ליצור שאלות תקינות ושונות נוספות). אפשר ללחוץ שוב על צור מבחן.');
  }catch(e){
@@ -1344,7 +1370,7 @@ function testView(){
  const v=$('v');document.body.classList.add('tbg');
  if(T.qs.length&&T.tq!==T.qs){T.tq=T.qs;T.t0=Date.now();T.dur=0}
  if(T.fixing){v.innerHTML='<div class="card"><div class="big">🛠 מתקן את השאלה…</div><div class="mute" style="text-align:center">זה לוקח כמה שניות</div></div>';return}
- if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">'+(T.prog?esc(T.prog):'בדרך כלל 10–30 שניות')+'</div><div class="mute" style="text-align:center;margin-top:6px">מבחן גדול נוצר בקבוצות ולוקח כמה דקות</div></div>';return}
+ if(T.loading){v.innerHTML='<div class="card"><div class="big">יוצר מבחן מהחומר…</div><div class="mute" style="text-align:center">'+(T.prog?esc(T.prog):'בדרך כלל 10–30 שניות')+'</div><div class="mute" style="text-align:center;margin-top:6px">מבחן גדול נוצר בקבוצות ולוקח כמה דקות</div><div class="mute" style="text-align:center;margin-top:6px">השאר את האפליקציה פתוחה על המסך. בחלון צף או ברקע (למשל ליד YouTube) הטלפון עוצר אותה והמבחן נתקע.</div></div>';return}
  if(T.reading&&T.story&&T.qs.length){document.body.classList.add('tbg');v.innerHTML=`<div class="card"><div class="big">📖 קראו את הקטע</div><div class="mute" style="text-align:center">אחרי הקריאה יש ${T.qs.length} שאלות עליו</div><div class="tstory" style="margin:12px 0"><div style="margin:0;font-size:16px">${esc(T.story)}</div></div><button class="btn" id="rd">${T.started?'חזרה לשאלה ›':'התחל שאלות ›'}</button></div>`;$('rd').onclick=()=>{T.reading=false;T.started=true;render();window.scrollTo(0,0)};return}
  if(T.qs.length){document.body.classList.add('tbg');
   const sk=T.skipped||0,tot=Math.max(0,T.qs.length-sk);
@@ -1650,7 +1676,9 @@ function exNotify(){
  }catch(e){}
 }
 setInterval(()=>{exNotify();if(!tab&&!showSet)try{render()}catch(e){}},3600000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){exNotify();if(!tab&&!showSet)try{render()}catch(e){}}});
+const _resume=()=>{if(T.loading&&Date.now()-(window._tick||0)>20000){window._acs.forEach(a=>{try{a.abort()}catch(e){}});window._acs.clear()}};
+window.addEventListener('focus',_resume);window.addEventListener('pageshow',_resume);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){_resume();exNotify();if(!tab&&!showSet)try{render()}catch(e){}}});
 const X={kind:'מבחן',photo:'',subject:'',date:'',note:'',busy:false,msg:'',found:[],used:{},manual:false};
 const xNorm=t=>String(t||'').replace(/["'׳״\s]/g,'').toLowerCase();
 /* קריאת תמונה בלי AI (OCR בדפדפן) */
