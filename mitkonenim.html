@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.50 | קוד עדכון V-T4WB-7LHE -->
+<!-- מתכוננים | גרסה 3.54 | קוד עדכון V-N2YF-6KTC -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-T4WB-7LHE";   /* קוד העדכון של גרסה 3.50. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.50";
+window.UPDATE_CODE = "V-N2YF-6KTC";   /* קוד העדכון של גרסה 3.54. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.54";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -933,7 +933,7 @@ function mathFix(y){
   while((m=re.exec(q))){if(/[+\-−×÷*:()]/.test(m[0])||/\d\/\d/.test(m[0])){if(/[+\-−×÷*:]/.test(m[0])){found=m;break}}}
   if(!found)return y;
   const rest=(q.slice(0,found.index)+' '+q.slice(found.index+found[0].length)).replace(/[\s.:?,!"']+/g,' ').trim();
-  if(!/^((חשב|חשבו|פתור|פתרו|מצא|מצאו|מה|מהו|מהי|הוא|היא|התוצאה|הערך|של|התרגיל|תרגיל|כמה|זה|שווה|את|הבא|הבאה|בצע|בצעו|הפעולה|הביטוי|ביטוי|סכום|הסכום|ההפרש|המכפלה|המנה)\s*)*$/.test(rest))return y;
+  if(!/^((חשב|חשבו|פתור|פתרו|מצא|מצאו|מה|מהו|מהי|הוא|היא|התוצאה|הערך|של|התרגיל|תרגיל|כמה|זה|שווה|את|הבא|הבאה|בצע|בצעו|הפעולה|הביטוי|ביטוי|סכום|הסכום|ההפרש|המכפלה|המנה|תוצר|התוצר|מנה|מכפלה|הפרש|חילוק|כפל|חיבור|חיסור|איזה|איזו|מהבאים|מהבא|מבין|האפשרויות|התשובות|הבאים|נכון|נכונה|הנכון|הנכונה|שלפניך|ל|כאשר|בין|בעזרת|מחשבים|על|ידי|בערך|אחרי|כמו|הוא|הם|שווים|שווה|ל)\s*)*$/.test(rest))return y;
   const v=_calc(found[0].trim());if(!v)return y;
   const dec=/\d\.\d/.test(found[0]);
   const rd=t=>{t=String(t).replace(/[,،]/g,'.').trim();const pm=/^(\d+(?:\.\d+)?)\s*%$/.exec(t);if(pm){const w=_num(pm[1]);return w?_fr(w.n,w.d*100n):null}return _num(t)};
@@ -942,7 +942,13 @@ function mathFix(y){
   if(y.type=='mc'&&Array.isArray(y.options)){
    const hit=y.options.map((o,i)=>same(o)?i:-1).filter(i=>i>=0);
    if(hit.length>1)return null;
-   if(hit.length==0){return y.options.some(o=>rd(o)==null)?y:null}
+   if(hit.length==0){
+    if(y.options.some(o=>rd(o)==null))return y;
+    /* התשובה הנכונה לא מופיעה באפשרויות: מחליפים את האפשרות שסומנה בתשובה המחושבת, באותו סגנון כתיבה */
+    const mixed=y.options.some(o=>/^\d+\s+\d+\/\d+$/.test(String(o).trim()));
+    let txt;if(v.d==1n)txt=String(v.n);else if(dec)txt=_fmt(v,true);else if(mixed&&v.n>v.d&&v.n>0n){const w=v.n/v.d,r=v.n%v.d;txt=r==0n?String(w):w+' '+r+'/'+v.d}else txt=v.n+'/'+v.d;
+    const ai=Number.isInteger(y.answer)&&y.answer>=0&&y.answer<y.options.length?y.answer:0;
+    y.options[ai]=txt;y.answer=ai;y.why='התשובה: '+txt;delete y.exp;return y}
    if(y.answer!==hit[0]){y.answer=hit[0];y.why='התשובה: '+y.options[hit[0]]}
    return y}
   return y;
@@ -1022,6 +1028,36 @@ function wheelInit(id,max,val,onChange){
  return{set:v=>{v=Math.max(1,Math.min(max,Math.round(+v)||1));go(v,false);mark(v);requestAnimationFrame(()=>{if(Math.round(el.scrollTop/H)+1!==v)go(v,false)})}};
 }
 const RPR={repeat:'השאלה הזו חוזרת, כבר ראיתי אותה',wrong_answer:'התשובה שסומנה כנכונה שגויה',bad_question:'השאלה לא ברורה, לא נכונה או חסרה',typo:'טעות כתיב או ניסוח',obvious:'התשובה הנכונה בולטת וקל לנחש',other:'בעיה אחרת'};
+/* מחשבון לשאלות חשבון: שברים, מספרים מעורבים, ÷ × + − וסוגריים */
+function calcRun(expr){
+ let e=String(expr||'').trim().replace(/(\d)\s*[xX]\s*(\d)/g,'$1×$2').replace(/[\u0660-\u0669]/g,d=>d.charCodeAt(0)-0x660);
+ if(!e)return null;
+ const v=_calc(e);if(!v)return {err:'לא הבנתי את התרגיל. דוגמה: 5 1/4 ÷ 2 1/2'};
+ const fr=v.d==1n?String(v.n):v.n+'/'+v.d;
+ const neg=v.n<0n,an=neg?-v.n:v.n;let mixed='';if(v.d!=1n&&an>v.d){const w=an/v.d,r=an%v.d;mixed=(neg?'-':'')+w+' '+r+'/'+v.d}
+ const dc=+(Number(v.n)/Number(v.d)).toFixed(6);
+ let steps='';
+ const m=/^\s*(-?\d+(?:\s+\d+\/\d+|\/\d+)?)\s*([+\-−×÷*:])\s*(-?\d+(?:\s+\d+\/\d+|\/\d+)?)\s*$/.exec(e.replace(/\*/g,'×'));
+ if(m){const a=_calc(m[1]),b=_calc(m[3]),o=m[2]=='*'?'×':m[2]=='-'||m[2]=='−'?'−':m[2]==':'?'÷':m[2];
+  if(a&&b){const f=x=>x.d==1n?String(x.n):x.n+'/'+x.d;const L=[];
+   if(/\s/.test(m[1]))L.push(m[1]+' = '+f(a));if(/\s/.test(m[3]))L.push(m[3]+' = '+f(b));
+   if(o=='÷')L.push(f(a)+' ÷ '+f(b)+' = '+f(a)+' × '+(b.n<0n?'-'+b.d+'/'+(-b.n):b.d+'/'+b.n));
+   L.push('התוצאה: '+fr+(mixed?' = '+mixed:''));steps=L.join('\n')}}
+ return{fr,mixed,dc,steps};
+}
+function openCalc(){
+ if(document.getElementById('cmd'))return;
+ const o=document.createElement('div');o.id='cmd';o.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(5,15,40,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px';
+ o.innerHTML=`<div style="background:#fff;color:#142039;border-radius:22px;padding:16px;width:100%;max-width:460px;direction:rtl;max-height:92vh;overflow:auto"><p style="font-weight:800;font-size:18px;margin:0 0 8px">🧮 מחשבון</p><input id="cin" dir="ltr" placeholder="5 1/4 ÷ 2 1/2" style="width:100%;box-sizing:border-box;font-size:22px;text-align:center;margin-bottom:8px" autocomplete="off"><div id="ckp" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px">${['÷','×','−','+','/','(',')','␣','⌫','C'].map(k=>`<button type="button" class="btn sec" data-k="${k}" style="padding:10px 0;margin:0;width:auto;font-size:20px">${k}</button>`).join('')}</div><div id="cout" style="white-space:pre-wrap;background:#f3f6fd;border-radius:14px;padding:12px;min-height:48px;font-size:18px;text-align:center;margin-bottom:8px;direction:rtl">הקלד תרגיל ולחץ "חשב"</div><button class="btn" id="cgo">חשב</button><button class="btn sec" id="cx" style="margin-top:8px">סגור</button></div>`;
+ document.body.appendChild(o);
+ const inp=o.querySelector('#cin'),out=o.querySelector('#cout');
+ const go=()=>{const r=calcRun(inp.value);if(!r){out.textContent='הקלד תרגיל';return}if(r.err){out.textContent=r.err;return}
+  out.innerHTML=(r.steps?'<div style="font-size:15px;text-align:right;color:#4b5775;margin-bottom:8px;white-space:pre-wrap;direction:ltr">'+esc(r.steps)+'</div>':'')+'<div style="font-weight:800;font-size:24px;direction:ltr">'+esc(r.fr)+(r.mixed?' = '+esc(r.mixed):'')+'</div>'+(r.fr.includes('/')?'<div style="color:#4b5775;direction:ltr">≈ '+esc(String(r.dc))+'</div>':'')};
+ o.querySelector('#cgo').onclick=go;inp.addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();go()}});
+ o.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(k=='C'){inp.value='';out.textContent='הקלד תרגיל ולחץ "חשב"'}else if(k=='⌫')inp.value=inp.value.slice(0,-1);else inp.value+=(k=='␣'?' ':k=='−'?'-':k);inp.focus()});
+ const close=()=>o.remove();o.querySelector('#cx').onclick=close;o.onclick=e=>{if(e.target===o)close()};
+ setTimeout(()=>inp.focus(),50);
+}
 function openReport(){
  if(T.busy||T.fixing||!T.qs[T.i])return;
  const o=document.createElement('div');o.id='rpm';o.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(5,15,40,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px';
@@ -1387,7 +1423,7 @@ function testView(){
    return}
   const q=T.qs[T.i],last=T.i+1<T.qs.length?'שאלה הבאה ›':'לציון 🏆';
   const next=()=>{T.i++;T.pick=null;T.ans='';T.way='';T.fb=null;render()};
-  const tag=`שאלה ${T.i+1}/${T.qs.length}`,rpb='<div style="text-align:center;margin:12px 0 0"><button class="tbtn sec" id="rp" style="width:auto;padding:8px 16px;font-size:14px">🚩 דווח על שאלה</button></div>';
+  const tag=`שאלה ${T.i+1}/${T.qs.length}`,rpb='<div style="text-align:center;margin:12px 0 0">'+(SUBJ=='מתמטיקה'?'<button class="tbtn sec" id="cb" style="width:auto;padding:8px 16px;font-size:14px;margin-left:8px">🧮 מחשבון</button>':'')+'<button class="tbtn sec" id="rp" style="width:auto;padding:8px 16px;font-size:14px">🚩 דווח על שאלה</button></div>';
   if(q.type=='open'){
    const f=T.fb,math=SUBJ=='מתמטיקה'&&/^[\d\s.,\/\-]+$/.test(String(q.model).trim()),dis=f?'disabled':'';
    let fbh='';
@@ -1402,7 +1438,7 @@ function testView(){
    if(f&&f.shown)v.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const s=+b.dataset.s;T.score+=s;if(s==1)confetti();next()});
    else if(f){$('nx').onclick=next}
    else{$('gr').onclick=()=>gradeOpen(q);$('sk').onclick=()=>{T.skipped=(T.skipped||0)+1;next()}}
-  if($('rp'))$('rp').onclick=openReport;
+  if($('rp'))$('rp').onclick=openReport;if($('cb'))$('cb').onclick=openCalc;
   return}
   const ans=+q.answer,p=T.pick;
   v.innerHTML=`<div class="tcard">${hdr(tag)}<div class="tbd"><div class="tq">${mx(String(q.q))}</div><div class="topts">
@@ -1410,7 +1446,7 @@ function testView(){
   ${p!==null?`<div class="tmsg ${p===ans?'tok':'tbad'}">${p===ans?'נכון! ✓':'לא נכון. התשובה הנכונה: '+mx(String(q.options[ans]))}</div>${q.why?`<div class="tmsg tneu" style="text-align:right"><b>למה?</b> ${mx(String(q.why))}</div>`:''}${(Array.isArray(q.exp)&&q.exp.length==q.options.length)?`<div class="texp">${q.options.map((o,i)=>`<div class="te ${i===ans?'r':i===p?'w':''}"><b>${'אבגד'[i]||i+1}. ${i===ans?'✓ נכונה':'✗ שגויה'}${i===p?' (בחרת)':''}:</b> ${mx(String(q.exp[i]))}</div>`).join('')}</div>`:''}<div class="trow"><button class="tbtn" id="nx">${last}</button></div>`:''}${rpb}</div></div>`;
   v.querySelectorAll('.topt').forEach(b=>b.onclick=()=>{T.pick=+b.dataset.i;const ok=T.pick===ans;if(ok)T.score++;render();if(ok)confetti()});
   if(p!==null)$('nx').onclick=next;
-  if($('rp'))$('rp').onclick=openReport;
+  if($('rp'))$('rp').onclick=openReport;if($('cb'))$('cb').onclick=openCalc;
   return}
  v.innerHTML=`<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><img class="gi" src="${IM[SUBJ]||''}" alt=""><p style="margin:0;font-size:20px;font-weight:800">המבחן ייערך ב${esc(SUBJ)}</p></div><div style="margin:6px 0 12px"><label style="font-weight:800" for="grade">🎓 כיתה</label><select id="grade" style="width:100%;margin-top:6px;padding:12px;border-radius:14px;border:2px solid #dfe4f1;font:inherit;background:#f3f6fd;color:#14213d"><option value="א">כיתה א׳</option><option value="ב">כיתה ב׳</option><option value="ג">כיתה ג׳</option><option value="ד">כיתה ד׳</option><option value="ה">כיתה ה׳</option><option value="ו">כיתה ו׳</option><option value="ז">כיתה ז׳</option><option value="ח">כיתה ח׳</option><option value="ט">כיתה ט׳</option><option value="י">כיתה י׳</option><option value="י״א">כיתה י״א</option><option value="י״ב">כיתה י״ב</option></select></div><p style="font-weight:600;margin-top:0">רשמו כאן את החומר</p><p class="mute" style="margin-top:-6px">(ללא הערות מהמורה או תאריך)</p><textarea id="mat" rows="9" placeholder="הדבק או כתוב כאן את כל חומר הלימוד"></textarea>
  <label style="font-weight:800;display:block;margin-top:6px">🔢 כמה שאלות? (גללו, או לחצו על המספר כדי להקליד)</label><div id="wbox">${wheelHTML('wh',100)}</div>
@@ -1875,17 +1911,66 @@ async function podGen(){
  P.loading=true;P.err='';render();
  try{
   const n=POD_LINES[P.len]||34;
-  let r;try{r=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${n} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`);}catch(e0){r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
-  const lines=(r.lines||[]).filter(x=>x&&x.t&&String(x.t).trim()).map(x=>({w:x.w=='b'?'b':'a',t:String(x.t).trim()}));
+  const podLines=r=>{/* קורא את תשובת ה-AI בגמישות: מערך ישיר, או מפתח אחר, ושמות שדות שונים */
+   let arr=Array.isArray(r)?r:(r&&(r.lines||r.dialogue||r.script||r.conversation||r.turns||r['שיחה']||r['תסריט']))||null;
+   if(!Array.isArray(arr)&&r&&typeof r=='object'){arr=Object.values(r).find(v=>Array.isArray(v)&&v.length&&typeof v[0]=='object')||null}
+   return (arr||[]).map(x=>{if(!x)return null;if(typeof x=='string'){const m=/^\s*(נועה|דני)\s*[:\-]\s*(.+)$/.exec(x);return m?{w:m[1]=='דני'?'b':'a',t:m[2].trim()}:null}
+    const t=String(x.t||x.text||x.line||x.content||x['טקסט']||'').trim();const who=String(x.w||x.speaker||x.who||x.name||'').toLowerCase();
+    return t?{w:(who=='b'||who=='דני')?'b':'a',t}:null}).filter(Boolean)};
+  let lines=[],title='',r=null,aiOk=false;
+  /* מבקשים בחלקים של עד 20 שורות: תשובה ארוכה נחתכת ונהיית JSON שבור */
+  try{
+   for(let part=0;lines.length<n&&part<5;part++){
+    const k=Math.min(20,n-lines.length),first=!lines.length,lastPart=part>=4||lines.length+k>=n;
+    const ctx=first?'':'\nהשיחה עד כה (הסוף): '+lines.slice(-6).map(l=>(l.w=='b'?'דני: ':'נועה: ')+l.t).join(' / ')+'\nהמשך את השיחה בדיוק מהמקום שבו נעצרה עם הנושאים הבאים בחומר, בלי לחזור על מה שכבר נאמר ובלי לברך מחדש. '+(lastPart?'זה החלק האחרון: סיימו בסיכום קצר.':'אל תסכמו ואל תסיימו עדיין.');
+    let got=[];
+    for(let at=0;at<2&&got.length<2;at++){let rr=null;try{rr=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${first?'':ctx}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){if(first&&at==1)throw e1;rr=null}
+     if(rr){got=podLines(rr);if(first&&rr&&rr.title&&!title)title=String(rr.title)}}
+    if(!got.length)break;
+    aiOk=true;lines=lines.concat(got);
+   }
+  }catch(e0){
+   if(!lines.length){r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
+  }
+  if(lines.length<4&&!aiOk){r=localPod(text,P.sub,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
+  r={title:title||P.sub,lines};
   if(lines.length<4)throw new Error('empty');
   const pod={id:Date.now(),sub:P.sub,title:String(r.title||P.sub),lines};
-  S.pods=S.pods||[];S.pods.unshift(pod);if(S.pods.length>10)S.pods.length=10;save();
+  S.pods=S.pods||[];S.pods.unshift(pod);podTrim();save();
   P.cur=pod;P.i=0;P.playing=false;
- }catch(e){P.err=aiErr(e)}
+ }catch(e){P.err=(e&&e.message=='empty')?'ה-AI לא החזיר תסריט תקין. נסה שוב בעוד רגע.'+(window.LASTRAW?' [מה חזר: '+String(window.LASTRAW).slice(0,140)+']':''):aiErr(e)}
  P.loading=false;render();
+}
+/* פודקאסט מוכן מבחוץ (למשל מ-NotebookLM): קובץ שמע שנשמר בטלפון (IndexedDB) ומתנגן באפליקציה */
+const audDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('mitk_audio',1);r.onupgradeneeded=()=>r.result.createObjectStore('aud');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function audPut(id,blob){const d=await audDB();return new Promise((res,rej)=>{const t=d.transaction('aud','readwrite');t.objectStore('aud').put(blob,String(id));t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||new Error('abort'))})}
+async function audGet(id){const d=await audDB();return new Promise((res,rej)=>{const q=d.transaction('aud').objectStore('aud').get(String(id));q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)})}
+async function audDel(id){try{const d=await audDB();await new Promise(res=>{const t=d.transaction('aud','readwrite');t.objectStore('aud').delete(String(id));t.oncomplete=res;t.onerror=res})}catch(e){}}
+function podTrim(){S.pods=S.pods||[];while(S.pods.length>10){const x=S.pods.pop();if(x&&x.audio)audDel(x.id)}}
+const fmtMB=b=>(b/1048576).toFixed(b>=10485760?0:1)+' MB';
+function podAudioView(){
+ document.body.classList.add('tbg');
+ const v=$('v'),c=P.cur;let url='';
+ v.innerHTML=`<div class="pl"><div class="cover">🎧</div><div class="pt">${esc(c.title)}</div><div class="ps">${esc(c.sub)} · קובץ שמע</div>
+  <audio id="aud" controls preload="metadata" style="width:100%;margin:14px 0"></audio><div class="msg" id="amsg" style="color:#fde68a"></div>
+  <div class="pctl"><button id="abk" aria-label="חזרה 15 שניות" title="חזרה 15 שניות">⏪</button><button id="afw" aria-label="קדימה 15 שניות" title="קדימה 15 שניות">⏩</button></div>
+  <div class="psp">${[[.8,'🐢 0.8x'],[1,'▶ 1x'],[1.25,'1.25x'],[1.5,'🐇 1.5x'],[2,'2x']].map(([r,t])=>`<button class="${(P.arate||1)==r?'on':''}" data-ar="${r}">${t}</button>`).join('')}</div></div>
+  <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
+ const a=$('aud');let lastSave=0;
+ const setRate=r=>{P.arate=r;a.defaultPlaybackRate=r;a.playbackRate=r;v.querySelectorAll('[data-ar]').forEach(b=>b.classList.toggle('on',+b.dataset.ar==r))};
+ v.querySelectorAll('[data-ar]').forEach(b=>b.onclick=()=>setRate(+b.dataset.ar));
+ $('abk').onclick=()=>{a.currentTime=Math.max(0,a.currentTime-15)};$('afw').onclick=()=>{a.currentTime=Math.min(a.duration||1e9,a.currentTime+15)};
+ a.addEventListener('loadedmetadata',()=>{if(c.pos>1&&c.pos<(a.duration||1e9)-2)a.currentTime=c.pos;setRate(P.arate||1)});
+ const savePos=()=>{c.pos=Math.floor(a.currentTime||0);save()};
+ a.addEventListener('timeupdate',()=>{const n=Date.now();if(n-lastSave>5000){lastSave=n;c.pos=Math.floor(a.currentTime||0);save()}});
+ a.addEventListener('pause',savePos);a.addEventListener('ended',()=>{c.pos=0;save()});
+ a.addEventListener('error',()=>{$('amsg').textContent='הקובץ לא מתנגן בטלפון הזה. נסה קובץ mp3 או m4a.'});
+ $('pback').onclick=()=>{try{a.pause()}catch(e){}savePos();if(url)URL.revokeObjectURL(url);P.cur=null;render()};
+ audGet(c.id).then(b=>{if(!b){$('amsg').textContent='הקובץ לא נמצא בטלפון (אולי נמחק). אפשר להעלות אותו שוב.';return}url=URL.createObjectURL(b);a.src=url}).catch(()=>{$('amsg').textContent='לא הצלחתי לפתוח את הקובץ השמור.'});
 }
 function podView(){
  document.body.classList.add('tbg');
+ if(P.cur&&P.cur.audio&&!P.loading){podAudioView();return}
  const v=$('v');
  if(P.loading){v.innerHTML='<div class="tcard"><div class="tbd"><div class="tbig">🎙️</div><p style="text-align:center;font-weight:700">נועה ודני מתכוננים להקלטה…</p></div></div>';return}
  if(P.cur){
@@ -1912,14 +1997,22 @@ function podView(){
   <label>מקצוע</label><div class="pchs">${S.subjects.map(n=>`<button class="pch ${n==P.sub?'on':''}" data-sb="${esc(n)}">${esc(n)}</button>`).join('')||'<span class="mute">אין מקצועות עדיין. הוסף במסך המבחנים.</span>'}</div>
   <label>כמה זמן?</label><div class="pchs">${[[2,'קצר','2 דקות'],[5,'בינוני','5 דקות'],[10,'ארוך','10 דקות']].map(([l,a,b])=>`<button class="pch ${P.len==l?'on':''}" data-ln="${l}">${a}<small>${b}</small></button>`).join('')}</div>
   <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק חומר ללימוד (כמה משפטים). עם מפתח AI אפשר גם רק נושא קצר"></textarea>
-  <div class="msg" style="color:var(--bad)">${esc(P.err)}</div><button class="tbtn" id="pg" style="width:100%">צור פודקאסט ✨</button></div></div>
-  ${pods.length?`<div class="card" style="margin-top:14px"><p style="font-weight:600;margin-top:0">📂 פודקאסטים שמורים (עובדים גם בלי אינטרנט)</p>${pods.map(p=>`<div class="item"><span>${esc(p.title)}<br><small class="mute">${esc(p.sub)} · ${p.lines.length} תורות</small></span><span><button class="btn" style="width:auto;padding:6px 14px" data-pl="${p.id}">האזן</button> <button data-pd="${p.id}">✕</button></span></div>`).join('')}</div>`:''}`;
+  <div class="msg" style="color:var(--bad)">${esc(P.err)}</div><button class="tbtn" id="pg" style="width:100%">צור פודקאסט ✨</button>
+  <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #d8dff0"><div style="font-weight:700;font-size:14px;margin-bottom:6px">יש לך פודקאסט מוכן? (למשל מ-NotebookLM)</div><label class="tbtn sec" style="display:block;text-align:center;cursor:pointer;width:100%;box-sizing:border-box">📥 העלה קובץ שמע<input type="file" id="pup" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.mp4,.opus" hidden></label><div class="mute" style="font-size:13px;margin-top:6px">הקובץ נשמר בטלפון ומתנגן באפליקציה, גם בלי אינטרנט.</div></div></div></div>
+  ${pods.length?`<div class="card" style="margin-top:14px"><p style="font-weight:600;margin-top:0">📂 פודקאסטים שמורים (עובדים גם בלי אינטרנט)</p>${pods.map(p=>`<div class="item"><span>${esc(p.title)}<br><small class="mute">${esc(p.sub)} · ${p.audio?'🎵 קובץ שמע · '+fmtMB(p.size||0):p.lines.length+' תורות'}</small></span><span><button class="btn" style="width:auto;padding:6px 14px" data-pl="${p.id}">האזן</button> <button data-pd="${p.id}">✕</button></span></div>`).join('')}</div>`:''}`;
  $('pm').value=S.mats[P.sub]||'';addUpload('pm');
  v.querySelectorAll('[data-sb]').forEach(b=>b.onclick=()=>{keep();P.sub=b.dataset.sb;P.err='';render()});
  v.querySelectorAll('[data-ln]').forEach(b=>b.onclick=()=>{keep();P.len=+b.dataset.ln;render()});
  v.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{keep();P.cur=pods.find(x=>x.id==b.dataset.pl);P.i=0;P.playing=false;render()});
- v.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{S.pods=S.pods.filter(x=>x.id!=b.dataset.pd);save();render()});
+ v.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{const x=S.pods.find(z=>z.id==b.dataset.pd);if(x&&x.audio)audDel(x.id);S.pods=S.pods.filter(x=>x.id!=b.dataset.pd);save();render()});
  $('pg').onclick=podGen;
+ $('pup').onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;keep();
+  if(!(/^audio\//.test(f.type)||/\.(mp3|m4a|wav|ogg|aac|mp4|opus|webm)$/i.test(f.name))){P.err='זה לא קובץ שמע. בחר mp3, m4a או wav.';render();return}
+  if(f.size>300*1048576){P.err='הקובץ גדול מדי (מעל 300 MB).';render();return}
+  if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
+  P.err='';const m=document.querySelector('#pup').closest('div');if(m)m.querySelector('.mute').textContent='שומר את הקובץ…';
+  try{const id=Date.now();await audPut(id,f);S.pods=S.pods||[];S.pods.unshift({id,sub:P.sub,title:f.name.replace(/\.[^.]+$/,'').slice(0,80)||'פודקאסט',audio:true,mime:f.type||'audio/mpeg',size:f.size,lines:[],pos:0});podTrim();save();toast('נשמר ✅');render()}
+  catch(err){P.err='לא הצלחתי לשמור את הקובץ (אולי אין מקום בטלפון).';render()}};
 }
 /* ---- העלאת קבצים לחומר ---- */
 const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=()=>rej(new Error('read'));r.readAsDataURL(f)});
