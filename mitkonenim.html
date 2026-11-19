@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.56 | קוד עדכון V-W7NK-3FQD -->
+<!-- מתכוננים | גרסה 3.58 | קוד עדכון V-J9RC-4ZLM -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-W7NK-3FQD";   /* קוד העדכון של גרסה 3.56. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.56";
+window.UPDATE_CODE = "V-J9RC-4ZLM";   /* קוד העדכון של גרסה 3.58. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.58";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1916,7 +1916,7 @@ async function podGen(){
  const ta=$('pm'),text=(ta?ta.value:'').trim();if(P.sub){S.mats[P.sub]=text;save()}
  if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
  if(text.length<3){P.err='כתוב נושא או חומר ללימוד.';render();return}
- P.loading=true;P.err='';render();
+ P.loading=true;P.err='';P.prog='';render();
  try{
   const n=POD_LINES[P.len]||34;
   const podLines=r=>{/* קורא את תשובת ה-AI בגמישות: מערך ישיר, או מפתח אחר, ושמות שדות שונים */
@@ -1926,23 +1926,31 @@ async function podGen(){
     const t=String(x.t||x.text||x.line||x.content||x['טקסט']||'').trim();const who=String(x.w||x.speaker||x.who||x.name||'').toLowerCase();
     return t?{w:(who=='b'||who=='דני')?'b':'a',t:cleanLine(t)}:null}).filter(x=>x&&x.t)};
   let lines=[],title='',r=null,aiOk=false,paused=false;
-  {const d=S.podDraft;if(d&&d.sub==P.sub&&d.text==text&&d.n==n&&Array.isArray(d.lines)&&d.lines.length&&d.lines.length<n){lines=d.lines.slice();title=d.title||'';aiOk=true;toast('ממשיך מהמקום שעצרנו: '+lines.length+' מתוך '+n+' שורות')}}
-  /* מבקשים בחלקים של עד 20 שורות: תשובה ארוכה נחתכת ונהיית JSON שבור */
+  /* מבקשים את כל החלקים במקביל (כל חלק עד 20 שורות), וכל חלק שהסתיים נשמר מיד */
   try{
-   for(let part=0;lines.length<n&&part<5;part++){
-    if(document.hidden){paused=true;break}
-    const k=Math.min(20,n-lines.length),first=!lines.length,lastPart=part>=4||lines.length+k>=n;
-    const ctx=first?'':'\nהשיחה עד כה (הסוף): '+lines.slice(-6).map(l=>(l.w=='b'?'דני: ':'נועה: ')+l.t).join(' / ')+'\nהמשך את השיחה בדיוק מהמקום שבו נעצרה עם הנושאים הבאים בחומר, בלי לחזור על מה שכבר נאמר ובלי לברך מחדש. '+(lastPart?'זה החלק האחרון: סיימו בסיכום קצר.':'אל תסכמו ואל תסיימו עדיין.');
-    let got=[];
-    for(let at=0;at<2&&got.length<2;at++){let rr=null;try{rr=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${first?'':ctx}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){if(first&&at==1)throw e1;rr=null}
-     if(rr){got=podLines(rr);if(first&&rr&&rr.title&&!title)title=String(rr.title)}}
-    if(!got.length){paused=lines.length>0;break}
-    aiOk=true;lines=lines.concat(got);S.podDraft={sub:P.sub,text,n,lines:lines.slice(),title};save();
-   }
+   const N=Math.ceil(n/20),per=Math.ceil(n/N);
+   const parts=(S.podDraft&&S.podDraft.parts&&S.podDraft.sub==P.sub&&S.podDraft.text==text&&S.podDraft.n==n)?Object.assign({},S.podDraft.parts):{};
+   if(S.podDraft&&parts&&Object.keys(parts).length&&S.podDraft.sub==P.sub&&S.podDraft.text==text&&S.podDraft.n==n){title=S.podDraft.title||'';toast('ממשיך מהמקום שעצרנו: '+Object.keys(parts).length+' מתוך '+N+' חלקים')}
+   const one=async i=>{
+    const k=Math.min(per,n-i*per),first=i==0,last=i==N-1;
+    const pos=N>1?'\nזה חלק '+(i+1)+' מתוך '+N+' של הפודקאסט. כסה רק את החלק ה-'+(i+1)+' מתוך '+N+' של החומר, לפי הסדר, ואל תחזור על חלקים אחרים. '+(first?'פתחו בברכה קצרה. ':'אל תברכו מחדש, התחילו ישר בנושא. ')+(last?'סיימו בסיכום קצר.':'אל תסכמו ואל תסיימו, ההמשך בחלק הבא.'):'';
+    let got=[],err=null;
+    if(i)await new Promise(r=>setTimeout(r,i*700));/* מרווח קטן בין הבקשות, כדי לא להיחסם */
+    for(let at=0;at<2&&got.length<2;at++){let rr=null;if(at&&err&&/limit/.test(String(err.message)))await new Promise(r=>setTimeout(r,3000));try{rr=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${pos}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){err=e1;rr=null}
+     if(rr){got=podLines(rr);if(first&&rr.title&&!title)title=String(rr.title)}}
+    if(got.length<2)throw err||new Error('empty');
+    parts[i]=got;P.prog=Object.keys(parts).length+'/'+N;if(P.loading&&tab==6&&!P.cur)try{podView()}catch(e){}S.podDraft={sub:P.sub,text,n,parts:Object.assign({},parts),title};save();
+   };
+   const todo=[];for(let i=0;i<N;i++)if(!parts[i])todo.push(i);
+   const res=await Promise.allSettled(todo.map(one));
+   const bad=res.find(x=>x.status=='rejected');
+   for(let i=0;i<N;i++)if(parts[i])lines=lines.concat(parts[i]);
+   if(lines.length)aiOk=true;
+   if(bad){if(!lines.length)throw bad.reason;paused=true}
   }catch(e0){
    if(lines.length){paused=true}else{r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
   }
-  if(paused&&lines.length&&lines.length<n*0.7){P.err='הפודקאסט נעצר באמצע ('+lines.length+' מתוך '+n+' שורות) והחלק שכבר נוצר נשמר. כשתחזור לכאן הוא ימשיך לבד, או לחץ שוב על יצירה.';window._podPaused=true;P.loading=false;render();return}
+  if(paused&&lines.length){P.err='הפודקאסט נעצר באמצע ('+lines.length+' מתוך '+n+' שורות) והחלק שכבר נוצר נשמר. כשתחזור לכאן הוא ימשיך לבד, או לחץ שוב על יצירה.';window._podPaused=true;P.loading=false;render();return}
   if(lines.length<4&&!aiOk){r=localPod(text,P.sub,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
   r={title:title||P.sub,lines};
   if(lines.length<4)throw new Error('empty');
@@ -1983,7 +1991,7 @@ function podView(){
  document.body.classList.add('tbg');
  if(P.cur&&P.cur.audio&&!P.loading){podAudioView();return}
  const v=$('v');
- if(P.loading){v.innerHTML='<div class="tcard"><div class="tbd"><div class="tbig">🎙️</div><p style="text-align:center;font-weight:700">נועה ודני מתכוננים להקלטה…</p></div></div>';return}
+ if(P.loading){v.innerHTML=`<div class="tcard"><div class="tbd"><div class="tbig">🎙️</div><p style="text-align:center;font-weight:700">נועה ודני מתכוננים להקלטה…</p>${P.prog?`<p style="text-align:center;opacity:.8">הושלמו ${esc(P.prog)} חלקים</p>`:''}</div></div>`;return}
  if(P.cur){
   const c=P.cur,n=c.lines.length,pct=Math.round(100*Math.min(P.i,n)/n);
   v.innerHTML=`<div class="pl"><div class="cover">🎧</div><div class="pt">${esc(c.title)}</div><div class="ps">${esc(c.sub)} · נועה ודני</div>
