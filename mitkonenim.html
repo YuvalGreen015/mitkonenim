@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.54 | קוד עדכון V-N2YF-6KTC -->
+<!-- מתכוננים | גרסה 3.55 | קוד עדכון V-Y3HD-5MRB -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-N2YF-6KTC";   /* קוד העדכון של גרסה 3.54. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.54";
+window.UPDATE_CODE = "V-Y3HD-5MRB";   /* קוד העדכון של גרסה 3.55. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.55";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1862,15 +1862,23 @@ function podErr(c){
  if(c=='language-unavailable'||c=='voice-unavailable')return 'אין קול בעברית במכשיר. בהגדרות הטלפון: ניהול כללי ← המרת טקסט לדיבור ← הורד עברית.';
  return 'ההקראה לא התחילה ('+c+'). בדוק שהווליום של המדיה לא על אפס ושיש קול בעברית (הגדרות ← ניהול כללי ← המרת טקסט לדיבור). אם פתחת מתוך אפליקציית Claude, פתח בכרום.';
 }
+/* ניקוי טקסט לפני הקראה והצגה: בלי שם הדובר ("דני:"), ובלי מקפים וסימנים שהקול מקריא כ"מינוס" */
+function cleanLine(t){
+ return String(t||'').replace(/^\s*(?:ה)?(?:נועה|דני)\s*[:：\-–—]\s*/,'').replace(/^\s*[-–—•*]+\s*/,'');
+}
+function speakText(t){
+ return cleanLine(t).replace(/\s*[–—―‒]\s*/g,', ').replace(/(\d)\s*-\s*(\d)/g,'$1 עד $2').replace(/\s-\s/g,', ').replace(/(\S)-(\S)/g,'$1 $2')
+  .replace(/[()\[\]{}"״“”„*_#~^|<>=\\\/]/g,' ').replace(/\s*([,.;:!?])(?:\s*\1)+/g,'$1').replace(/\s+/g,' ').replace(/\s+([,.;:!?])/g,'$1').trim();
+}
 function podSay(){
  const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance=='undefined'){P.playing=false;P.msg=podErr('not-supported');render();return}
- const ln=c.lines[P.i],u=new SpeechSynthesisUtterance(ln.t),tok=++P.tok;
+ const ln=c.lines[P.i],u=new SpeechSynthesisUtterance(speakText(ln.t)),tok=++P.tok;
  const g=ln.w=='b'?'male':'female',gv=pickVoice('he-IL',g),v=gv||pickVoice('he-IL','');
  u.lang='he-IL';u.rate=Math.min(2,.95*P.rate);u.volume=1;if(v)u.voice=v;if(!gv)u.pitch=g=='female'?1.5:.6;
  let started=false;
  u.onstart=()=>{started=true;if(P.msg){P.msg='';render()}};
- u.onend=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)podSay()};
+ u.onend=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},260)};
  u.onerror=e=>{if(tok!==P.tok)return;if(e.error=='canceled'||e.error=='interrupted')return;P.playing=false;P.msg=podErr(e.error||'error');render()};
  try{
   speechSynthesis.cancel();
@@ -1916,7 +1924,7 @@ async function podGen(){
    if(!Array.isArray(arr)&&r&&typeof r=='object'){arr=Object.values(r).find(v=>Array.isArray(v)&&v.length&&typeof v[0]=='object')||null}
    return (arr||[]).map(x=>{if(!x)return null;if(typeof x=='string'){const m=/^\s*(נועה|דני)\s*[:\-]\s*(.+)$/.exec(x);return m?{w:m[1]=='דני'?'b':'a',t:m[2].trim()}:null}
     const t=String(x.t||x.text||x.line||x.content||x['טקסט']||'').trim();const who=String(x.w||x.speaker||x.who||x.name||'').toLowerCase();
-    return t?{w:(who=='b'||who=='דני')?'b':'a',t}:null}).filter(Boolean)};
+    return t?{w:(who=='b'||who=='דני')?'b':'a',t:cleanLine(t)}:null}).filter(x=>x&&x.t)};
   let lines=[],title='',r=null,aiOk=false;
   /* מבקשים בחלקים של עד 20 שורות: תשובה ארוכה נחתכת ונהיית JSON שבור */
   try{
@@ -1980,7 +1988,7 @@ function podView(){
   <div class="pctl"><button id="pprev" aria-label="הקודם">⏮</button><button class="pp" id="pplay" aria-label="הפעל או עצור">${P.playing?'⏸':'▶'}</button><button id="pnext" aria-label="הבא">⏭</button></div>
   ${P.msg?`<div style="margin:12px 0 0;padding:10px;border-radius:14px;background:rgba(251,191,36,.18);color:#fde68a;font-size:14px;line-height:1.5">⚠️ ${esc(P.msg)}</div>`:''}
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
-  <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(l.t)}</div></div>`).join('')}</div></div>
+  <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
   const go=()=>{if(P.playing)podSay();render()};
   $('pplay').onclick=()=>{P.msg='';if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
