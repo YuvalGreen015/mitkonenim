@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.58 | קוד עדכון V-J9RC-4ZLM -->
+<!-- מתכוננים | גרסה 3.59 | קוד עדכון V-S4PD-6HWA -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-J9RC-4ZLM";   /* קוד העדכון של גרסה 3.58. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.58";
+window.UPDATE_CODE = "V-S4PD-6HWA";   /* קוד העדכון של גרסה 3.59. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.59";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1875,10 +1875,16 @@ function podSay(){
  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance=='undefined'){P.playing=false;P.msg=podErr('not-supported');render();return}
  const ln=c.lines[P.i],u=new SpeechSynthesisUtterance(speakText(ln.t)),tok=++P.tok;
  const g=ln.w=='b'?'male':'female',gv=pickVoice('he-IL',g),v=gv||pickVoice('he-IL','');
- u.lang='he-IL';u.rate=Math.min(2,.95*P.rate);u.volume=1;if(v)u.voice=v;if(!gv)u.pitch=g=='female'?1.5:.6;
- let started=false;
- u.onstart=()=>{started=true;if(P.msg){P.msg='';render()}};
- u.onend=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},260)};
+ u.lang='he-IL';u.rate=Math.min(2,.95*P.rate);u.volume=1;if(v&&!P.novoice)u.voice=v;if(!gv)u.pitch=g=='female'?1.5:.6;
+ let started=false,t0=0;const txt=speakText(ln.t);
+ u.onstart=()=>{started=true;t0=Date.now();if(P.msg){P.msg='';render()}};
+ u.onend=()=>{if(tok!==P.tok||!P.playing)return;
+  /* נגמר מיד בלי להישמע (קול חסר או שבור): ננסה פעם אחת עם הקול הרגיל של הטלפון, ואם גם זה לא עובד נעצור ונסביר */
+  if(txt.length>25&&(!started||Date.now()-t0<350)){
+   if(!P.novoice){P.novoice=true;setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},200);return}
+   P.playing=false;let hv=0;try{hv=speechSynthesis.getVoices().filter(x=>/^he/i.test(x.lang)).length}catch(e){}
+   P.msg='ההקראה נגמרת מיד בלי קול. '+(hv?'':'אין קול בעברית במכשיר. ')+'בהגדרות הטלפון: ניהול כללי ← המרת טקסט לדיבור ← מנוע של Google ← הורד/י עברית. בדוק גם את עוצמת המדיה, ופתח בכרום ולא מתוך אפליקציה אחרת.';render();return}
+  P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},260)};
  u.onerror=e=>{if(tok!==P.tok)return;if(e.error=='canceled'||e.error=='interrupted')return;P.playing=false;P.msg=podErr(e.error||'error');render()};
  try{
   speechSynthesis.cancel();
@@ -2002,7 +2008,7 @@ function podView(){
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
   const go=()=>{if(P.playing)podSay();render()};
-  $('pplay').onclick=()=>{P.msg='';if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
+  $('pplay').onclick=()=>{P.msg='';P.novoice=false;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
   $('pnext').onclick=()=>{P.i=Math.min(n-1,P.i+1);go()};
   v.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{P.rate=+b.dataset.r;go()});
