@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.60 | קוד עדכון V-B3LX-9QTE -->
+<!-- מתכוננים | גרסה 3.63 | קוד עדכון V-R6TB-3KXP -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-B3LX-9QTE";   /* קוד העדכון של גרסה 3.60. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.60";
+window.UPDATE_CODE = "V-R6TB-3KXP";   /* קוד העדכון של גרסה 3.63. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.63";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1856,7 +1856,7 @@ const hwToday=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMon
 /* ---- פודקאסט ---- */
 let P={sub:'',len:5,loading:false,err:'',cur:null,i:0,playing:false,rate:1,tok:0,msg:''};
 const POD_LINES={2:14,5:34,10:70};
-function podStop(){P.playing=false;P.tok++;try{speechSynthesis.cancel()}catch(e){}}
+function podStop(){P.playing=false;P.tok++;try{speechSynthesis.cancel()}catch(e){}try{if(P.au)P.au.pause()}catch(e){}}
 function podErr(c){
  if(c=='not-supported')return 'הדפדפן הזה לא תומך בהקראה. פתח את האפליקציה בכרום.';
  if(c=='language-unavailable'||c=='voice-unavailable')return 'אין קול בעברית במכשיר. בהגדרות הטלפון: ניהול כללי ← המרת טקסט לדיבור ← הורד עברית.';
@@ -1870,8 +1870,39 @@ function speakText(t){
  return cleanLine(t).replace(/\s*[–—―‒]\s*/g,', ').replace(/(\d)\s*-\s*(\d)/g,'$1 עד $2').replace(/\s-\s/g,', ').replace(/(\S)-(\S)/g,'$1 $2')
   .replace(/[()\[\]{}"״“”„*_#~^|<>=\\\/]/g,' ').replace(/\s*([,.;:!?])(?:\s*\1)+/g,'$1').replace(/\s+/g,' ').replace(/\s+([,.;:!?])/g,'$1').trim();
 }
+/* אין קול עברי בטלפון? מקריאים דרך קול עברי של גוגל באינטרנט (כמו אלמנט שמע רגיל, בלי להתקין כלום) */
+const hasHeVoice=()=>{try{return speechSynthesis.getVoices().some(x=>/^(he|iw)/i.test(x.lang))}catch(e){return false}};
+function chunkTxt(t,max){const out=[];let s=String(t).trim();max=max||170;
+ while(s.length>max){let k=Math.max(s.lastIndexOf(', ',max),s.lastIndexOf('. ',max),s.lastIndexOf('? ',max),s.lastIndexOf('! ',max),s.lastIndexOf(' ',max));if(k<40)k=max;out.push(s.slice(0,k+1).trim());s=s.slice(k+1).trim()}
+ if(s)out.push(s);return out.filter(x=>x)}
+function podWeb(){
+ const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
+ const ln=c.lines[P.i],tok=++P.tok,parts=chunkTxt(speakText(ln.t));
+ if(!parts.length){P.i++;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},50);return}
+ const a=P.au||(P.au=new Audio());let k=0,tries=0;
+ const fail=why=>{if(tok!==P.tok)return;P.playing=false;P.msg='לא הצלחתי להקריא דרך האינטרנט ('+why+'). בדוק שיש חיבור לאינטרנט ונסה שוב. אם זה חוזר, שלח לי צילום מסך.';render()};
+ const next=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},250)};
+ const play=()=>{
+  if(tok!==P.tok||!P.playing)return;
+  if(k>=parts.length){next();return}
+  a.onended=()=>{k++;tries=0;play()};
+  a.onerror=()=>{if(tok!==P.tok)return;if(tries++<1){setTimeout(play,600);return}fail('שגיאת רשת')};
+  a.onplaying=()=>{if(P.msg){P.msg='';render()}};
+  a.src='https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=iw&q='+encodeURIComponent(parts[k]);
+  try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false}catch(e){}
+  const r=(ln.w=='b'?.9:1.06)*Math.min(1.5,P.rate);try{a.defaultPlaybackRate=r;a.playbackRate=r}catch(e){}
+  const pr=a.play();if(pr&&pr.catch)pr.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError'))fail(e&&e.name||'play')});
+ };
+ try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:c.title,artist:'נועה ודני',album:c.sub});
+  navigator.mediaSession.setActionHandler('play',()=>{if(!P.playing){P.playing=true;podSay();render()}});
+  navigator.mediaSession.setActionHandler('pause',()=>{if(P.playing){podStop();render()}});
+  navigator.mediaSession.setActionHandler('nexttrack',()=>{if(P.cur&&P.i<P.cur.lines.length-1){podStop();P.i++;P.playing=true;podSay();render()}});
+  navigator.mediaSession.setActionHandler('previoustrack',()=>{if(P.cur&&P.i>0){podStop();P.i--;P.playing=true;podSay();render()}})}}catch(e){}
+ play();
+}
 function podSay(){
  const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
+ if(P.web||(!P.forceTTS&&!hasHeVoice())){P.web=true;try{speechSynthesis.cancel()}catch(e){}podWeb();return}
  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance=='undefined'){P.playing=false;P.msg=podErr('not-supported');render();return}
  const ln=c.lines[P.i],u=new SpeechSynthesisUtterance(speakText(ln.t)),tok=++P.tok;
  const g=ln.w=='b'?'male':'female',gv=pickVoice('he-IL',g),v=gv||pickVoice('he-IL','');
@@ -1882,8 +1913,7 @@ function podSay(){
   /* נגמר מיד בלי להישמע (קול חסר או שבור): ננסה פעם אחת עם הקול הרגיל של הטלפון, ואם גם זה לא עובד נעצור ונסביר */
   if(txt.length>25&&(!started||Date.now()-t0<350)){
    if(!P.novoice){P.novoice=true;setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},200);return}
-   P.playing=false;let hv=0;try{hv=speechSynthesis.getVoices().filter(x=>/^he/i.test(x.lang)).length}catch(e){}
-   P.msg='ההקראה נגמרת מיד בלי קול. '+(hv?'':'אין קול בעברית במכשיר. ')+'בהגדרות הטלפון: ניהול כללי ← המרת טקסט לדיבור ← מנוע של Google ← הורד/י עברית. בדוק גם את עוצמת המדיה, ופתח בכרום ולא מתוך אפליקציה אחרת.';render();return}
+   P.web=true;setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},100);return}
   P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},260)};
  u.onerror=e=>{if(tok!==P.tok)return;if(e.error=='canceled'||e.error=='interrupted')return;P.playing=false;P.msg=podErr(e.error||'error');render()};
  try{
@@ -1902,8 +1932,7 @@ function localPod(text,sub,n){
  const ask=['ספר לי עוד, מה עוד חשוב לדעת?','ומה לגבי ההמשך?','וואו, ואיך זה ממשיך?','יופי, ומה אחר כך?','זה מעניין, תוסיף עוד קצת.','ומה עוד כדאי שנזכור?'];
  const link=['תשמע, ','בקיצור, ','והנה העיקר: ','חשוב לדעת ש','כדאי לזכור ש','מה שחשוב כאן: '];
  const cl=x=>x.replace(/[.!?:;]+$/,'');
- a('היי, אני נועה, ברוכים הבאים לפודקאסט הלימוד.');b('ואני דני. היום נלמד יחד על '+sub+'.');
- a('מצוין, בוא נתחיל. מה הדבר הראשון שצריך לדעת?');
+ a('רגע, יש משהו על '+sub+' שכדאי שנבין לפני המבחן. מאיפה מתחילים?');b('בוא נתחיל מהעיקר, ותגיד לי אם זה ברור.');
  let i=0,k=0;const room=Math.max(2,n-6);
  for(const x of ss){
   if(L.length>=room)break;
@@ -1915,7 +1944,7 @@ function localPod(text,sub,n){
  if(L[L.length-1].w=='a')L.pop();
  a('בואו נסכם: איזה דבר אחד הכי כדאי לזכור?');
  b('הנקודה המרכזית: '+cl(ss[0])+'. כדאי לחזור על זה שוב.');
- a('תודה שהקשבתם, ובהצלחה בלימודים!');b('ביי ביי.');
+ a('יופי, עכשיו זה נשמע לי הרבה יותר ברור. בהצלחה במבחן!');
  return{title:sub,lines:L};
 }
 async function podGen(){
@@ -1939,10 +1968,11 @@ async function podGen(){
    if(S.podDraft&&parts&&Object.keys(parts).length&&S.podDraft.sub==P.sub&&S.podDraft.text==text&&S.podDraft.n==n){title=S.podDraft.title||'';toast('ממשיך מהמקום שעצרנו: '+Object.keys(parts).length+' מתוך '+N+' חלקים')}
    const one=async i=>{
     const k=Math.min(per,n-i*per),first=i==0,last=i==N-1;
-    const pos=N>1?'\nזה חלק '+(i+1)+' מתוך '+N+' של הפודקאסט. כסה רק את החלק ה-'+(i+1)+' מתוך '+N+' של החומר, לפי הסדר, ואל תחזור על חלקים אחרים. '+(first?'פתחו בברכה קצרה. ':'אל תברכו מחדש, התחילו ישר בנושא. ')+(last?'סיימו בסיכום קצר.':'אל תסכמו ואל תסיימו, ההמשך בחלק הבא.'):'';
+    const pos=N>1?'\nזה חלק '+(i+1)+' מתוך '+N+' של הפודקאסט. כסה רק את החלק ה-'+(i+1)+' מתוך '+N+' של החומר, לפי הסדר, ואל תחזור על חלקים אחרים. '+(first?'פתחו בברכה קצרה, ומיד אחריה "וו" מסקרן. ':'אל תברכו מחדש, התחילו ישר בנושא. ')+(last?'סיימו בסיכום קצר ובשאלת מבחן.':'אל תסכמו ואל תסיימו, ההמשך בחלק הבא.'):'';
     let got=[],err=null;
     if(i)await new Promise(r=>setTimeout(r,i*700));/* מרווח קטן בין הבקשות, כדי לא להיחסם */
-    for(let at=0;at<2&&got.length<2;at++){let rr=null;if(at&&err&&/limit/.test(String(err.message)))await new Promise(r=>setTimeout(r,3000));try{rr=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט פודקאסט לימודי בעברית: שיחה טבעית וקלילה בין שתי דמויות, נועה (מנחה סקרנית ששואלת) ודני (חבר שמסביר בצורה ברורה). השיחה מבוססת רק על החומר שלהלן, מכסה את כל נושאיו לפי הסדר, בשפה פשוטה לתלמיד, עם דוגמאות קצרות מהחומר ובלי להמציא עובדות שאינן בו. אם מה שנכתב הוא רק נושא או כותרת קצרה (למשל שלוש מילים כמו "אתונה נגד ספרטה"), השתמש בידע כללי נכון ומדויק על הנושא, בהתאמה לתלמיד. בסוף סכמו בקצרה. התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${pos}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){err=e1;rr=null}
+    for(let at=0;at<2&&got.length<2;at++){let rr=null;if(at&&err&&/limit/.test(String(err.message)))await new Promise(r=>setTimeout(r,3000));try{rr=await aiJsonA(`המקצוע: ${P.sub}. כתוב תסריט לפודקאסט לימודי בעברית, בסגנון "Audio Overview" של NotebookLM: שיחה חיה, מרתקת ומשעשעת בין שני חברים, נועה (סקרנית, שואלת, מגיבה בהתלהבות, לפעמים מתפלאת או מתווכחת) ודני (חובב היסטוריה ומדע שמספר סיפורים ומסביר בצורה ברורה). המטרה: שתלמיד ירצה להמשיך להקשיב ויזכור מה שנאמר.
+כללים: 1) מותר ברכה קצרה של שורה או שתיים ("היי, אני נועה" / "ואני דני"), ומיד אחריה פותחים ב"וו" שתופס: עובדה מפתיעה, שאלה מסקרנת, סיפור או סצנה מהחומר. לא מדברים על הנושא באופן כללי ("היום נלמד על...") אלא נכנסים מיד לדבר המעניין. 2) מספרים סיפור: מי, למה, מה קרה, ומה יצא מזה. כל נושא מוסבר דרך דוגמה, השוואה לחיי היומיום של תלמיד, או מקרה מעניין. 3) הדוברים מגיבים זה לזה ("רגע, באמת?", "וואו, לא ידעתי", "תסביר לי את זה כאילו אני בכיתה ו'", "אז בעצם..."), ולפעמים נועה מנסה לנחש או מסכמת בשפה פשוטה ודני מתקן או משלים. 4) משפטים קצרים וטבעיים כמו בדיבור אמיתי, בלי נאום ובלי רשימות. 5) לפעמים שאלה לחשיבה למאזין ("תעצרו רגע וחשבו: למה לדעתכם...") ואז התשובה. 6) כל השמות, התאריכים וההסברים מדויקים ומבוססים על החומר. אסור להמציא עובדות. אם החומר הוא רק נושא או כותרת קצרה (למשל "יוון העתיקה"), השתמש בידע כללי נכון ומדויק, וכסה את הדברים החשובים שתלמיד צריך לדעת עליו למבחן (אנשים, אירועים, סיבות ותוצאות, מושגים), לפי סדר הגיוני. 7) התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). 8) בסוף: סיכום קצר וקליט של 3 דברים לזכור, ושאלת מבחן אחת למאזין עם התשובה. 9) בלי סימנים מיוחדים, בלי אימוג'י, ובלי כתיבת שם הדובר בתוך הטקסט. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות"). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${pos}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){err=e1;rr=null}
      if(rr){got=podLines(rr);if(first&&rr.title&&!title)title=String(rr.title)}}
     if(got.length<2)throw err||new Error('empty');
     parts[i]=got;P.prog=Object.keys(parts).length+'/'+N;if(P.loading&&tab==6&&!P.cur)try{podView()}catch(e){}S.podDraft={sub:P.sub,text,n,parts:Object.assign({},parts),title};save();
@@ -2011,7 +2041,7 @@ function podView(){
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
   const go=()=>{if(P.playing)podSay();render()};
-  $('pplay').onclick=()=>{P.msg='';P.novoice=false;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
+  $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
   $('pnext').onclick=()=>{P.i=Math.min(n-1,P.i+1);go()};
   v.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{P.rate=+b.dataset.r;go()});
