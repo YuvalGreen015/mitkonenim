@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.64 | קוד עדכון V-Q4ZN-8VDL -->
+<!-- מתכוננים | גרסה 3.67 | קוד עדכון V-T9KA-2FHN -->
 <html lang="he" dir="rtl">
 <head>
+<meta name="referrer" content="no-referrer">
 <script src="ai.js"></script>
 <meta charset="utf-8">
 <title>מתכוננים</title>
@@ -213,8 +214,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-Q4ZN-8VDL";   /* קוד העדכון של גרסה 3.64. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.64";
+window.UPDATE_CODE = "V-T9KA-2FHN";   /* קוד העדכון של גרסה 3.67. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.67";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1875,13 +1876,85 @@ const hasHeVoice=()=>{try{return speechSynthesis.getVoices().some(x=>/^(he|iw)/i
 function chunkTxt(t,max){const out=[];let s=String(t).trim();max=max||170;
  while(s.length>max){let k=Math.max(s.lastIndexOf(', ',max),s.lastIndexOf('. ',max),s.lastIndexOf('? ',max),s.lastIndexOf('! ',max),s.lastIndexOf(' ',max));if(k<40)k=max;out.push(s.slice(0,k+1).trim());s=s.slice(k+1).trim()}
  if(s)out.push(s);return out.filter(x=>x)}
+/* קולות עבריים עצביים של מיקרוסופט (נועה = הילה, דני = אברי), דרך האינטרנט */
+async function edgeTTS(text,voice){
+ const TOK='6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+ let t=Math.floor(Date.now()/1000)+11644473600;t-=t%300;
+ const hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((BigInt(t)*10000000n).toString()+TOK));
+ const gec=Array.from(new Uint8Array(hb)).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+ const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');
+ const dt=()=>new Date().toUTCString().replace('GMT','GMT+0000 (Coordinated Universal Time)');
+ const esc2=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ return new Promise((res,rej)=>{
+  const chunks=[];let done=false,ws=null;
+  const fin=e=>{if(done)return;done=true;clearTimeout(to);try{ws&&ws.close()}catch(x){}if(e)rej(e);else if(!chunks.length)rej(new Error('no audio'));else res(new Blob(chunks,{type:'audio/mpeg'}))};
+  const to=setTimeout(()=>fin(new Error('timeout')),15000);
+  try{ws=new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken='+TOK+'&Sec-MS-GEC='+gec+'&Sec-MS-GEC-Version=1-143.0.3650.75&ConnectionId='+rid())}catch(e){fin(e);return}
+  ws.binaryType='arraybuffer';
+  ws.onerror=()=>fin(new Error('ws error'));
+  ws.onclose=()=>fin(chunks.length?null:new Error('closed'));
+  ws.onopen=()=>{
+   ws.send('X-Timestamp:'+dt()+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}\r\n');
+   ws.send('X-RequestId:'+rid()+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+dt()+'Z\r\nPath:ssml\r\n\r\n<speak version=\'1.0\' xmlns=\'http://www.w3.org/2001/10/synthesis\' xml:lang=\'he-IL\'><voice name=\''+voice+'\'><prosody pitch=\'+0Hz\' rate=\'+0%\' volume=\'+0%\'>'+esc2(text)+'</prosody></voice></speak>')};
+  ws.onmessage=ev=>{const d=ev.data;
+   if(typeof d==='string'){if(/Path:turn\.end/.test(d))fin(null);return}
+   const u=new Uint8Array(d);if(u.length<2)return;const hl=(u[0]<<8)|u[1];
+   const head=new TextDecoder().decode(u.slice(2,2+hl));
+   if(/Path:audio/.test(head)&&u.length>hl+2)chunks.push(u.slice(hl+2))}
+ })
+}
+/* שומר את כל הפודקאסט כקובץ שמע בטלפון (קולות מיקרוסופט), ואז הוא מתנגן בלי אינטרנט ועם מסך כבוי */
+async function podSaveAudio(){
+ const c=P.cur;if(!c||P.dl)return;const n=c.lines.length;P.dl=1;P.msg='';
+ const setT=t=>{const e=$('pdl');if(e)e.textContent=t};
+ try{
+  /* כל שורה שהצליחה נשמרת בזיכרון: אם משהו נכשל, לחיצה נוספת ממשיכה מאותו מקום ולא מתחילה מחדש */
+  P.dlc=P.dlc||{};const K=i=>c.id+':'+i,blobs=new Array(n);let idx=0,fails=0,lastErr=null;
+  const cnt=()=>{let d=0;for(let i=0;i<n;i++)if(P.dlc[K(i)])d++;return d};
+  const worker=async()=>{while(idx<n&&fails<3){const i=idx++,l=c.lines[i];if(P.dlc[K(i)])continue;let b=null;
+   for(let at=0;at<4&&!b;at++){if(at)await new Promise(r=>setTimeout(r,[0,800,2000,4000][at]));try{b=await edgeTTS(speakText(l.t),l.w=='b'?'he-IL-AvriNeural':'he-IL-HilaNeural')}catch(e){lastErr=e}}
+   if(!b){fails++;continue}P.dlc[K(i)]=b;setT('מכין שמע… '+cnt()+'/'+n)}};
+  await Promise.all([worker(),worker(),worker()]);
+  if(cnt()<n){const e=new Error('נשמרו '+cnt()+' מתוך '+n+' שורות, לחץ שוב כדי להמשיך מאותו מקום. סיבה: '+String(lastErr&&lastErr.message||'לא ידועה'));e.keep=1;throw e}
+  for(let i=0;i<n;i++)blobs[i]=P.dlc[K(i)];P.dlc={};
+  const blob=new Blob(blobs,{type:'audio/mpeg'}),id=Date.now();
+  await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (שמע)',audio:true,mime:'audio/mpeg',size:blob.size,lines:[],pos:0});podTrim();save();
+  toast('נשמר ✅ אפשר להאזין בלי אינטרנט, גם כשהמסך כבוי (ברשימה למטה)');
+ }catch(e){P.msg='לא הצלחתי להכין את כל קובץ השמע ('+String(e&&e.message||e).slice(0,140)+'). בדוק חיבור לאינטרנט.'}
+ P.dl='';render();
+}
 function podWeb(){
  const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
- const ln=c.lines[P.i],tok=++P.tok,parts=chunkTxt(speakText(ln.t));
+ const ln=c.lines[P.i],tok=++P.tok,txt=speakText(ln.t),parts=chunkTxt(txt);
  if(!parts.length){P.i++;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},50);return}
- const a=P.au||(P.au=new Audio());let k=0,tries=0;
- const fail=why=>{if(tok!==P.tok)return;P.playing=false;P.msg='לא הצלחתי להקריא דרך האינטרנט ('+why+'). בדוק שיש חיבור לאינטרנט ונסה שוב. אם זה חוזר, שלח לי צילום מסך.';render()};
+ const a=P.au||(P.au=new Audio());
+ const fail=why=>{if(tok!==P.tok)return;P.playing=false;P.msg='לא הצלחתי להקריא דרך האינטרנט. '+(P.why?'מיקרוסופט: '+P.why+'. ':'')+'גוגל: '+why+'. בדוק חיבור לאינטרנט ונסה שוב, ואם זה חוזר שלח לי צילום מסך.';render()};
  const next=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},250)};
+ const media=()=>{try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:c.title,artist:'נועה ודני',album:c.sub});
+  navigator.mediaSession.setActionHandler('play',()=>{if(!P.playing){P.playing=true;podSay();render()}});
+  navigator.mediaSession.setActionHandler('pause',()=>{if(P.playing){podStop();render()}});
+  navigator.mediaSession.setActionHandler('nexttrack',()=>{if(P.cur&&P.i<P.cur.lines.length-1){podStop();P.i++;P.playing=true;podSay();render()}});
+  navigator.mediaSession.setActionHandler('previoustrack',()=>{if(P.cur&&P.i>0){podStop();P.i--;P.playing=true;podSay();render()}})}}catch(e){}};
+ media();
+ /* 1) קול עצבי של מיקרוסופט, עם הכנה מראש של השורה הבאה */
+ if(!P.edgeBad){
+  P.ec=P.ec||{};
+  const get=i=>{const l=c.lines[i];if(!l)return null;const key=c.id+':'+i;if(!P.ec[key])P.ec[key]=edgeTTS(speakText(l.t),l.w=='b'?'he-IL-AvriNeural':'he-IL-HilaNeural');return P.ec[key]};
+  const pr=get(P.i);
+  pr.then(blob=>{
+   if(tok!==P.tok||!P.playing)return;
+   const url=URL.createObjectURL(blob);get(P.i+1);
+   try{a.preservesPitch=true}catch(e){}
+   a.onended=()=>{URL.revokeObjectURL(url);delete P.ec[c.id+':'+P.i];next()};
+   a.onerror=()=>{if(tok!==P.tok)return;P.edgeBad=true;P.why='הקובץ לא התנגן';podWeb()};
+   a.onplaying=()=>{if(P.msg){P.msg='';render()}};
+   a.src=url;try{a.defaultPlaybackRate=Math.min(1.5,P.rate);a.playbackRate=Math.min(1.5,P.rate)}catch(e){}
+   const pp=a.play();if(pp&&pp.catch)pp.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError')){P.edgeBad=true;P.why=(e&&e.name)||'play';podWeb()}})
+  }).catch(e=>{if(tok!==P.tok)return;delete P.ec[c.id+':'+P.i];P.edgeBad=true;P.why=String(e&&e.message||e).slice(0,40);podWeb()});
+  return;
+ }
+ /* 2) גיבוי: קול עברי של גוגל */
+ let k=0,tries=0;
  const play=()=>{
   if(tok!==P.tok||!P.playing)return;
   if(k>=parts.length){next();return}
@@ -1893,11 +1966,6 @@ function podWeb(){
   const r=(ln.w=='b'?.9:1.06)*Math.min(1.5,P.rate);try{a.defaultPlaybackRate=r;a.playbackRate=r}catch(e){}
   const pr=a.play();if(pr&&pr.catch)pr.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError'))fail(e&&e.name||'play')});
  };
- try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:c.title,artist:'נועה ודני',album:c.sub});
-  navigator.mediaSession.setActionHandler('play',()=>{if(!P.playing){P.playing=true;podSay();render()}});
-  navigator.mediaSession.setActionHandler('pause',()=>{if(P.playing){podStop();render()}});
-  navigator.mediaSession.setActionHandler('nexttrack',()=>{if(P.cur&&P.i<P.cur.lines.length-1){podStop();P.i++;P.playing=true;podSay();render()}});
-  navigator.mediaSession.setActionHandler('previoustrack',()=>{if(P.cur&&P.i>0){podStop();P.i--;P.playing=true;podSay();render()}})}}catch(e){}
  play();
 }
 function podSay(){
@@ -2054,9 +2122,11 @@ function podView(){
   ${P.msg?`<div style="margin:12px 0 0;padding:10px;border-radius:14px;background:rgba(251,191,36,.18);color:#fde68a;font-size:14px;line-height:1.5">⚠️ ${esc(P.msg)}</div>`:''}
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
+  <button class="tbtn" id="pdl" style="width:100%;margin-top:12px">📥 שמור להאזנה בלי אינטרנט</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
+  $('pdl').onclick=podSaveAudio;if(P.dl)$('pdl').textContent='מכין שמע…';
   const go=()=>{if(P.playing)podSay();render()};
-  $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
+  $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;P.edgeBad=false;P.why='';if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
   $('pnext').onclick=()=>{P.i=Math.min(n-1,P.i+1);go()};
   v.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{P.rate=+b.dataset.r;go()});
