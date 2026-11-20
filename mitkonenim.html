@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.67 | קוד עדכון V-T9KA-2FHN -->
+<!-- מתכוננים | גרסה 3.67.5 | קוד עדכון V-A9FG-2LNX -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
 <script src="ai.js"></script>
+<script src="podcast-ai.js" onerror="void 0"></script>
 <meta charset="utf-8">
 <title>מתכוננים</title>
 <link rel="apple-touch-icon" data-img="apple-touch-icon.png">
@@ -214,8 +215,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-T9KA-2FHN";   /* קוד העדכון של גרסה 3.67. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.67";
+window.UPDATE_CODE = "V-A9FG-2LNX";   /* קוד העדכון של גרסה 3.67.5. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.67.5";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1923,6 +1924,61 @@ async function podSaveAudio(){
  }catch(e){P.msg='לא הצלחתי להכין את כל קובץ השמע ('+String(e&&e.message||e).slice(0,140)+'). בדוק חיבור לאינטרנט.'}
  P.dl='';render();
 }
+/* קול אנושי של Google Gemini (שתי דמויות), נשמר כקובץ שמע בטלפון. צריך מפתח Google שמתחיל ב-AIza */
+const GEM_MODELS=['gemini-2.5-flash-preview-tts','gemini-2.5-pro-preview-tts'];
+const GEM_STYLE='Read this Hebrew conversation as a warm, natural, human podcast. Danny: a warm, deep, clear baritone with a measured calm pace and classic storyteller delivery; dramatic, varied intonation that builds tension and interest, emphasizing certain words and slowing down in the right places; authoritative yet accessible, as if telling a fascinating story by a campfire. Noa: a bright, warm, curious young woman with lively natural intonation who reacts with real interest and surprise. No robotic tone. ';
+async function gemPart(lines,key){
+ const txt=GEM_STYLE+'\nTTS the following conversation between Noa and Danny:\n'+lines.map(l=>(l.w=='b'?'Danny: ':'Noa: ')+speakText(l.t)).join('\n');
+ const body={contents:[{parts:[{text:txt}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{multiSpeakerVoiceConfig:{speakerVoiceConfigs:[
+  {speaker:'Noa',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Aoede'}}},{speaker:'Danny',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}}}]}}}};
+ let last=null;
+ for(const m of GEM_MODELS){
+  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),120000);
+  let r,j=null;
+  try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});j=await r.json().catch(()=>null)}
+  catch(e){clearTimeout(to);last=new Error(e&&e.name=='AbortError'?'זמן ההמתנה נגמר':'אין חיבור לשרת של Google');continue}
+  clearTimeout(to);
+  const d=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].inlineData;
+  if(r.ok&&d&&d.data){const bin=atob(d.data),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+  last=new Error((j&&j.error&&j.error.message)||('HTTP '+r.status));last.status=r.status;
+  if(r.status==429||r.status==403||r.status==401)throw last;
+ }
+ throw last||new Error('no audio');
+}
+function pcmWav(chunks){
+ let n=0;chunks.forEach(c=>n+=c.length);const b=new Uint8Array(44+n),dv=new DataView(b.buffer),w=(o,t)=>{for(let i=0;i<t.length;i++)b[o+i]=t.charCodeAt(i)};
+ w(0,'RIFF');dv.setUint32(4,36+n,true);w(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,24000,true);dv.setUint32(28,48000,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,n,true);
+ let o=44;chunks.forEach(c=>{b.set(c,o);o+=c.length});return new Blob([b],{type:'audio/wav'});
+}
+async function podSaveGemini(){
+ const c=P.cur;if(!c||P.dl)return;
+ /* מפתח נפרד רק לקול של הפודקאסט (נשמר בטלפון בלבד, לא משפיע על שאר ה-AI באפליקציה) */
+ let key=String(window.PODCAST_KEY||'').trim();if(!/^AIza/.test(key)){try{key=localStorage.getItem('pkey')||''}catch(e){}}
+ if(!/^AIza/.test(key)){
+  const v=(prompt('הדבק כאן מפתח Google חינמי לקול של הפודקאסט (מתחיל ב-AIza). אפשר לקבל אחד ב-aistudio.google.com ← Get API key. המפתח נשמר רק בטלפון שלך. (או הדבק אותו בקובץ podcast-ai.js)')||'').trim();
+  if(!/^AIza[\w-]{20,}$/.test(v)){if(v)P.msg='המפתח לא נראה תקין. הוא צריך להתחיל ב-AIza.';else P.msg='לקול אנושי צריך מפתח Google חינמי (מתחיל ב-AIza). קבל אותו ב-aistudio.google.com ← Get API key.';render();return}
+  try{localStorage.setItem('pkey',v)}catch(e){}key=v}
+ const n=c.lines.length,PER=12,N=Math.ceil(n/PER);P.dl=1;P.msg='';
+ const setT=t=>{const e=$('pgem');if(e)e.textContent=t};
+ try{
+  P.gc=P.gc||{};const K=i=>c.id+':'+i;
+  for(let i=0;i<N;i++){
+   if(P.gc[K(i)])continue;setT('מכין קול אנושי… חלק '+(i+1)+' מתוך '+N);
+   let u=null,err=null;
+   for(let at=0;at<3&&!u;at++){
+    if(at)await new Promise(r=>setTimeout(r,at*20000));
+    try{u=await gemPart(c.lines.slice(i*PER,(i+1)*PER),key)}catch(e){err=e;if(!(e.status==429))break}
+   }
+   if(!u){const e=new Error('נשמרו '+Object.keys(P.gc).filter(k=>k.startsWith(c.id+':')).length+' מתוך '+N+' חלקים, לחץ שוב כדי להמשיך. סיבה: '+String(err&&err.message||'לא ידועה').slice(0,160));throw e}
+   P.gc[K(i)]=u;
+  }
+  const chunks=[];for(let i=0;i<N;i++)chunks.push(P.gc[K(i)]);
+  const blob=pcmWav(chunks),id=Date.now();
+  await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (קול אנושי)',audio:true,mime:'audio/wav',size:blob.size,lines:[],pos:0});podTrim();save();P.gc={};
+  toast('נשמר ✅ הקול האנושי מוכן ברשימה למטה');
+ }catch(e){P.msg='לא הצלחתי להכין קול אנושי. '+String(e&&e.message||e).slice(0,220)}
+ P.dl='';render();
+}
 function podWeb(){
  const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
  const ln=c.lines[P.i],tok=++P.tok,txt=speakText(ln.t),parts=chunkTxt(txt);
@@ -2031,12 +2087,19 @@ function podSub(text){
  return S.subjects.find(n=>name[best].test(n))||P.sub;
 }
 async function podGen(){
- const ta=$('pm'),text=(ta?ta.value:'').trim();if(P.sub){S.mats[P.sub]=text;save()}
- if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
+ const ta=$('pm'),text=(ta?ta.value:'').trim();S.mats.__pod=text;save();P.sub='כללי';
  if(text.length<3){P.err='כתוב נושא או חומר ללימוד.';render();return}
  if(!window._podAutoCall)P.auto=0;window._podAutoCall=false;P.loading=true;P.err='';P.prog='';render();
  try{
   const n=POD_LINES[P.len]||34;
+  /* שלב 1: ה-AI קורא את החומר ומחליט לאיזה מקצוע הוא שייך (מתמטיקה, היסטוריה, גיאוגרפיה...), ואם לא עבד משתמשים בזיהוי לפי מילים */
+  let dsubAI=podSub(text),subjName=dsubAI;
+  if(hasAI()){try{
+   const rc=await Promise.race([aiJsonA('קרא את החומר או הנושא הבא וקבע לאיזה מקצוע לימודים הוא שייך. המקצועות של התלמיד: '+S.subjects.join(' | ')+'. אם הוא מתאים לאחד מהם, החזר בדיוק את השם שלו. אם הוא לא מתאים לאף אחד, החזר שם מקצוע כללי בעברית (למשל מתמטיקה, היסטוריה, גיאוגרפיה, תנ"ך, אנגלית, מדעים, ספרות). דוגמאות: "1 ועוד 1" הוא מתמטיקה. "החשמונאים" או "יוון העתיקה" הם היסטוריה. "הרים ומדינות" הוא גיאוגרפיה. החזר JSON בלבד: {"subject":"..."}\n\nהחומר:\n'+text.slice(0,1500)),new Promise((_,j)=>setTimeout(()=>j(new Error('t')),9000))]);
+   const g=String(rc&&(rc.subject||rc['מקצוע'])||'').trim().slice(0,30);
+   if(g){subjName=g;const hit=S.subjects.find(x=>x==g)||S.subjects.find(x=>x.includes(g)||g.includes(x));dsubAI=hit||g}
+  }catch(e){}}
+  if(subjName!==P.sub)toast('זוהה מקצוע: '+subjName);
   const podLines=r=>{/* קורא את תשובת ה-AI בגמישות: מערך ישיר, או מפתח אחר, ושמות שדות שונים */
    let arr=Array.isArray(r)?r:(r&&(r.lines||r.dialogue||r.script||r.conversation||r.turns||r['שיחה']||r['תסריט']))||null;
    if(!Array.isArray(arr)&&r&&typeof r=='object'){arr=Object.values(r).find(v=>Array.isArray(v)&&v.length&&typeof v[0]=='object')||null}
@@ -2054,7 +2117,7 @@ async function podGen(){
     const pos=N>1?'\nזה חלק '+(i+1)+' מתוך '+N+' של הפודקאסט. כסה רק את החלק ה-'+(i+1)+' מתוך '+N+' של החומר, לפי הסדר, ואל תחזור על חלקים אחרים. '+(first?'פתחו בברכה קצרה, ומיד אחריה "וו" מסקרן. ':'אל תברכו מחדש, התחילו ישר בנושא. ')+(last?'סיימו בסיכום קצר ובשאלת מבחן.':'אל תסכמו ואל תסיימו, ההמשך בחלק הבא.'):'';
     let got=[],err=null;
     if(i)await new Promise(r=>setTimeout(r,i*700));/* מרווח קטן בין הבקשות, כדי לא להיחסם */
-    for(let at=0;at<2&&got.length<2;at++){let rr=null;if(at&&err&&/limit/.test(String(err.message)))await new Promise(r=>setTimeout(r,3000));try{rr=await aiJsonA(`המקצוע שנבחר באפליקציה: ${P.sub}, אבל אל תסתמך עליו. קבע בעצמך לאיזה תחום שייך החומר או הנושא שלהלן, לפי התוכן שלו בלבד (מתמטיקה, היסטוריה, גיאוגרפיה, תנ"ך, אנגלית, עברית, מדעים ועוד), והתאם את השיחה לתחום: במתמטיקה מסבירים צעד אחר צעד עם דוגמאות חישוב קטנות ומשחקי חשיבה מחיי היומיום, ואומרים את החישובים במילים ("אחד ועוד אחד שווה שניים"); בהיסטוריה מספרים סיפור עם דמויות, סיבות ותוצאות; בגיאוגרפיה מתארים מקומות בצורה חזותית, משווים בין אזורים ומסבירים למה דברים נמצאים איפה שהם; בתנ"ך מספרים את הסיפור, הדמויות והמסר. כתוב תסריט לפודקאסט לימודי בעברית, בסגנון "Audio Overview" של NotebookLM: שיחה חיה, מרתקת ומשעשעת בין שני חברים, נועה (סקרנית, שואלת, מגיבה בהתלהבות, לפעמים מתפלאת או מתווכחת) ודני (חובב היסטוריה ומדע שמספר סיפורים ומסביר בצורה ברורה). המטרה: שתלמיד ירצה להמשיך להקשיב ויזכור מה שנאמר.
+    for(let at=0;at<2&&got.length<2;at++){let rr=null;if(at&&err&&/limit/.test(String(err.message)))await new Promise(r=>setTimeout(r,3000));try{rr=await aiJsonA(`המקצוע שזוהה: ${subjName}. התאם את השיחה לתחום הזה: במתמטיקה מסבירים צעד אחר צעד עם דוגמאות חישוב קטנות ומשחקי חשיבה מחיי היומיום, ואומרים את החישובים במילים ("אחד ועוד אחד שווה שניים"); בהיסטוריה מספרים סיפור עם דמויות, סיבות ותוצאות; בגיאוגרפיה מתארים מקומות בצורה חזותית, משווים בין אזורים ומסבירים למה דברים נמצאים איפה שהם; בתנ"ך מספרים את הסיפור, הדמויות והמסר. כתוב תסריט לפודקאסט לימודי בעברית, בסגנון "Audio Overview" של NotebookLM: שיחה חיה, מרתקת ומשעשעת בין שני חברים, נועה (סקרנית, שואלת, מגיבה בהתלהבות, לפעמים מתפלאת או מתווכחת) ודני (חובב היסטוריה ומדע שמספר סיפורים ומסביר בצורה ברורה). המטרה: שתלמיד ירצה להמשיך להקשיב ויזכור מה שנאמר.
 כללים: 1) מותר ברכה קצרה של שורה או שתיים ("היי, אני נועה" / "ואני דני"), ומיד אחריה פותחים ב"וו" שתופס: עובדה מפתיעה, שאלה מסקרנת, סיפור או סצנה מהחומר. לא מדברים על הנושא באופן כללי ("היום נלמד על...") אלא נכנסים מיד לדבר המעניין. 2) מספרים סיפור: מי, למה, מה קרה, ומה יצא מזה. כל נושא מוסבר דרך דוגמה, השוואה לחיי היומיום של תלמיד, או מקרה מעניין. 3) הדוברים מגיבים זה לזה ("רגע, באמת?", "וואו, לא ידעתי", "תסביר לי את זה כאילו אני בכיתה ו'", "אז בעצם..."), ולפעמים נועה מנסה לנחש או מסכמת בשפה פשוטה ודני מתקן או משלים. 4) משפטים קצרים וטבעיים כמו בדיבור אמיתי, בלי נאום ובלי רשימות. 5) לפעמים שאלה לחשיבה למאזין ("תעצרו רגע וחשבו: למה לדעתכם...") ואז התשובה. 6) כל השמות, התאריכים וההסברים מדויקים ומבוססים על החומר. אסור להמציא עובדות. אם החומר הוא רק נושא או כותרת קצרה (למשל "יוון העתיקה"), השתמש בידע כללי נכון ומדויק, וכסה את הדברים החשובים שתלמיד צריך לדעת עליו למבחן (אנשים, אירועים, סיבות ותוצאות, מושגים), לפי סדר הגיוני. 7) התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). 8) בסוף: סיכום קצר וקליט של 3 דברים לזכור, ושאלת מבחן אחת למאזין עם התשובה. 9) בלי סימנים מיוחדים, בלי אימוג'י, ובלי כתיבת שם הדובר בתוך הטקסט. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות"). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${pos}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){err=e1;rr=null}
      if(rr){got=podLines(rr);if(first&&rr.title&&!title)title=String(rr.title)}}
     if(got.length<2)throw err||new Error('empty');
@@ -2067,16 +2130,16 @@ async function podGen(){
    if(lines.length)aiOk=true;
    if(bad){if(!lines.length)throw bad.reason;paused=true}
   }catch(e0){
-   if(lines.length){paused=true}else{r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
+   if(lines.length){paused=true}else{r=localPod(text,subjName,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
   }
   if(paused&&lines.length){P.err='הפודקאסט נעצר באמצע ('+lines.length+' מתוך '+n+' שורות) והחלק שכבר נוצר נשמר. כשתחזור לכאן הוא ימשיך לבד, או לחץ שוב על יצירה.';window._podPaused=true;P.loading=false;render();
    /* חזרת לאפליקציה והבקשה נקטעה: ממשיכים לבד (עד 3 פעמים) */
    if(!document.hidden&&(P.auto=(P.auto||0)+1)<=3)setTimeout(()=>{if(window._podPaused&&!P.loading&&!P.cur&&tab==6&&$('pm')&&!document.hidden){window._podAutoCall=true;podGen()}},1500);
    return}
-  if(lines.length<4&&!aiOk){r=localPod(text,P.sub,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
-  r={title:title||P.sub,lines};
+  if(lines.length<4&&!aiOk){r=localPod(text,subjName,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
+  r={title:title||subjName,lines};
   if(lines.length<4)throw new Error('empty');
-  const dsub=podSub(text),pod={id:Date.now(),sub:dsub,title:String(r.title||dsub),lines};
+  const dsub=dsubAI,pod={id:Date.now(),sub:dsub,title:String(r.title||subjName),lines};
   S.pods=S.pods||[];S.pods.unshift(pod);podTrim();delete S.podDraft;window._podPaused=false;save();
   P.cur=pod;P.i=0;P.playing=false;
  }catch(e){P.err=(e&&e.message=='empty')?'ה-AI לא החזיר תסריט תקין. נסה שוב בעוד רגע.'+(window.LASTRAW?' [מה חזר: '+String(window.LASTRAW).slice(0,140)+']':''):aiErr(e)}
@@ -2122,9 +2185,11 @@ function podView(){
   ${P.msg?`<div style="margin:12px 0 0;padding:10px;border-radius:14px;background:rgba(251,191,36,.18);color:#fde68a;font-size:14px;line-height:1.5">⚠️ ${esc(P.msg)}</div>`:''}
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
+  <button class="tbtn" id="pgem" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#6366f1,#ec4899)">🎙️ קול אנושי (Google Gemini)</button>
   <button class="tbtn" id="pdl" style="width:100%;margin-top:12px">📥 שמור להאזנה בלי אינטרנט</button>
+  <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 החלף מפתח לקול אנושי</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
-  $('pdl').onclick=podSaveAudio;if(P.dl)$('pdl').textContent='מכין שמע…';
+  $('pkey').onclick=()=>{try{localStorage.removeItem('pkey')}catch(e){}toast('המפתח נמחק. בלחיצה הבאה על קול אנושי תוכל להדביק חדש')};$('pdl').onclick=podSaveAudio;$('pgem').onclick=podSaveGemini;if(P.dl){$('pdl').textContent='מכין שמע…';$('pgem').textContent='מכין…'}
   const go=()=>{if(P.playing)podSay();render()};
   $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;P.edgeBad=false;P.why='';if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
@@ -2134,17 +2199,16 @@ function podView(){
   $('pback').onclick=()=>{podStop();P.cur=null;P.msg='';render()};
   const bx=$('chat'),el=bx.querySelector('.on');if(el)bx.scrollTop=el.offsetTop-bx.clientHeight/2+el.clientHeight/2;
   return}
- if(!P.sub||!S.subjects.includes(P.sub))P.sub=S.subjects[0]||'';
- const pods=S.pods||[],keep=()=>{if($('pm')&&P.sub){S.mats[P.sub]=$('pm').value;save()}};
+ P.sub='כללי';
+ const pods=S.pods||[],keep=()=>{if($('pm')){S.mats.__pod=$('pm').value;save()}};
  v.innerHTML=`<div class="tcard"><div class="thd" style="background:linear-gradient(135deg,#a855f7,#ec4899,#f97316)"><div class="ic">🎧</div><div><small>מקשיבים לחומר כמו לשיחה</small><b>פודקאסט</b></div></div><div class="tbd">
-  <label>מקצוע</label><div class="pchs">${S.subjects.map(n=>`<button class="pch ${n==P.sub?'on':''}" data-sb="${esc(n)}">${esc(n)}</button>`).join('')||'<span class="mute">אין מקצועות עדיין. הוסף במסך המבחנים.</span>'}</div>
+  <div class="mute" style="margin-bottom:8px">✨ אין צורך לבחור מקצוע. כתוב את החומר או הנושא, והאפליקציה מזהה לבד אם זה מתמטיקה, היסטוריה, גיאוגרפיה או משהו אחר.</div>
   <label>כמה זמן?</label><div class="pchs">${[[2,'קצר','2 דקות'],[5,'בינוני','5 דקות'],[10,'ארוך','10 דקות']].map(([l,a,b])=>`<button class="pch ${P.len==l?'on':''}" data-ln="${l}">${a}<small>${b}</small></button>`).join('')}</div>
   <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק חומר ללימוד (כמה משפטים). עם מפתח AI אפשר גם רק נושא קצר"></textarea>
   <div class="msg" style="color:var(--bad)">${esc(P.err)}</div><button class="tbtn" id="pg" style="width:100%">צור פודקאסט ✨</button>
   <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #d8dff0"><div style="font-weight:700;font-size:14px;margin-bottom:6px">יש לך פודקאסט מוכן? (למשל מ-NotebookLM)</div><label class="tbtn sec" style="display:block;text-align:center;cursor:pointer;width:100%;box-sizing:border-box">📥 העלה קובץ שמע<input type="file" id="pup" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.mp4,.opus" hidden></label><div class="mute" style="font-size:13px;margin-top:6px">הקובץ נשמר בטלפון ומתנגן באפליקציה, גם בלי אינטרנט.</div></div></div></div>
   ${pods.length?`<div class="card" style="margin-top:14px"><p style="font-weight:600;margin-top:0">📂 פודקאסטים שמורים (עובדים גם בלי אינטרנט)</p>${pods.map(p=>`<div class="item"><span>${esc(p.title)}<br><small class="mute">${esc(p.sub)} · ${p.audio?'🎵 קובץ שמע · '+fmtMB(p.size||0):p.lines.length+' תורות'}</small></span><span><button class="btn" style="width:auto;padding:6px 14px" data-pl="${p.id}">האזן</button> <button data-pd="${p.id}">✕</button></span></div>`).join('')}</div>`:''}`;
- $('pm').value=S.mats[P.sub]||'';addUpload('pm');
- v.querySelectorAll('[data-sb]').forEach(b=>b.onclick=()=>{keep();P.sub=b.dataset.sb;P.err='';render()});
+ $('pm').value=S.mats.__pod||'';addUpload('pm');
  v.querySelectorAll('[data-ln]').forEach(b=>b.onclick=()=>{keep();P.len=+b.dataset.ln;render()});
  v.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{keep();P.cur=pods.find(x=>x.id==b.dataset.pl);P.i=0;P.playing=false;render()});
  v.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{const x=S.pods.find(z=>z.id==b.dataset.pd);if(x&&x.audio)audDel(x.id);S.pods=S.pods.filter(x=>x.id!=b.dataset.pd);save();render()});
@@ -2152,9 +2216,8 @@ function podView(){
  $('pup').onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;keep();
   if(!(/^audio\//.test(f.type)||/\.(mp3|m4a|wav|ogg|aac|mp4|opus|webm)$/i.test(f.name))){P.err='זה לא קובץ שמע. בחר mp3, m4a או wav.';render();return}
   if(f.size>300*1048576){P.err='הקובץ גדול מדי (מעל 300 MB).';render();return}
-  if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
   P.err='';const m=document.querySelector('#pup').closest('div');if(m)m.querySelector('.mute').textContent='שומר את הקובץ…';
-  try{const id=Date.now();await audPut(id,f);S.pods=S.pods||[];S.pods.unshift({id,sub:P.sub,title:f.name.replace(/\.[^.]+$/,'').slice(0,80)||'פודקאסט',audio:true,mime:f.type||'audio/mpeg',size:f.size,lines:[],pos:0});podTrim();save();toast('נשמר ✅');render()}
+  try{const id=Date.now();await audPut(id,f);S.pods=S.pods||[];S.pods.unshift({id,sub:podSub(f.name),title:f.name.replace(/\.[^.]+$/,'').slice(0,80)||'פודקאסט',audio:true,mime:f.type||'audio/mpeg',size:f.size,lines:[],pos:0});podTrim();save();toast('נשמר ✅');render()}
   catch(err){P.err='לא הצלחתי לשמור את הקובץ (אולי אין מקום בטלפון).';render()}};
 }
 /* ---- העלאת קבצים לחומר ---- */
