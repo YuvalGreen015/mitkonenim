@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.59 | קוד עדכון V-S4PD-6HWA -->
+<!-- מתכוננים | גרסה 3.60 | קוד עדכון V-B3LX-9QTE -->
 <html lang="he" dir="rtl">
 <head>
 <script src="ai.js"></script>
@@ -213,8 +213,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-S4PD-6HWA";   /* קוד העדכון של גרסה 3.59. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.59";
+window.UPDATE_CODE = "V-B3LX-9QTE";   /* קוד העדכון של גרסה 3.60. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.60";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1714,7 +1714,7 @@ function exNotify(){
 setInterval(()=>{exNotify();if(!tab&&!showSet)try{render()}catch(e){}},3600000);
 const _resume=()=>{if((T.loading||(typeof P!=='undefined'&&P.loading))&&Date.now()-(window._tick||0)>20000){window._acs.forEach(a=>{try{a.abort()}catch(e){}});window._acs.clear()}};
 window.addEventListener('focus',_resume);window.addEventListener('pageshow',_resume);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){_resume();exNotify();if(window._podPaused&&tab==6&&!P.loading&&!P.cur&&$('pm'))setTimeout(()=>{if(window._podPaused&&!P.loading)podGen()},400);if(!tab&&!showSet)try{render()}catch(e){}}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){_resume();exNotify();if(window._podPaused&&tab==6&&!P.loading&&!P.cur&&$('pm'))setTimeout(()=>{if(window._podPaused&&!P.loading){window._podAutoCall=true;P.auto=0;podGen()}},400);if(!tab&&!showSet)try{render()}catch(e){}}});
 const X={kind:'מבחן',photo:'',subject:'',date:'',note:'',busy:false,msg:'',found:[],used:{},manual:false};
 const xNorm=t=>String(t||'').replace(/["'׳״\s]/g,'').toLowerCase();
 /* קריאת תמונה בלי AI (OCR בדפדפן) */
@@ -1922,7 +1922,7 @@ async function podGen(){
  const ta=$('pm'),text=(ta?ta.value:'').trim();if(P.sub){S.mats[P.sub]=text;save()}
  if(!P.sub){P.err='צור קודם מקצוע במסך המבחנים.';render();return}
  if(text.length<3){P.err='כתוב נושא או חומר ללימוד.';render();return}
- P.loading=true;P.err='';P.prog='';render();
+ if(!window._podAutoCall)P.auto=0;window._podAutoCall=false;P.loading=true;P.err='';P.prog='';render();
  try{
   const n=POD_LINES[P.len]||34;
   const podLines=r=>{/* קורא את תשובת ה-AI בגמישות: מערך ישיר, או מפתח אחר, ושמות שדות שונים */
@@ -1956,7 +1956,10 @@ async function podGen(){
   }catch(e0){
    if(lines.length){paused=true}else{r=localPod(text,P.sub,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
   }
-  if(paused&&lines.length){P.err='הפודקאסט נעצר באמצע ('+lines.length+' מתוך '+n+' שורות) והחלק שכבר נוצר נשמר. כשתחזור לכאן הוא ימשיך לבד, או לחץ שוב על יצירה.';window._podPaused=true;P.loading=false;render();return}
+  if(paused&&lines.length){P.err='הפודקאסט נעצר באמצע ('+lines.length+' מתוך '+n+' שורות) והחלק שכבר נוצר נשמר. כשתחזור לכאן הוא ימשיך לבד, או לחץ שוב על יצירה.';window._podPaused=true;P.loading=false;render();
+   /* חזרת לאפליקציה והבקשה נקטעה: ממשיכים לבד (עד 3 פעמים) */
+   if(!document.hidden&&(P.auto=(P.auto||0)+1)<=3)setTimeout(()=>{if(window._podPaused&&!P.loading&&!P.cur&&tab==6&&$('pm')&&!document.hidden){window._podAutoCall=true;podGen()}},1500);
+   return}
   if(lines.length<4&&!aiOk){r=localPod(text,P.sub,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
   r={title:title||P.sub,lines};
   if(lines.length<4)throw new Error('empty');
