@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.72.0 | קוד עדכון V-K2YB-6TNH -->
+<!-- מתכוננים | גרסה 3.72.1 | קוד עדכון V-S8GA-3WPZ -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-K2YB-6TNH";   /* קוד העדכון של גרסה 3.72.0. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.72.0";
+window.UPDATE_CODE = "V-S8GA-3WPZ";   /* קוד העדכון של גרסה 3.72.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.72.1";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1936,14 +1936,22 @@ function podSay(){
 }
 /* קול משלך: מעלים הקלטה של הקול שלך (או של מי שנתן לך רשות), ו-ElevenLabs יוצר ממנה קול שמדבר כל טקסט */
 async function podAddVoice(){
- let key=elKey();if(key.length<20){key=elAsk();if(!key){render();return}}
  if(!confirm('שיבוט קול מותר רק לקול שלך, או לקול של אדם שנתן לך רשות ברורה. אסור לשבט קול של אדם אחר בלי רשותו, למשל אדם מפורסם. האם זה הקול שלך או שיש לך רשות?'))return;
- const inp=document.createElement('input');inp.type='file';inp.accept='audio/*';inp.multiple=true;
+ /* בלי סינון סוג קובץ: הטלפון פותח את מסך הקבצים עם השמות האמיתיים, כמו בהעלאה במבחנים */
+ const inp=document.createElement('input');inp.type='file';inp.multiple=true;
  inp.onchange=async()=>{
-  const files=[...inp.files];if(!files.length)return;
-  const name=(prompt('איך לקרוא לקול הזה?')||'').trim().slice(0,40);if(!name)return;
+  const all=[...inp.files];if(!all.length)return;
+  const sniff=async f=>{const u=new Uint8Array(await f.slice(0,16).arrayBuffer()),t=String.fromCharCode(...u);
+   if(t.startsWith('ID3')||(u[0]==255&&(u[1]&224)==224))return 'audio/mpeg';if(t.startsWith('RIFF')&&t.slice(8,12)=='WAVE')return 'audio/wav';
+   if(t.slice(4,8)=='ftyp')return 'audio/mp4';if(t.startsWith('OggS'))return 'audio/ogg';if(u[0]==0x1A&&u[1]==0x45&&u[2]==0xDF&&u[3]==0xA3)return 'audio/webm';if(t.startsWith('fLaC'))return 'audio/flac';return ''};
+  const files=[],bad=[];
+  for(const f of all){const m=/^audio\//.test(f.type)?f.type:await sniff(f);if(m)files.push(new File([f],f.name,{type:m}));else bad.push(f.name)}
+  if(!files.length){P.msg='לא נמצא קובץ שמע בין הקבצים שבחרת'+(bad.length?' ('+bad.join(', ')+')':'')+'. בחר קובץ mp3, wav או m4a.';render();return}
+  const names=files.map(f=>f.name).join('\n');
+  const name=(prompt('הקבצים שנבחרו:\n'+names+'\n\nאיך לקרוא לקול הזה?')||'').trim().slice(0,40);if(!name)return;
   const isF=confirm('האם זה קול של אישה? אישור = אישה, ביטול = גבר');
-  P.msg='🎤 יוצר את הקול… זה לוקח כחצי דקה';render();
+  let key=elKey();if(key.length<20){key=elAsk();if(!key){render();return}}
+  P.msg='🎤 יוצר את הקול מ-'+files.length+' קבצים… זה לוקח כחצי דקה';render();
   try{
    const fd=new FormData();fd.append('name',name);fd.append('remove_background_noise','true');fd.append('description','מתכוננים');files.forEach(f=>fd.append('files',f,f.name));
    const r=await fetch('https://api.elevenlabs.io/v1/voices/add',{method:'POST',headers:{'xi-api-key':key},body:fd});
@@ -2118,7 +2126,7 @@ function podView(){
   <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${elF().map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${elM().map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="pintro" ${S.intro===true?'checked':''}> ▶️ הקדמה מוקלטת ("שלום ילדים, היום נלמד על יוון העתיקה")</label>
   <div class="mute" style="font-size:12.5px;margin-top:6px">${elKey()?'🎧 הקולות מגיעים מ-ElevenLabs (נועה: אישה, דני: גבר). אפשר להחליף למעלה.':'🎧 הקולות מגיעים מ-ElevenLabs. בלחיצה הראשונה על הפעלה תדביק את המפתח שלך (sk_...) פעם אחת.'}</div>
-  <button class="tbtn sec" id="pmv" style="width:100%;margin-top:8px">🎤 הוסף קול משלי (מהקלטה, למשל א-ב)</button>
+  <button class="tbtn sec" id="pmv" style="width:100%;margin-top:8px">🎤 הוסף קול: בחר קובץ שמע (כמו במבחנים)</button>
   <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">📥 שמור כקובץ שמע (להאזנה גם בלי אינטרנט)</button>
   <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 הוסף או החלף מפתח ElevenLabs (לקולות המיוחדים)</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
