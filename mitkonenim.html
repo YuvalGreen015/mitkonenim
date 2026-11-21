@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.70.2 | קוד עדכון V-Z3KS-7HVE -->
+<!-- מתכוננים | גרסה 3.70.4 | קוד עדכון V-H2DM-8SXW -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-Z3KS-7HVE";   /* קוד העדכון של גרסה 3.70.2. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.70.2";
+window.UPDATE_CODE = "V-H2DM-8SXW";   /* קוד העדכון של גרסה 3.70.4. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.70.4";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1878,11 +1878,41 @@ function speakText(t){
 const EL_F=[['tnSpp4vdxKPjI9w0GnoV','מירה'],['Nhs7eitvQWFTQBsf0yiT','סרה']],EL_M=[['JYUzXNeyCPmymMkfcicu','ג׳ון'],['c6SfcYrb2t09NHXiT80T','ג׳ונתן']];
 const EL_MODELS=['eleven_v3','eleven_multilingual_v2','eleven_flash_v2_5'];
 const elSel=()=>{const v=S.podV||{};return{a:EL_F.some(x=>x[0]==v.a)?v.a:EL_F[0][0],b:EL_M.some(x=>x[0]==v.b)?v.b:EL_M[0][0]}};
-function elKey(){let k=String(window.ELEVEN_KEY||'').trim();if(k.length<20){try{k=localStorage.getItem('ekey')||''}catch(e){}}return k}
+function elKey(){let k=String(window.ELEVEN_KEY||'').trim();if(!/^sk_/.test(k)){k='';try{k=localStorage.getItem('ekey')||''}catch(e){}}if(!/^sk_/.test(k)){try{localStorage.removeItem('ekey')}catch(e){}k=''}return k}
 function elAsk(){
  const v=(prompt('הדבק כאן את המפתח של ElevenLabs (באתר elevenlabs.io: Profile ← API Keys). המפתח נשמר רק בטלפון שלך.')||'').trim();
  if(v.length<20){P.msg='כדי לשמוע את הקולות צריך מפתח (API key) מהאתר elevenlabs.io.';return ''}
+ if(!/^sk_/.test(v)){P.msg='זה לא מפתח של ElevenLabs. מפתח של ElevenLabs מתחיל ב-sk_ . '+(/^gsk_/.test(v)?'זה מפתח של Groq.':/^(AIza|AQ\.)/.test(v)?'זה מפתח של Google.':'')+' קבל אותו באתר elevenlabs.io: Profile ← API Keys.';return ''}
  try{localStorage.setItem('ekey',v)}catch(e){}return v}
+/* קול חינמי בלי מפתח: קולות עצביים של מיקרוסופט (נועה = הילה, דני = אברי) */
+async function edgeTTS(text,voice){
+ const TOK='6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+ let t=Math.floor(Date.now()/1000)+11644473600;t-=t%300;
+ const hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((BigInt(t)*10000000n).toString()+TOK));
+ const gec=Array.from(new Uint8Array(hb)).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+ const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');
+ const dt=()=>new Date().toUTCString().replace('GMT','GMT+0000 (Coordinated Universal Time)');
+ const esc2=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ return new Promise((res,rej)=>{
+  const chunks=[];let done=false,ws=null;
+  const fin=e=>{if(done)return;done=true;clearTimeout(to);try{ws&&ws.close()}catch(x){}if(e)rej(e);else if(!chunks.length)rej(new Error('no audio'));else res(new Blob(chunks,{type:'audio/mpeg'}))};
+  const to=setTimeout(()=>fin(new Error('timeout')),15000);
+  try{ws=new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken='+TOK+'&Sec-MS-GEC='+gec+'&Sec-MS-GEC-Version=1-143.0.3650.75&ConnectionId='+rid())}catch(e){fin(e);return}
+  ws.binaryType='arraybuffer';
+  ws.onerror=()=>fin(new Error('ws error'));
+  ws.onclose=()=>fin(chunks.length?null:new Error('closed'));
+  ws.onopen=()=>{
+   ws.send('X-Timestamp:'+dt()+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}\r\n');
+   ws.send('X-RequestId:'+rid()+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+dt()+'Z\r\nPath:ssml\r\n\r\n<speak version=\'1.0\' xmlns=\'http://www.w3.org/2001/10/synthesis\' xml:lang=\'he-IL\'><voice name=\''+voice+'\'><prosody pitch=\'+0Hz\' rate=\'+0%\' volume=\'+0%\'>'+esc2(text)+'</prosody></voice></speak>')};
+  ws.onmessage=ev=>{const d=ev.data;
+   if(typeof d==='string'){if(/Path:turn\.end/.test(d))fin(null);return}
+   const u=new Uint8Array(d);if(u.length<2)return;const hl=(u[0]<<8)|u[1];
+   const head=new TextDecoder().decode(u.slice(2,2+hl));
+   if(/Path:audio/.test(head)&&u.length>hl+2)chunks.push(u.slice(hl+2))}
+ })
+}
+/* בלי מפתח ElevenLabs משתמשים בקול החינמי, ועם מפתח בקולות שנבחרו */
+const ttsLine=(text,w,sel,key)=>key?elevenTTS(text,w=='b'?sel.b:sel.a,key):edgeTTS(text,w=='b'?'he-IL-AvriNeural':'he-IL-HilaNeural');
 async function elevenTTS(text,voice,key){
  let last=null;
  for(const m of EL_MODELS){
@@ -1903,7 +1933,7 @@ const elWhy=e=>String(e&&e.message||e).slice(0,200)+(e&&e.status==402?' (יית�
 /* הפעלה: כל שורה מופקת בקול שנבחר, והשורה הבאה מוכנה מראש */
 function podSay(){
  const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
- let key=elKey();if(key.length<20){key=elAsk();if(!key){P.playing=false;render();return}}
+ const key=elKey();
  /* הקדמה מוקלטת בתחילת הפודקאסט (אפשר לכבות במסך הפודקאסט) */
  const INTRO=window.INTRO_AUDIO||[];
  if(P.i==0&&!P.intro&&S.intro===true&&INTRO.length&&!P._ik){
@@ -1914,7 +1944,7 @@ function podSay(){
    ia.src=INTRO[k];try{ia.playbackRate=1}catch(e){}const pp=ia.play();if(pp&&pp.catch)pp.catch(()=>{k=99;nx()})};
   P.msg='';render();nx();return}
  const tok=++P.tok,sel=elSel(),a=P.au||(P.au=new Audio());P.elp=P.elp||{};
- const get=i=>{const l=c.lines[i];if(!l)return null;const v=l.w=='b'?sel.b:sel.a,k=c.id+':'+i+':'+v;if(!P.elp[k]){const pr=elevenTTS(speakText(l.t),v,key);P.elp[k]=pr;pr.catch(()=>{if(P.elp[k]===pr)delete P.elp[k]})}return P.elp[k]};
+ const get=i=>{const l=c.lines[i];if(!l)return null;const v=(key?(l.w=='b'?sel.b:sel.a):(l.w=='b'?'ms-b':'ms-a')),k=c.id+':'+i+':'+v;if(!P.elp[k]){const pr=ttsLine(speakText(l.t),l.w,sel,key);P.elp[k]=pr;pr.catch(()=>{if(P.elp[k]===pr)delete P.elp[k]})}return P.elp[k]};
  const fail=e=>{if(tok!==P.tok)return;P.playing=false;P.msg='הקול לא נוצר. '+elWhy(e);render()};
  try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:c.title,artist:'נועה ודני',album:c.sub});
   navigator.mediaSession.setActionHandler('play',()=>{if(!P.playing){P.playing=true;podSay();render()}});
@@ -1933,15 +1963,15 @@ function podSay(){
 /* שומר את כל הפודקאסט כקובץ שמע בטלפון, ואז הוא מתנגן בלי אינטרנט ועם מסך כבוי */
 async function podSaveEleven(){
  const c=P.cur;if(!c||P.dl)return;
- let key=elKey();if(key.length<20){key=elAsk();if(!key){render();return}}
+ const key=elKey();
  const n=c.lines.length,sel=elSel();P.dl=1;P.msg='';
  const setT=t=>{const e=$('pel');if(e)e.textContent=t};
  try{
-  P.elc=P.elc||{};const K=i=>c.id+':'+i+':'+(c.lines[i].w=='b'?sel.b:sel.a);
+  P.elc=P.elc||{};const K=i=>c.id+':'+i+':'+(key?(c.lines[i].w=='b'?sel.b:sel.a):(c.lines[i].w=='b'?'ms-b':'ms-a'));
   let idx=0,fails=0,lastErr=null;const cnt=()=>{let d=0;for(let i=0;i<n;i++)if(P.elc[K(i)])d++;return d};
   const worker=async()=>{while(idx<n&&fails<2){const i=idx++,l=c.lines[i];if(P.elc[K(i)])continue;let b=null;
-   for(let at=0;at<3&&!b;at++){if(at)await new Promise(r=>setTimeout(r,at*3000));try{b=await elevenTTS(speakText(l.t),l.w=='b'?sel.b:sel.a,key)}catch(e){lastErr=e;if(e.status==401||e.status==402||e.status==403)break}}
-   if(!b){fails++;if(lastErr&&(lastErr.status==401||lastErr.status==402||lastErr.status==403))fails=9;continue}P.elc[K(i)]=b;setT('מכין קובץ… '+cnt()+'/'+n)}};
+   for(let at=0;at<3&&!b;at++){if(at)await new Promise(r=>setTimeout(r,at*3000));try{b=await ttsLine(speakText(l.t),l.w,sel,key)}catch(e){lastErr=e;if(key&&(e.status==401||e.status==402||e.status==403))break}}
+   if(!b){fails++;if(key&&lastErr&&(lastErr.status==401||lastErr.status==402||lastErr.status==403))fails=9;continue}P.elc[K(i)]=b;setT('מכין קובץ… '+cnt()+'/'+n)}};
   await Promise.all([worker(),worker()]);
   if(cnt()<n){throw new Error('נשמרו '+cnt()+' מתוך '+n+' שורות. '+elWhy(lastErr)+'. לחץ שוב כדי להמשיך מאותו מקום.')}
   const intro=[];if(S.intro===true)for(const u of (window.INTRO_AUDIO||[])){try{intro.push(await (await fetch(u)).blob())}catch(e){}}
@@ -2092,10 +2122,11 @@ function podView(){
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
   <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${EL_F.map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${EL_M.map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="pintro" ${S.intro===true?'checked':''}> ▶️ הקדמה מוקלטת ("שלום ילדים, היום נלמד על יוון העתיקה")</label>
+  <div class="mute" style="font-size:12.5px;margin-top:6px">${elKey()?'🎧 קולות ElevenLabs שבחרת.':'🎧 בלי מפתח ElevenLabs הקול הוא קול חינמי של מיקרוסופט (אישה וגבר). לקולות שבחרת למעלה, הוסף מפתח ElevenLabs למטה.'}</div>
   <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">📥 שמור כקובץ שמע (להאזנה גם בלי אינטרנט)</button>
-  <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 החלף מפתח ElevenLabs</button>
+  <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 הוסף או החלף מפתח ElevenLabs (לקולות המיוחדים)</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
-  $('pel').onclick=podSaveEleven;$('pintro').onchange=e=>{S.intro=e.target.checked;save()};$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}toast('המפתח נמחק. בלחיצה הבאה על הפעלה תוכל להדביק מפתח חדש')};if(P.dl){$('pel').textContent='מכין קובץ…'}
+  $('pel').onclick=podSaveEleven;$('pintro').onchange=e=>{S.intro=e.target.checked;save()};$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}const k=elAsk();if(k)toast('✅ המפתח נשמר');render()};if(P.dl){$('pel').textContent='מכין קובץ…'}
   const go=()=>{if(P.playing)podSay();render()};
   $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;P.edgeBad=false;P.why='';if(P.i==0)P.intro=0;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
