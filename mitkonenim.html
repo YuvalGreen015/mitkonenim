@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.69.3 | קוד עדכון V-L8VC-3MYT -->
+<!-- מתכוננים | גרסה 3.70.0 | קוד עדכון V-T3PD-9XHA -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-L8VC-3MYT";   /* קוד העדכון של גרסה 3.69.3. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.69.3";
+window.UPDATE_CODE = "V-T3PD-9XHA";   /* קוד העדכון של גרסה 3.70.0. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.70.0";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1877,7 +1877,9 @@ function speakText(t){
 /* קולות הפודקאסט: רק הקולות של ElevenLabs שנבחרו (נשים: מירה וסרה, גברים: ג׳ון וג׳ונתן) */
 const EL_F=[['tnSpp4vdxKPjI9w0GnoV','מירה'],['Nhs7eitvQWFTQBsf0yiT','סרה']],EL_M=[['JYUzXNeyCPmymMkfcicu','ג׳ון'],['c6SfcYrb2t09NHXiT80T','ג׳ונתן']];
 const EL_MODELS=['eleven_v3','eleven_multilingual_v2','eleven_flash_v2_5'];
-const elSel=()=>{const v=S.podV||{};return{a:EL_F.some(x=>x[0]==v.a)?v.a:EL_F[0][0],b:EL_M.some(x=>x[0]==v.b)?v.b:EL_M[0][0]}};
+const myV=g=>(S.myV||[]).filter(v=>!!v.f===g).map(v=>[v.id,'🎤 '+v.name]);
+const elF=()=>EL_F.concat(myV(true)),elM=()=>EL_M.concat(myV(false));
+const elSel=()=>{const v=S.podV||{};return{a:elF().some(x=>x[0]==v.a)?v.a:EL_F[0][0],b:elM().some(x=>x[0]==v.b)?v.b:EL_M[0][0]}};
 function elKey(){let k=String(window.ELEVEN_KEY||'').trim();if(k.length<20){try{k=localStorage.getItem('ekey')||''}catch(e){}}return k}
 function elAsk(){
  const v=(prompt('הדבק כאן את המפתח של ElevenLabs (באתר elevenlabs.io: Profile ← API Keys). המפתח נשמר רק בטלפון שלך.')||'').trim();
@@ -1929,6 +1931,27 @@ function podSay(){
   a.src=url;try{a.preservesPitch=true;a.defaultPlaybackRate=Math.min(1.5,P.rate);a.playbackRate=Math.min(1.5,P.rate)}catch(e){}
   const pp=a.play();if(pp&&pp.catch)pp.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError'))fail(e)})
  }).catch(fail);
+}
+/* קול משלך: מעלים הקלטה של הקול שלך (או של מי שנתן לך רשות), ו-ElevenLabs יוצר ממנה קול שמדבר כל טקסט */
+async function podAddVoice(){
+ let key=elKey();if(key.length<20){key=elAsk();if(!key){render();return}}
+ if(!confirm('שיבוט קול מותר רק לקול שלך, או לקול של אדם שנתן לך רשות ברורה. אסור לשבט קול של אדם אחר בלי רשותו, למשל אדם מפורסם. האם זה הקול שלך או שיש לך רשות?'))return;
+ const inp=document.createElement('input');inp.type='file';inp.accept='audio/*';inp.multiple=true;
+ inp.onchange=async()=>{
+  const files=[...inp.files];if(!files.length)return;
+  const name=(prompt('איך לקרוא לקול הזה?')||'').trim().slice(0,40);if(!name)return;
+  const isF=confirm('האם זה קול של אישה? אישור = אישה, ביטול = גבר');
+  P.msg='🎤 יוצר את הקול… זה לוקח כחצי דקה';render();
+  try{
+   const fd=new FormData();fd.append('name',name);fd.append('remove_background_noise','true');fd.append('description','מתכוננים');files.forEach(f=>fd.append('files',f,f.name));
+   const r=await fetch('https://api.elevenlabs.io/v1/voices/add',{method:'POST',headers:{'xi-api-key':key},body:fd});
+   let j=null;try{j=await r.json()}catch(e){}
+   if(!r.ok||!j||!j.voice_id){const m=(j&&j.detail&&(j.detail.message||j.detail.status||JSON.stringify(j.detail)))||('HTTP '+r.status);
+    throw new Error(m+(r.status==401||r.status==402||r.status==403?' (שיבוט קול דורש מנוי בתשלום ב-ElevenLabs, ובדוק שהמפתח נכון)':''))}
+   S.myV=(S.myV||[]).concat([{id:j.voice_id,name,f:isF}]);S.podV=Object.assign({},S.podV,isF?{a:j.voice_id}:{b:j.voice_id});save();
+   P.msg='';toast('✅ הקול "'+name+'" נוסף ונבחר ל'+(isF?'נועה':'דני'));render();
+  }catch(e){P.msg='לא הצלחתי ליצור את הקול. '+String(e&&e.message||e).slice(0,220);render()}
+ };inp.click();
 }
 /* שומר את כל הפודקאסט כקובץ שמע בטלפון, ואז הוא מתנגן בלי אינטרנט ועם מסך כבוי */
 async function podSaveEleven(){
@@ -2090,12 +2113,13 @@ function podView(){
   ${P.msg?`<div style="margin:12px 0 0;padding:10px;border-radius:14px;background:rgba(251,191,36,.18);color:#fde68a;font-size:14px;line-height:1.5">⚠️ ${esc(P.msg)}</div>`:''}
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
-  <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${EL_F.map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${EL_M.map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
+  <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${elF().map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${elM().map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="pintro" ${S.intro===true?'checked':''}> ▶️ הקדמה מוקלטת ("שלום ילדים, היום נלמד על יוון העתיקה")</label>
+  <button class="tbtn sec" id="pmv" style="width:100%;margin-top:8px">🎤 הוסף קול משלי (מהקלטה)</button>
   <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">📥 שמור כקובץ שמע (להאזנה גם בלי אינטרנט)</button>
   <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 החלף מפתח ElevenLabs</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
-  $('pel').onclick=podSaveEleven;$('pintro').onchange=e=>{S.intro=e.target.checked;save()};$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}toast('המפתח נמחק. בלחיצה הבאה על הפעלה תוכל להדביק מפתח חדש')};if(P.dl){$('pel').textContent='מכין קובץ…'}
+  $('pel').onclick=podSaveEleven;$('pmv').onclick=podAddVoice;$('pintro').onchange=e=>{S.intro=e.target.checked;save()};$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}toast('המפתח נמחק. בלחיצה הבאה על הפעלה תוכל להדביק מפתח חדש')};if(P.dl){$('pel').textContent='מכין קובץ…'}
   const go=()=>{if(P.playing)podSay();render()};
   $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;P.edgeBad=false;P.why='';if(P.i==0)P.intro=0;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
