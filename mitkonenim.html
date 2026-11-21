@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.72.1 | קוד עדכון V-S8GA-3WPZ -->
+<!-- מתכוננים | גרסה 3.72.2 | קוד עדכון V-C4TQ-9MXD -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-S8GA-3WPZ";   /* קוד העדכון של גרסה 3.72.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.72.1";
+window.UPDATE_CODE = "V-C4TQ-9MXD";   /* קוד העדכון של גרסה 3.72.2. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.72.2";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1935,10 +1935,10 @@ function podSay(){
  }).catch(fail);
 }
 /* קול משלך: מעלים הקלטה של הקול שלך (או של מי שנתן לך רשות), ו-ElevenLabs יוצר ממנה קול שמדבר כל טקסט */
-async function podAddVoice(){
+async function podAddVoice(allFiles){
  if(!confirm('שיבוט קול מותר רק לקול שלך, או לקול של אדם שנתן לך רשות ברורה. אסור לשבט קול של אדם אחר בלי רשותו, למשל אדם מפורסם. האם זה הקול שלך או שיש לך רשות?'))return;
- /* בלי סינון סוג קובץ: הטלפון פותח את מסך הקבצים עם השמות האמיתיים, כמו בהעלאה במבחנים */
- const inp=document.createElement('input');inp.type='file';inp.multiple=true;
+ /* ברירת מחדל: רק קבצי שמע. הכפתור "כל הקבצים" פותח בלי סינון, למקרה שהקובץ לא מופיע */
+ const inp=document.createElement('input');inp.type='file';inp.multiple=true;if(!allFiles)inp.accept='audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac,.opus,.wma';
  inp.onchange=async()=>{
   const all=[...inp.files];if(!all.length)return;
   const sniff=async f=>{const u=new Uint8Array(await f.slice(0,16).arrayBuffer()),t=String.fromCharCode(...u);
@@ -2126,11 +2126,12 @@ function podView(){
   <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${elF().map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${elM().map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
   <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="pintro" ${S.intro===true?'checked':''}> ▶️ הקדמה מוקלטת ("שלום ילדים, היום נלמד על יוון העתיקה")</label>
   <div class="mute" style="font-size:12.5px;margin-top:6px">${elKey()?'🎧 הקולות מגיעים מ-ElevenLabs (נועה: אישה, דני: גבר). אפשר להחליף למעלה.':'🎧 הקולות מגיעים מ-ElevenLabs. בלחיצה הראשונה על הפעלה תדביק את המפתח שלך (sk_...) פעם אחת.'}</div>
-  <button class="tbtn sec" id="pmv" style="width:100%;margin-top:8px">🎤 הוסף קול: בחר קובץ שמע (כמו במבחנים)</button>
+  <button class="tbtn sec" id="pmv" style="width:100%;margin-top:8px">🎤 הוסף קול: בחר קובץ שמע</button>
+  <button class="tbtn sec" id="pmv2" style="width:100%;margin-top:6px;font-size:13px;opacity:.85">📁 לא רואה את הקובץ? הצג את כל הקבצים</button>
   <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">📥 שמור כקובץ שמע (להאזנה גם בלי אינטרנט)</button>
   <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 הוסף או החלף מפתח ElevenLabs (לקולות המיוחדים)</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
-  $('pel').onclick=podSaveEleven;$('pmv').onclick=podAddVoice;$('pintro').onchange=e=>{S.intro=e.target.checked;save()};$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}const k=elAsk();if(k)toast('✅ המפתח נשמר');render()};if(P.dl){$('pel').textContent='מכין קובץ…'}
+  $('pel').onclick=podSaveEleven;$('pmv').onclick=()=>podAddVoice(false);$('pmv2').onclick=()=>podAddVoice(true);$('pintro').onchange=e=>{S.intro=e.target.checked;save()};$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}const k=elAsk();if(k)toast('✅ המפתח נשמר');render()};if(P.dl){$('pel').textContent='מכין קובץ…'}
   const go=()=>{if(P.playing)podSay();render()};
   $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;P.edgeBad=false;P.why='';if(P.i==0)P.intro=0;if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
@@ -2147,7 +2148,7 @@ function podView(){
   <label>כמה זמן?</label><div class="pchs">${[[2,'קצר','2 דקות'],[5,'בינוני','5 דקות'],[10,'ארוך','10 דקות']].map(([l,a,b])=>`<button class="pch ${P.len==l?'on':''}" data-ln="${l}">${a}<small>${b}</small></button>`).join('')}</div>
   <label>החומר</label><textarea id="pm" rows="5" placeholder="הדבק חומר ללימוד (כמה משפטים). עם מפתח AI אפשר גם רק נושא קצר"></textarea>
   <div class="msg" style="color:var(--bad)">${esc(P.err)}</div><button class="tbtn" id="pg" style="width:100%">צור פודקאסט ✨</button>
-  <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #d8dff0"><div style="font-weight:700;font-size:14px;margin-bottom:6px">יש לך פודקאסט מוכן? (למשל מ-NotebookLM)</div><label class="tbtn sec" style="display:block;text-align:center;cursor:pointer;width:100%;box-sizing:border-box">📥 העלה קובץ שמע<input type="file" id="pup" multiple hidden></label><div class="mute" style="font-size:13px;margin-top:6px">הקובץ נשמר בטלפון ומתנגן באפליקציה, גם בלי אינטרנט.</div></div></div></div>
+  <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #d8dff0"><div style="font-weight:700;font-size:14px;margin-bottom:6px">יש לך פודקאסט מוכן? (למשל מ-NotebookLM)</div><label class="tbtn sec" style="display:block;text-align:center;cursor:pointer;width:100%;box-sizing:border-box">📥 העלה קובץ שמע<input type="file" id="pup" multiple accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac,.opus,.wma" hidden></label><label class="tbtn sec" style="display:block;text-align:center;cursor:pointer;width:100%;box-sizing:border-box;margin-top:6px;font-size:13px;opacity:.85">📁 לא רואה את הקובץ? הצג את כל הקבצים<input type="file" id="pup2" multiple hidden></label><div class="mute" style="font-size:13px;margin-top:6px">הקובץ נשמר בטלפון ומתנגן באפליקציה, גם בלי אינטרנט.</div></div></div></div>
   ${pods.length?`<div class="card" style="margin-top:14px"><p style="font-weight:600;margin-top:0">📂 פודקאסטים שמורים (עובדים גם בלי אינטרנט)</p>${pods.map(p=>`<div class="item"><span>${esc(p.title)}<br><small class="mute">${esc(p.sub)} · ${p.audio?'🎵 קובץ שמע · '+fmtMB(p.size||0):p.lines.length+' תורות'}</small></span><span><button class="btn" style="width:auto;padding:6px 14px" data-pl="${p.id}">האזן</button> <button data-pd="${p.id}">✕</button></span></div>`).join('')}</div>`:''}`;
  $('pm').value=S.mats.__pod||'';addUpload('pm');
  v.querySelectorAll('[data-ln]').forEach(b=>b.onclick=()=>{keep();P.len=+b.dataset.ln;render()});
@@ -2155,7 +2156,7 @@ function podView(){
  v.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{const x=S.pods.find(z=>z.id==b.dataset.pd);if(x&&x.audio)audDel(x.id);S.pods=S.pods.filter(x=>x.id!=b.dataset.pd);save();render()});
  $('pg').onclick=podGen;
  /* בלי סינון סוג קובץ, כדי שהטלפון יציג את כל הקבצים בשמותיהם (כמו הצירוף בצ'אט). את סוג השמע בודקים לפי תוכן הקובץ. */
- $('pup').onchange=async e=>{const fl=[...(e.target.files||[])];e.target.value='';if(!fl.length)return;keep();
+ const pupH=async e=>{const fl=[...(e.target.files||[])];e.target.value='';if(!fl.length)return;keep();
   const sniff=async f=>{const u=new Uint8Array(await f.slice(0,16).arrayBuffer()),t=String.fromCharCode(...u);
    if(t.startsWith('ID3')||(u[0]==255&&(u[1]&224)==224))return 'audio/mpeg';if(t.startsWith('RIFF')&&t.slice(8,12)=='WAVE')return 'audio/wav';
    if(t.slice(4,8)=='ftyp')return 'audio/mp4';if(t.startsWith('OggS'))return 'audio/ogg';if(u[0]==0x1A&&u[1]==0x45&&u[2]==0xDF&&u[3]==0xA3)return 'audio/webm';
@@ -2170,6 +2171,7 @@ function podView(){
    catch(err){bad.push(f.name+' (אין מקום בטלפון?)')}
   }
   podTrim();save();P.err=bad.length?'לא נשמרו: '+bad.join(', '):'';if(ok)toast('נשמרו '+ok+' קבצים ✅');render()};
+ $('pup').onchange=pupH;$('pup2').onchange=pupH;
 }
 /* ---- העלאת קבצים לחומר ---- */
 const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=()=>rej(new Error('read'));r.readAsDataURL(f)});
