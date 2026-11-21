@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.69.1 | קוד עדכון V-G7TL-8CWP -->
+<!-- מתכוננים | גרסה 3.69.2 | קוד עדכון V-X4RN-6BJE -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-G7TL-8CWP";   /* קוד העדכון של גרסה 3.69.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.69.1";
+window.UPDATE_CODE = "V-X4RN-6BJE";   /* קוד העדכון של גרסה 3.69.2. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.69.2";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1906,7 +1906,7 @@ function podSay(){
  let key=elKey();if(key.length<20){key=elAsk();if(!key){P.playing=false;render();return}}
  /* הקדמה מוקלטת בתחילת הפודקאסט (אפשר לכבות במסך הפודקאסט) */
  const INTRO=window.INTRO_AUDIO||[];
- if(P.i==0&&!P.intro&&S.intro!==false&&INTRO.length&&!P._ik){
+ if(P.i==0&&!P.intro&&S.intro===true&&INTRO.length&&!P._ik){
   P._ik=1;const itok=++P.tok,ia=P.au||(P.au=new Audio());let k=0;
   const nx=()=>{if(itok!==P.tok||!P.playing){P._ik=0;return}
    if(k>=INTRO.length){P._ik=0;P.intro=1;podSay();return}
@@ -1944,7 +1944,7 @@ async function podSaveEleven(){
    if(!b){fails++;if(lastErr&&(lastErr.status==401||lastErr.status==402||lastErr.status==403))fails=9;continue}P.elc[K(i)]=b;setT('מכין קובץ… '+cnt()+'/'+n)}};
   await Promise.all([worker(),worker()]);
   if(cnt()<n){throw new Error('נשמרו '+cnt()+' מתוך '+n+' שורות. '+elWhy(lastErr)+'. לחץ שוב כדי להמשיך מאותו מקום.')}
-  const intro=[];if(S.intro!==false)for(const u of (window.INTRO_AUDIO||[])){try{intro.push(await (await fetch(u)).blob())}catch(e){}}
+  const intro=[];if(S.intro===true)for(const u of (window.INTRO_AUDIO||[])){try{intro.push(await (await fetch(u)).blob())}catch(e){}}
   const blob=new Blob(intro.concat(Array.from({length:n},(_,i)=>P.elc[K(i)])),{type:'audio/mpeg'}),id=Date.now();
   await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (שמע)',audio:true,mime:'audio/mpeg',size:blob.size,lines:[],pos:0});podTrim();save();P.elc={};
   toast('נשמר ✅ הקובץ מוכן ברשימה למטה, מתנגן גם בלי אינטרנט');
@@ -2036,19 +2036,18 @@ async function podGen(){
    if(lines.length)aiOk=true;
    if(bad){if(!lines.length)throw bad.reason;paused=true}
   }catch(e0){
-   if(lines.length){paused=true}else{r=localPod(text,subjName,n);if(!r){if(!getKey()){P.err='לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא), ';P.loading=false;render();return}throw e0}toast('נוצר פודקאסט בלי AI (מהחומר שכתבת). לפודקאסט חכם יותר, הוסף מפתח בהגדרות ⚙️')}
+   if(lines.length){paused=true}else{throw e0}
   }
   if(paused&&lines.length){P.err='הפודקאסט נעצר באמצע ('+lines.length+' מתוך '+n+' שורות) והחלק שכבר נוצר נשמר. כשתחזור לכאן הוא ימשיך לבד, או לחץ שוב על יצירה.';window._podPaused=true;P.loading=false;render();
    /* חזרת לאפליקציה והבקשה נקטעה: ממשיכים לבד (עד 3 פעמים) */
    if(!document.hidden&&(P.auto=(P.auto||0)+1)<=3)setTimeout(()=>{if(window._podPaused&&!P.loading&&!P.cur&&tab==6&&$('pm')&&!document.hidden){window._podAutoCall=true;podGen()}},1500);
    return}
-  if(lines.length<4&&!aiOk){r=localPod(text,subjName,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
   r={title:title||(plan&&plan.title)||subjName,lines};
   if(lines.length<4)throw new Error('empty');
   const dsub=dsubAI,pod={id:Date.now(),sub:dsub,title:String(r.title||subjName),lines};
   S.pods=S.pods||[];S.pods.unshift(pod);podTrim();delete S.podDraft;window._podPaused=false;save();
   P.cur=pod;P.i=0;P.playing=false;
- }catch(e){P.err=(e&&e.message=='empty')?'ה-AI לא החזיר תסריט תקין. נסה שוב בעוד רגע.'+(window.LASTRAW?' [מה חזר: '+String(window.LASTRAW).slice(0,140)+']':''):aiErr(e)}
+ }catch(e){P.err=(e&&e.message=='empty')?'ה-AI לא החזיר תסריט תקין, ולכן לא יצרתי פודקאסט (אני לא מקריא סתם את מה שכתבת). בדוק שמפתח ה-AI ב-ai.js עובד, ונסה שוב בעוד רגע.'+(window.LASTRAW?' [מה חזר: '+String(window.LASTRAW).slice(0,140)+']':''):String(aiErr(e)).replace(/מבחן/g,'פודקאסט')+' (ה-AI לא ענה, ולכן לא נוצר פודקאסט. בדוק את מפתח ה-AI ב-ai.js.)'}
  P.loading=false;render();
 }
 /* פודקאסט מוכן מבחוץ (למשל מ-NotebookLM): קובץ שמע שנשמר בטלפון (IndexedDB) ומתנגן באפליקציה */
@@ -2092,7 +2091,7 @@ function podView(){
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
   <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${EL_F.map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${EL_M.map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
-  <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="pintro" ${S.intro!==false?'checked':''}> ▶️ הקדמה מוקלטת בתחילת הפודקאסט</label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="pintro" ${S.intro===true?'checked':''}> ▶️ הקדמה מוקלטת ("שלום ילדים, היום נלמד על יוון העתיקה")</label>
   <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">📥 שמור כקובץ שמע (להאזנה גם בלי אינטרנט)</button>
   <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 החלף מפתח ElevenLabs</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
