@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.68.0 | קוד עדכון V-U6BH-4ZNW -->
+<!-- מתכוננים | גרסה 3.69.0 | קוד עדכון V-Y2QK-5TDM -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -215,8 +215,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-U6BH-4ZNW";   /* קוד העדכון של גרסה 3.68.0. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.68.0";
+window.UPDATE_CODE = "V-Y2QK-5TDM";   /* קוד העדכון של גרסה 3.69.0. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.69.0";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1872,118 +1872,15 @@ function speakText(t){
  return cleanLine(t).replace(/\s*[–—―‒]\s*/g,', ').replace(/(\d)\s*-\s*(\d)/g,'$1 עד $2').replace(/\s-\s/g,', ').replace(/(\S)-(\S)/g,'$1 $2')
   .replace(/[()\[\]{}"״“”„*_#~^|<>=\\\/]/g,' ').replace(/\s*([,.;:!?])(?:\s*\1)+/g,'$1').replace(/\s+/g,' ').replace(/\s+([,.;:!?])/g,'$1').trim();
 }
-/* אין קול עברי בטלפון? מקריאים דרך קול עברי של גוגל באינטרנט (כמו אלמנט שמע רגיל, בלי להתקין כלום) */
-const hasHeVoice=()=>{try{return speechSynthesis.getVoices().some(x=>/^(he|iw)/i.test(x.lang))}catch(e){return false}};
-function chunkTxt(t,max){const out=[];let s=String(t).trim();max=max||170;
- while(s.length>max){let k=Math.max(s.lastIndexOf(', ',max),s.lastIndexOf('. ',max),s.lastIndexOf('? ',max),s.lastIndexOf('! ',max),s.lastIndexOf(' ',max));if(k<40)k=max;out.push(s.slice(0,k+1).trim());s=s.slice(k+1).trim()}
- if(s)out.push(s);return out.filter(x=>x)}
-/* קולות עבריים עצביים של מיקרוסופט (נועה = הילה, דני = אברי), דרך האינטרנט */
-async function edgeTTS(text,voice){
- const TOK='6A5AA1D4EAFF4E9FB37E23D68491D6F4';
- let t=Math.floor(Date.now()/1000)+11644473600;t-=t%300;
- const hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((BigInt(t)*10000000n).toString()+TOK));
- const gec=Array.from(new Uint8Array(hb)).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
- const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');
- const dt=()=>new Date().toUTCString().replace('GMT','GMT+0000 (Coordinated Universal Time)');
- const esc2=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
- return new Promise((res,rej)=>{
-  const chunks=[];let done=false,ws=null;
-  const fin=e=>{if(done)return;done=true;clearTimeout(to);try{ws&&ws.close()}catch(x){}if(e)rej(e);else if(!chunks.length)rej(new Error('no audio'));else res(new Blob(chunks,{type:'audio/mpeg'}))};
-  const to=setTimeout(()=>fin(new Error('timeout')),15000);
-  try{ws=new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken='+TOK+'&Sec-MS-GEC='+gec+'&Sec-MS-GEC-Version=1-143.0.3650.75&ConnectionId='+rid())}catch(e){fin(e);return}
-  ws.binaryType='arraybuffer';
-  ws.onerror=()=>fin(new Error('ws error'));
-  ws.onclose=()=>fin(chunks.length?null:new Error('closed'));
-  ws.onopen=()=>{
-   ws.send('X-Timestamp:'+dt()+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}\r\n');
-   ws.send('X-RequestId:'+rid()+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+dt()+'Z\r\nPath:ssml\r\n\r\n<speak version=\'1.0\' xmlns=\'http://www.w3.org/2001/10/synthesis\' xml:lang=\'he-IL\'><voice name=\''+voice+'\'><prosody pitch=\'+0Hz\' rate=\'+0%\' volume=\'+0%\'>'+esc2(text)+'</prosody></voice></speak>')};
-  ws.onmessage=ev=>{const d=ev.data;
-   if(typeof d==='string'){if(/Path:turn\.end/.test(d))fin(null);return}
-   const u=new Uint8Array(d);if(u.length<2)return;const hl=(u[0]<<8)|u[1];
-   const head=new TextDecoder().decode(u.slice(2,2+hl));
-   if(/Path:audio/.test(head)&&u.length>hl+2)chunks.push(u.slice(hl+2))}
- })
-}
-/* שומר את כל הפודקאסט כקובץ שמע בטלפון (קולות מיקרוסופט), ואז הוא מתנגן בלי אינטרנט ועם מסך כבוי */
-async function podSaveAudio(){
- const c=P.cur;if(!c||P.dl)return;const n=c.lines.length;P.dl=1;P.msg='';
- const setT=t=>{const e=$('pdl');if(e)e.textContent=t};
- try{
-  /* כל שורה שהצליחה נשמרת בזיכרון: אם משהו נכשל, לחיצה נוספת ממשיכה מאותו מקום ולא מתחילה מחדש */
-  P.dlc=P.dlc||{};const K=i=>c.id+':'+i,blobs=new Array(n);let idx=0,fails=0,lastErr=null;
-  const cnt=()=>{let d=0;for(let i=0;i<n;i++)if(P.dlc[K(i)])d++;return d};
-  const worker=async()=>{while(idx<n&&fails<3){const i=idx++,l=c.lines[i];if(P.dlc[K(i)])continue;let b=null;
-   for(let at=0;at<4&&!b;at++){if(at)await new Promise(r=>setTimeout(r,[0,800,2000,4000][at]));try{b=await edgeTTS(speakText(l.t),l.w=='b'?'he-IL-AvriNeural':'he-IL-HilaNeural')}catch(e){lastErr=e}}
-   if(!b){fails++;continue}P.dlc[K(i)]=b;setT('מכין שמע… '+cnt()+'/'+n)}};
-  await Promise.all([worker(),worker(),worker()]);
-  if(cnt()<n){const e=new Error('נשמרו '+cnt()+' מתוך '+n+' שורות, לחץ שוב כדי להמשיך מאותו מקום. סיבה: '+String(lastErr&&lastErr.message||'לא ידועה'));e.keep=1;throw e}
-  for(let i=0;i<n;i++)blobs[i]=P.dlc[K(i)];P.dlc={};
-  const blob=new Blob(blobs,{type:'audio/mpeg'}),id=Date.now();
-  await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (שמע)',audio:true,mime:'audio/mpeg',size:blob.size,lines:[],pos:0});podTrim();save();
-  toast('נשמר ✅ אפשר להאזין בלי אינטרנט, גם כשהמסך כבוי (ברשימה למטה)');
- }catch(e){P.msg='לא הצלחתי להכין את כל קובץ השמע ('+String(e&&e.message||e).slice(0,140)+'). בדוק חיבור לאינטרנט.'}
- P.dl='';render();
-}
-/* קול אנושי של Google Gemini (שתי דמויות), נשמר כקובץ שמע בטלפון. צריך מפתח Google שמתחיל ב-AIza */
-const GEM_MODELS=['gemini-2.5-flash-preview-tts','gemini-2.5-pro-preview-tts'];
-const GEM_STYLE='Read this Hebrew conversation as a lively, engaging kids-and-teens history podcast. Danny: an energetic, friendly male storyteller with a warm, clear voice, expressive and humorous, who builds suspense with dramatic pauses and varied intonation, speeds up in exciting moments and slows down for the big reveals, and makes the listener feel part of the story. Noa: a young, playful, bright and cheerful girl with a light, youthful voice, a lively pace and a smile in her voice, who giggles, reacts with big surprise and excitement, teases Danny a little and asks the questions a student would ask. Natural spoken Hebrew, not robotic, not a news reader. ';
-async function gemPart(lines,key){
- const txt=GEM_STYLE+'\nTTS the following conversation between Noa and Danny:\n'+lines.map(l=>(l.w=='b'?'Danny: ':'Noa: ')+speakText(l.t)).join('\n');
- const body={contents:[{parts:[{text:txt}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{multiSpeakerVoiceConfig:{speakerVoiceConfigs:[
-  {speaker:'Noa',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Leda'}}},{speaker:'Danny',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}}}]}}}};
- let last=null;
- for(const m of GEM_MODELS){
-  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),120000);
-  let r,j=null;
-  try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});j=await r.json().catch(()=>null)}
-  catch(e){clearTimeout(to);last=new Error(e&&e.name=='AbortError'?'זמן ההמתנה נגמר':'אין חיבור לשרת של Google');continue}
-  clearTimeout(to);
-  const d=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].inlineData;
-  if(r.ok&&d&&d.data){const bin=atob(d.data),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
-  last=new Error((j&&j.error&&j.error.message)||('HTTP '+r.status));last.status=r.status;
-  if(r.status==429||r.status==403||r.status==401)throw last;
- }
- throw last||new Error('no audio');
-}
-function pcmWav(chunks){
- let n=0;chunks.forEach(c=>n+=c.length);const b=new Uint8Array(44+n),dv=new DataView(b.buffer),w=(o,t)=>{for(let i=0;i<t.length;i++)b[o+i]=t.charCodeAt(i)};
- w(0,'RIFF');dv.setUint32(4,36+n,true);w(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,24000,true);dv.setUint32(28,48000,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,n,true);
- let o=44;chunks.forEach(c=>{b.set(c,o);o+=c.length});return new Blob([b],{type:'audio/wav'});
-}
-async function podSaveGemini(){
- const c=P.cur;if(!c||P.dl)return;
- /* מפתח נפרד רק לקול של הפודקאסט (נשמר בטלפון בלבד, לא משפיע על שאר ה-AI באפליקציה) */
- let key=String(window.PODCAST_KEY||'').trim();if(!/^AIza/.test(key)){try{key=localStorage.getItem('pkey')||''}catch(e){}}
- if(!/^AIza/.test(key)){
-  const v=(prompt('הדבק כאן מפתח Google חינמי לקול של הפודקאסט (מתחיל ב-AIza). אפשר לקבל אחד ב-aistudio.google.com ← Get API key. המפתח נשמר רק בטלפון שלך. (או הדבק אותו בקובץ podcast-ai.js)')||'').trim();
-  if(!/^AIza[\w-]{20,}$/.test(v)){if(v)P.msg='המפתח לא נראה תקין. הוא צריך להתחיל ב-AIza.';else P.msg='לקול אנושי צריך מפתח Google חינמי (מתחיל ב-AIza). קבל אותו ב-aistudio.google.com ← Get API key.';render();return}
-  try{localStorage.setItem('pkey',v)}catch(e){}key=v}
- const n=c.lines.length,PER=12,N=Math.ceil(n/PER);P.dl=1;P.msg='';
- const setT=t=>{const e=$('pgem');if(e)e.textContent=t};
- try{
-  P.gc=P.gc||{};const K=i=>c.id+':'+i;
-  for(let i=0;i<N;i++){
-   if(P.gc[K(i)])continue;setT('מכין קול אנושי… חלק '+(i+1)+' מתוך '+N);
-   let u=null,err=null;
-   for(let at=0;at<3&&!u;at++){
-    if(at)await new Promise(r=>setTimeout(r,at*20000));
-    try{u=await gemPart(c.lines.slice(i*PER,(i+1)*PER),key)}catch(e){err=e;if(!(e.status==429))break}
-   }
-   if(!u){const e=new Error('נשמרו '+Object.keys(P.gc).filter(k=>k.startsWith(c.id+':')).length+' מתוך '+N+' חלקים, לחץ שוב כדי להמשיך. סיבה: '+String(err&&err.message||'לא ידועה').slice(0,160));throw e}
-   P.gc[K(i)]=u;
-  }
-  const chunks=[];for(let i=0;i<N;i++)chunks.push(P.gc[K(i)]);
-  const blob=pcmWav(chunks),id=Date.now();
-  await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (קול אנושי)',audio:true,mime:'audio/wav',size:blob.size,lines:[],pos:0});podTrim();save();P.gc={};
-  toast('נשמר ✅ הקול האנושי מוכן ברשימה למטה');
- }catch(e){P.msg='לא הצלחתי להכין קול אנושי. '+String(e&&e.message||e).slice(0,220)}
- P.dl='';render();
-}
-/* קולות ElevenLabs: נועה ודני, וכל אחד יכול לקבל כל אחד מארבעת הקולות */
-const EL_VOICES=[['tnSpp4vdxKPjI9w0GnoV','מירה'],['Nhs7eitvQWFTQBsf0yiT','סרה'],['JYUzXNeyCPmymMkfcicu','ג׳ון'],['c6SfcYrb2t09NHXiT80T','ג׳ונתן']];
+/* קולות הפודקאסט: רק הקולות של ElevenLabs שנבחרו (נשים: מירה וסרה, גברים: ג׳ון וג׳ונתן) */
+const EL_F=[['tnSpp4vdxKPjI9w0GnoV','מירה'],['Nhs7eitvQWFTQBsf0yiT','סרה']],EL_M=[['JYUzXNeyCPmymMkfcicu','ג׳ון'],['c6SfcYrb2t09NHXiT80T','ג׳ונתן']];
 const EL_MODELS=['eleven_v3','eleven_multilingual_v2','eleven_flash_v2_5'];
-const elSel=()=>{const v=S.podV||{};return{a:v.a||EL_VOICES[0][0],b:v.b||EL_VOICES[2][0]}};
+const elSel=()=>{const v=S.podV||{};return{a:EL_F.some(x=>x[0]==v.a)?v.a:EL_F[0][0],b:EL_M.some(x=>x[0]==v.b)?v.b:EL_M[0][0]}};
 function elKey(){let k=String(window.ELEVEN_KEY||'').trim();if(k.length<20){try{k=localStorage.getItem('ekey')||''}catch(e){}}return k}
+function elAsk(){
+ const v=(prompt('הדבק כאן את המפתח של ElevenLabs (באתר elevenlabs.io: Profile ← API Keys). המפתח נשמר רק בטלפון שלך.')||'').trim();
+ if(v.length<20){P.msg='כדי לשמוע את הקולות צריך מפתח (API key) מהאתר elevenlabs.io.';return ''}
+ try{localStorage.setItem('ekey',v)}catch(e){}return v}
 async function elevenTTS(text,voice,key){
  let last=null;
  for(const m of EL_MODELS){
@@ -2000,13 +1897,32 @@ async function elevenTTS(text,voice,key){
  }
  throw last||new Error('no audio');
 }
+const elWhy=e=>String(e&&e.message||e).slice(0,200)+(e&&e.status==402?' (ייתכן שהקולות הללו דורשים מנוי בתשלום ב-ElevenLabs)':'')+(e&&e.status==401?' (המפתח לא נכון. לחץ על "החלף מפתח")':'');
+/* הפעלה: כל שורה מופקת בקול שנבחר, והשורה הבאה מוכנה מראש */
+function podSay(){
+ const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
+ let key=elKey();if(key.length<20){key=elAsk();if(!key){P.playing=false;render();return}}
+ const tok=++P.tok,sel=elSel(),a=P.au||(P.au=new Audio());P.elp=P.elp||{};
+ const get=i=>{const l=c.lines[i];if(!l)return null;const v=l.w=='b'?sel.b:sel.a,k=c.id+':'+i+':'+v;if(!P.elp[k]){const pr=elevenTTS(speakText(l.t),v,key);P.elp[k]=pr;pr.catch(()=>{if(P.elp[k]===pr)delete P.elp[k]})}return P.elp[k]};
+ const fail=e=>{if(tok!==P.tok)return;P.playing=false;P.msg='הקול לא נוצר. '+elWhy(e);render()};
+ try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:c.title,artist:'נועה ודני',album:c.sub});
+  navigator.mediaSession.setActionHandler('play',()=>{if(!P.playing){P.playing=true;podSay();render()}});
+  navigator.mediaSession.setActionHandler('pause',()=>{if(P.playing){podStop();render()}})}}catch(e){}
+ if(!P.msg||/^הקול/.test(P.msg)){P.msg='🎧 מכין את הקול…'}render();
+ get(P.i).then(blob=>{
+  if(tok!==P.tok||!P.playing)return;
+  const url=URL.createObjectURL(blob);get(P.i+1);
+  a.onended=()=>{URL.revokeObjectURL(url);if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},200)};
+  a.onerror=()=>fail(new Error('הקובץ לא התנגן'));
+  a.onplaying=()=>{if(P.msg){P.msg='';render()}};
+  a.src=url;try{a.preservesPitch=true;a.defaultPlaybackRate=Math.min(1.5,P.rate);a.playbackRate=Math.min(1.5,P.rate)}catch(e){}
+  const pp=a.play();if(pp&&pp.catch)pp.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError'))fail(e)})
+ }).catch(fail);
+}
+/* שומר את כל הפודקאסט כקובץ שמע בטלפון, ואז הוא מתנגן בלי אינטרנט ועם מסך כבוי */
 async function podSaveEleven(){
  const c=P.cur;if(!c||P.dl)return;
- let key=elKey();
- if(key.length<20){
-  const v=(prompt('הדבק כאן את המפתח של ElevenLabs (elevenlabs.io ← Profile ← API Keys). המפתח נשמר רק בטלפון שלך.')||'').trim();
-  if(v.length<20){P.msg='כדי להשתמש בקולות של ElevenLabs צריך מפתח (API key) מהאתר elevenlabs.io.';render();return}
-  try{localStorage.setItem('ekey',v)}catch(e){}key=v}
+ let key=elKey();if(key.length<20){key=elAsk();if(!key){render();return}}
  const n=c.lines.length,sel=elSel();P.dl=1;P.msg='';
  const setT=t=>{const e=$('pel');if(e)e.textContent=t};
  try{
@@ -2014,84 +1930,14 @@ async function podSaveEleven(){
   let idx=0,fails=0,lastErr=null;const cnt=()=>{let d=0;for(let i=0;i<n;i++)if(P.elc[K(i)])d++;return d};
   const worker=async()=>{while(idx<n&&fails<2){const i=idx++,l=c.lines[i];if(P.elc[K(i)])continue;let b=null;
    for(let at=0;at<3&&!b;at++){if(at)await new Promise(r=>setTimeout(r,at*3000));try{b=await elevenTTS(speakText(l.t),l.w=='b'?sel.b:sel.a,key)}catch(e){lastErr=e;if(e.status==401||e.status==402||e.status==403)break}}
-   if(!b){fails++;if(lastErr&&(lastErr.status==401||lastErr.status==402||lastErr.status==403))fails=9;continue}P.elc[K(i)]=b;setT('מכין קול… '+cnt()+'/'+n)}};
+   if(!b){fails++;if(lastErr&&(lastErr.status==401||lastErr.status==402||lastErr.status==403))fails=9;continue}P.elc[K(i)]=b;setT('מכין קובץ… '+cnt()+'/'+n)}};
   await Promise.all([worker(),worker()]);
-  if(cnt()<n){const e=new Error('נשמרו '+cnt()+' מתוך '+n+' שורות. '+String(lastErr&&lastErr.message||'סיבה לא ידועה')+(lastErr&&lastErr.status==402?' (ייתכן שהקולות מהספרייה דורשים מנוי בתשלום ב-ElevenLabs)':'')+'. לחץ שוב כדי להמשיך מאותו מקום.');throw e}
+  if(cnt()<n){throw new Error('נשמרו '+cnt()+' מתוך '+n+' שורות. '+elWhy(lastErr)+'. לחץ שוב כדי להמשיך מאותו מקום.')}
   const blob=new Blob(Array.from({length:n},(_,i)=>P.elc[K(i)]),{type:'audio/mpeg'}),id=Date.now();
-  await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (ElevenLabs)',audio:true,mime:'audio/mpeg',size:blob.size,lines:[],pos:0});podTrim();save();P.elc={};
-  toast('נשמר ✅ הפודקאסט עם הקולות שבחרת מוכן ברשימה למטה');
- }catch(e){P.msg='לא הצלחתי להפיק עם ElevenLabs. '+String(e&&e.message||e).slice(0,260)}
+  await audPut(id,blob);S.pods=S.pods||[];S.pods.unshift({id,sub:c.sub,title:c.title+' (שמע)',audio:true,mime:'audio/mpeg',size:blob.size,lines:[],pos:0});podTrim();save();P.elc={};
+  toast('נשמר ✅ הקובץ מוכן ברשימה למטה, מתנגן גם בלי אינטרנט');
+ }catch(e){P.msg='לא הצלחתי להכין את הקובץ. '+String(e&&e.message||e).slice(0,300)}
  P.dl='';render();
-}
-function podWeb(){
- const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
- const ln=c.lines[P.i],tok=++P.tok,txt=speakText(ln.t),parts=chunkTxt(txt);
- if(!parts.length){P.i++;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},50);return}
- const a=P.au||(P.au=new Audio());
- const fail=why=>{if(tok!==P.tok)return;P.playing=false;P.msg='לא הצלחתי להקריא דרך האינטרנט. '+(P.why?'מיקרוסופט: '+P.why+'. ':'')+'גוגל: '+why+'. בדוק חיבור לאינטרנט ונסה שוב, ואם זה חוזר שלח לי צילום מסך.';render()};
- const next=()=>{if(tok!==P.tok||!P.playing)return;P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},250)};
- const media=()=>{try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:c.title,artist:'נועה ודני',album:c.sub});
-  navigator.mediaSession.setActionHandler('play',()=>{if(!P.playing){P.playing=true;podSay();render()}});
-  navigator.mediaSession.setActionHandler('pause',()=>{if(P.playing){podStop();render()}});
-  navigator.mediaSession.setActionHandler('nexttrack',()=>{if(P.cur&&P.i<P.cur.lines.length-1){podStop();P.i++;P.playing=true;podSay();render()}});
-  navigator.mediaSession.setActionHandler('previoustrack',()=>{if(P.cur&&P.i>0){podStop();P.i--;P.playing=true;podSay();render()}})}}catch(e){}};
- media();
- /* 1) קול עצבי של מיקרוסופט, עם הכנה מראש של השורה הבאה */
- if(!P.edgeBad){
-  P.ec=P.ec||{};
-  const get=i=>{const l=c.lines[i];if(!l)return null;const key=c.id+':'+i;if(!P.ec[key])P.ec[key]=edgeTTS(speakText(l.t),l.w=='b'?'he-IL-AvriNeural':'he-IL-HilaNeural');return P.ec[key]};
-  const pr=get(P.i);
-  pr.then(blob=>{
-   if(tok!==P.tok||!P.playing)return;
-   const url=URL.createObjectURL(blob);get(P.i+1);
-   try{a.preservesPitch=true}catch(e){}
-   a.onended=()=>{URL.revokeObjectURL(url);delete P.ec[c.id+':'+P.i];next()};
-   a.onerror=()=>{if(tok!==P.tok)return;P.edgeBad=true;P.why='הקובץ לא התנגן';podWeb()};
-   a.onplaying=()=>{if(P.msg){P.msg='';render()}};
-   a.src=url;try{a.defaultPlaybackRate=Math.min(1.5,P.rate);a.playbackRate=Math.min(1.5,P.rate)}catch(e){}
-   const pp=a.play();if(pp&&pp.catch)pp.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError')){P.edgeBad=true;P.why=(e&&e.name)||'play';podWeb()}})
-  }).catch(e=>{if(tok!==P.tok)return;delete P.ec[c.id+':'+P.i];P.edgeBad=true;P.why=String(e&&e.message||e).slice(0,40);podWeb()});
-  return;
- }
- /* 2) גיבוי: קול עברי של גוגל */
- let k=0,tries=0;
- const play=()=>{
-  if(tok!==P.tok||!P.playing)return;
-  if(k>=parts.length){next();return}
-  a.onended=()=>{k++;tries=0;play()};
-  a.onerror=()=>{if(tok!==P.tok)return;if(tries++<1){setTimeout(play,600);return}fail('שגיאת רשת')};
-  a.onplaying=()=>{if(P.msg){P.msg='';render()}};
-  a.src='https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=iw&q='+encodeURIComponent(parts[k]);
-  try{a.preservesPitch=false;a.mozPreservesPitch=false;a.webkitPreservesPitch=false}catch(e){}
-  const r=(ln.w=='b'?.9:1.06)*Math.min(1.5,P.rate);try{a.defaultPlaybackRate=r;a.playbackRate=r}catch(e){}
-  const pr=a.play();if(pr&&pr.catch)pr.catch(e=>{if(tok===P.tok&&!(e&&e.name=='AbortError'))fail(e&&e.name||'play')});
- };
- play();
-}
-function podSay(){
- const c=P.cur;if(!c||P.i>=c.lines.length){P.playing=false;render();return}
- if(P.web||(!P.forceTTS&&!hasHeVoice())){P.web=true;try{speechSynthesis.cancel()}catch(e){}podWeb();return}
- if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance=='undefined'){P.playing=false;P.msg=podErr('not-supported');render();return}
- const ln=c.lines[P.i],u=new SpeechSynthesisUtterance(speakText(ln.t)),tok=++P.tok;
- const g=ln.w=='b'?'male':'female',gv=pickVoice('he-IL',g),v=gv||pickVoice('he-IL','');
- u.lang='he-IL';u.rate=Math.min(2,.95*P.rate);u.volume=1;if(v&&!P.novoice)u.voice=v;if(!gv)u.pitch=g=='female'?1.5:.6;
- let started=false,t0=0;const txt=speakText(ln.t);
- u.onstart=()=>{started=true;t0=Date.now();if(P.msg){P.msg='';render()}};
- u.onend=()=>{if(tok!==P.tok||!P.playing)return;
-  /* נגמר מיד בלי להישמע (קול חסר או שבור): ננסה פעם אחת עם הקול הרגיל של הטלפון, ואם גם זה לא עובד נעצור ונסביר */
-  if(txt.length>25&&(!started||Date.now()-t0<350)){
-   if(!P.novoice){P.novoice=true;setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},200);return}
-   P.web=true;setTimeout(()=>{if(tok===P.tok&&P.playing)podWeb()},100);return}
-  P.i++;if(P.i>=c.lines.length)P.playing=false;render();if(P.playing)setTimeout(()=>{if(tok===P.tok&&P.playing)podSay()},260)};
- u.onerror=e=>{if(tok!==P.tok)return;if(e.error=='canceled'||e.error=='interrupted')return;P.playing=false;P.msg=podErr(e.error||'error');render()};
- try{
-  speechSynthesis.cancel();
-  setTimeout(()=>{
-   if(tok!==P.tok)return;
-   try{speechSynthesis.resume();speechSynthesis.speak(u)}catch(e){P.playing=false;P.msg=podErr('error');render();return}
-   setTimeout(()=>{if(tok===P.tok&&P.playing&&!started&&!speechSynthesis.speaking){P.playing=false;P.msg=podErr('silent');render()}},3500);
-  },120);
- }catch(e){P.playing=false;P.msg=podErr('error');render()}
 }
 function localPod(text,sub,n){
  let ss=sentencesOf(text);if(ss.length<3)ss=sentencesOf(text,true);
@@ -2233,13 +2079,11 @@ function podView(){
   ${P.msg?`<div style="margin:12px 0 0;padding:10px;border-radius:14px;background:rgba(251,191,36,.18);color:#fde68a;font-size:14px;line-height:1.5">⚠️ ${esc(P.msg)}</div>`:''}
   <div class="psp">${[[.8,'🐢 איטי'],[1,'▶ רגיל'],[1.25,'🐇 מהיר']].map(([r,t])=>`<button class="${P.rate==r?'on':''}" data-r="${r}">${t}</button>`).join('')}</div>
   <div class="chat" id="chat">${c.lines.map((l,i)=>`<div class="m ${l.w=='b'?'b':''} ${i==P.i?'on':''}" data-l="${i}"><div class="av">${l.w=='b'?'👦':'👩'}</div><div class="bub"><span class="who">${l.w=='b'?'דני':'נועה'}</span>${esc(cleanLine(l.t))}</div></div>`).join('')}</div></div>
-  <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה<select id="pvn" style="width:100%">${EL_VOICES.map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני<select id="pvd" style="width:100%">${EL_VOICES.map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
-  <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">🎧 הפק עם הקולות שבחרתי (ElevenLabs)</button>
-  <button class="tbtn" id="pgem" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#6366f1,#ec4899)">🎙️ קול אנושי (Google Gemini)</button>
-  <button class="tbtn" id="pdl" style="width:100%;margin-top:12px">📥 שמור להאזנה בלי אינטרנט</button>
-  <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 החלף מפתח לקול אנושי</button>
+  <div style="display:flex;gap:8px;margin-top:12px"><label style="flex:1;font-size:13px">קול נועה (אישה)<select id="pvn" style="width:100%">${EL_F.map(v=>`<option value="${v[0]}" ${v[0]==elSel().a?'selected':''}>${v[1]}</option>`).join('')}</select></label><label style="flex:1;font-size:13px">קול דני (גבר)<select id="pvd" style="width:100%">${EL_M.map(v=>`<option value="${v[0]}" ${v[0]==elSel().b?'selected':''}>${v[1]}</option>`).join('')}</select></label></div>
+  <button class="tbtn" id="pel" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">📥 שמור כקובץ שמע (להאזנה גם בלי אינטרנט)</button>
+  <button class="tbtn sec" id="pkey" style="width:100%;margin-top:12px">🔑 החלף מפתח ElevenLabs</button>
   <button class="tbtn sec" id="pback" style="width:100%;margin-top:12px">חזרה לרשימה</button>`;
-  $('pel').onclick=podSaveEleven;$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('pkey')}catch(e){}toast('המפתח נמחק. בלחיצה הבאה על קול אנושי תוכל להדביק חדש')};$('pdl').onclick=podSaveAudio;$('pgem').onclick=podSaveGemini;if(P.dl){$('pdl').textContent='מכין שמע…';$('pgem').textContent='מכין…';$('pel').textContent='מכין…'}
+  $('pel').onclick=podSaveEleven;$('pvn').onchange=e=>{S.podV=Object.assign({},S.podV,{a:e.target.value});save()};$('pvd').onchange=e=>{S.podV=Object.assign({},S.podV,{b:e.target.value});save()};$('pkey').onclick=()=>{try{localStorage.removeItem('ekey')}catch(e){}toast('המפתח נמחק. בלחיצה הבאה על הפעלה תוכל להדביק מפתח חדש')};if(P.dl){$('pel').textContent='מכין קובץ…'}
   const go=()=>{if(P.playing)podSay();render()};
   $('pplay').onclick=()=>{P.msg='';P.novoice=false;P.web=false;P.edgeBad=false;P.why='';if(P.playing){podStop()}else{if(P.i>=n)P.i=0;P.playing=true;podSay()}render()};
   $('pprev').onclick=()=>{P.i=Math.max(0,P.i-1);go()};
