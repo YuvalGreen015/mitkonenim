@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.67.5 | קוד עדכון V-A9FG-2LNX -->
+<!-- מתכוננים | גרסה 3.67.8 | קוד עדכון V-D5WQ-9LJA -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -215,8 +215,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-A9FG-2LNX";   /* קוד העדכון של גרסה 3.67.5. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.67.5";
+window.UPDATE_CODE = "V-D5WQ-9LJA";   /* קוד העדכון של גרסה 3.67.8. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.67.8";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1926,11 +1926,11 @@ async function podSaveAudio(){
 }
 /* קול אנושי של Google Gemini (שתי דמויות), נשמר כקובץ שמע בטלפון. צריך מפתח Google שמתחיל ב-AIza */
 const GEM_MODELS=['gemini-2.5-flash-preview-tts','gemini-2.5-pro-preview-tts'];
-const GEM_STYLE='Read this Hebrew conversation as a warm, natural, human podcast. Danny: a warm, deep, clear baritone with a measured calm pace and classic storyteller delivery; dramatic, varied intonation that builds tension and interest, emphasizing certain words and slowing down in the right places; authoritative yet accessible, as if telling a fascinating story by a campfire. Noa: a bright, warm, curious young woman with lively natural intonation who reacts with real interest and surprise. No robotic tone. ';
+const GEM_STYLE='Read this Hebrew conversation as a lively, engaging kids-and-teens history podcast. Danny: an energetic, friendly male storyteller with a warm, clear voice, expressive and humorous, who builds suspense with dramatic pauses and varied intonation, speeds up in exciting moments and slows down for the big reveals, and makes the listener feel part of the story. Noa: a young, playful, bright and cheerful girl with a light, youthful voice, a lively pace and a smile in her voice, who giggles, reacts with big surprise and excitement, teases Danny a little and asks the questions a student would ask. Natural spoken Hebrew, not robotic, not a news reader. ';
 async function gemPart(lines,key){
  const txt=GEM_STYLE+'\nTTS the following conversation between Noa and Danny:\n'+lines.map(l=>(l.w=='b'?'Danny: ':'Noa: ')+speakText(l.t)).join('\n');
  const body={contents:[{parts:[{text:txt}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{multiSpeakerVoiceConfig:{speakerVoiceConfigs:[
-  {speaker:'Noa',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Aoede'}}},{speaker:'Danny',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}}}]}}}};
+  {speaker:'Noa',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Leda'}}},{speaker:'Danny',voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}}}]}}}};
  let last=null;
  for(const m of GEM_MODELS){
   const ac=new AbortController(),to=setTimeout(()=>ac.abort(),120000);
@@ -2093,11 +2093,13 @@ async function podGen(){
  try{
   const n=POD_LINES[P.len]||34;
   /* שלב 1: ה-AI קורא את החומר ומחליט לאיזה מקצוע הוא שייך (מתמטיקה, היסטוריה, גיאוגרפיה...), ואם לא עבד משתמשים בזיהוי לפי מילים */
-  let dsubAI=podSub(text),subjName=dsubAI;
+  let dsubAI=podSub(text),subjName=dsubAI,plan=null;
+  const NP=Math.ceil(n/20);
   if(hasAI()){try{
-   const rc=await Promise.race([aiJsonA('קרא את החומר או הנושא הבא וקבע לאיזה מקצוע לימודים הוא שייך. המקצועות של התלמיד: '+S.subjects.join(' | ')+'. אם הוא מתאים לאחד מהם, החזר בדיוק את השם שלו. אם הוא לא מתאים לאף אחד, החזר שם מקצוע כללי בעברית (למשל מתמטיקה, היסטוריה, גיאוגרפיה, תנ"ך, אנגלית, מדעים, ספרות). דוגמאות: "1 ועוד 1" הוא מתמטיקה. "החשמונאים" או "יוון העתיקה" הם היסטוריה. "הרים ומדינות" הוא גיאוגרפיה. החזר JSON בלבד: {"subject":"..."}\n\nהחומר:\n'+text.slice(0,1500)),new Promise((_,j)=>setTimeout(()=>j(new Error('t')),9000))]);
+   const rc=await Promise.race([aiJsonA('אתה מפיק פודקאסט לימודי מקצועי, כמו הפודקאסטים של NotebookLM. קרא את החומר או הנושא הבא, וקבע: (1) לאיזה מקצוע לימודים הוא שייך. המקצועות של התלמיד: '+S.subjects.join(' | ')+'. אם הוא מתאים לאחד מהם, החזר בדיוק את השם שלו, ואם לא, שם מקצוע כללי בעברית (מתמטיקה, היסטוריה, גיאוגרפיה, תנ"ך, אנגלית, מדעים, ספרות ועוד). דוגמאות: "1 ועוד 1" הוא מתמטיקה, "החשמונאים" או "יוון העתיקה" הם היסטוריה, "הרים ומדינות" הוא גיאוגרפיה. (2) כותרת קצרה ומסקרנת לפודקאסט. (3) מתווה של '+NP+' חלקים לפי סדר הגיוני. לכל חלק: "hook" = משפט פתיחה מסקרן או סיפור קצר, ו-"notes" = 5 עד 7 נקודות מדויקות שצריך לכסות: עובדות, שמות, תאריכים, סיבות ותוצאות, דוגמה מחיי היומיום או השוואה, וסיפור או פרט מעניין. המתווה חייב להרחיב את החומר עם ידע נכון ורקע מעבר למה שכתוב בו, ולא רק לחזור עליו. אם החומר הוא רק נושא קצר, בנה את המתווה מהידע שלך. אל תמציא עובדות. החזר JSON בלבד: {"subject":"...","title":"...","segments":[{"hook":"...","notes":["...","..."]}]}\n\nהחומר:\n'+text.slice(0,2500)),new Promise((_,j)=>setTimeout(()=>j(new Error('t')),20000))]);
    const g=String(rc&&(rc.subject||rc['מקצוע'])||'').trim().slice(0,30);
    if(g){subjName=g;const hit=S.subjects.find(x=>x==g)||S.subjects.find(x=>x.includes(g)||g.includes(x));dsubAI=hit||g}
+   if(rc&&Array.isArray(rc.segments)&&rc.segments.length){plan={title:String(rc.title||''),segments:rc.segments.slice(0,NP).map(x=>({hook:String((x&&(x.hook||x.title))||'').slice(0,200),notes:Array.isArray(x&&x.notes)?x.notes.map(y=>String(y).slice(0,200)).slice(0,8):[]}))}}
   }catch(e){}}
   if(subjName!==P.sub)toast('זוהה מקצוע: '+subjName);
   const podLines=r=>{/* קורא את תשובת ה-AI בגמישות: מערך ישיר, או מפתח אחר, ושמות שדות שונים */
@@ -2115,10 +2117,12 @@ async function podGen(){
    const one=async i=>{
     const k=Math.min(per,n-i*per),first=i==0,last=i==N-1;
     const pos=N>1?'\nזה חלק '+(i+1)+' מתוך '+N+' של הפודקאסט. כסה רק את החלק ה-'+(i+1)+' מתוך '+N+' של החומר, לפי הסדר, ואל תחזור על חלקים אחרים. '+(first?'פתחו בברכה קצרה, ומיד אחריה "וו" מסקרן. ':'אל תברכו מחדש, התחילו ישר בנושא. ')+(last?'סיימו בסיכום קצר ובשאלת מבחן.':'אל תסכמו ואל תסיימו, ההמשך בחלק הבא.'):'';
+    const sg=plan&&plan.segments[i],planTxt=plan?'\nמתווה הפודקאסט כולו: '+plan.segments.map((x,j)=>(j+1)+') '+x.hook.slice(0,90)).join(' | ')+(sg?'\nהחלק שלך מפורט כאן. פתח וספר כל נקודה בהרחבה ואל תדלג על אף אחת: '+sg.hook+' . נקודות: '+sg.notes.join(' ; ')+' .':''):'';
+    const pos2=pos+planTxt;
     let got=[],err=null;
     if(i)await new Promise(r=>setTimeout(r,i*700));/* מרווח קטן בין הבקשות, כדי לא להיחסם */
     for(let at=0;at<2&&got.length<2;at++){let rr=null;if(at&&err&&/limit/.test(String(err.message)))await new Promise(r=>setTimeout(r,3000));try{rr=await aiJsonA(`המקצוע שזוהה: ${subjName}. התאם את השיחה לתחום הזה: במתמטיקה מסבירים צעד אחר צעד עם דוגמאות חישוב קטנות ומשחקי חשיבה מחיי היומיום, ואומרים את החישובים במילים ("אחד ועוד אחד שווה שניים"); בהיסטוריה מספרים סיפור עם דמויות, סיבות ותוצאות; בגיאוגרפיה מתארים מקומות בצורה חזותית, משווים בין אזורים ומסבירים למה דברים נמצאים איפה שהם; בתנ"ך מספרים את הסיפור, הדמויות והמסר. כתוב תסריט לפודקאסט לימודי בעברית, בסגנון "Audio Overview" של NotebookLM: שיחה חיה, מרתקת ומשעשעת בין שני חברים, נועה (סקרנית, שואלת, מגיבה בהתלהבות, לפעמים מתפלאת או מתווכחת) ודני (חובב היסטוריה ומדע שמספר סיפורים ומסביר בצורה ברורה). המטרה: שתלמיד ירצה להמשיך להקשיב ויזכור מה שנאמר.
-כללים: 1) מותר ברכה קצרה של שורה או שתיים ("היי, אני נועה" / "ואני דני"), ומיד אחריה פותחים ב"וו" שתופס: עובדה מפתיעה, שאלה מסקרנת, סיפור או סצנה מהחומר. לא מדברים על הנושא באופן כללי ("היום נלמד על...") אלא נכנסים מיד לדבר המעניין. 2) מספרים סיפור: מי, למה, מה קרה, ומה יצא מזה. כל נושא מוסבר דרך דוגמה, השוואה לחיי היומיום של תלמיד, או מקרה מעניין. 3) הדוברים מגיבים זה לזה ("רגע, באמת?", "וואו, לא ידעתי", "תסביר לי את זה כאילו אני בכיתה ו'", "אז בעצם..."), ולפעמים נועה מנסה לנחש או מסכמת בשפה פשוטה ודני מתקן או משלים. 4) משפטים קצרים וטבעיים כמו בדיבור אמיתי, בלי נאום ובלי רשימות. 5) לפעמים שאלה לחשיבה למאזין ("תעצרו רגע וחשבו: למה לדעתכם...") ואז התשובה. 6) כל השמות, התאריכים וההסברים מדויקים ומבוססים על החומר. אסור להמציא עובדות. אם החומר הוא רק נושא או כותרת קצרה (למשל "יוון העתיקה"), השתמש בידע כללי נכון ומדויק, וכסה את הדברים החשובים שתלמיד צריך לדעת עליו למבחן (אנשים, אירועים, סיבות ותוצאות, מושגים), לפי סדר הגיוני. 7) התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). 8) בסוף: סיכום קצר וקליט של 3 דברים לזכור, ושאלת מבחן אחת למאזין עם התשובה. 9) בלי סימנים מיוחדים, בלי אימוג'י, ובלי כתיבת שם הדובר בתוך הטקסט. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות"). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${pos}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){err=e1;rr=null}
+כללים: 0) הסגנון: כמו ערוץ היסטוריה מצליח לילדים ולנוער. מספרים סיפור עם דמויות, מתח, הומור קל וגילויים מפתיעים, בשפה פשוטה וחיה, כך שתלמיד בן 12 יבין ויהנה. 1) מותר ברכה קצרה של שורה או שתיים ("היי, אני נועה" / "ואני דני"), ומיד אחריה פותחים ב"וו" שתופס: עובדה מפתיעה, שאלה מסקרנת, סיפור או סצנה מהחומר. לא מדברים על הנושא באופן כללי ("היום נלמד על...") אלא נכנסים מיד לדבר המעניין. 2) מספרים סיפור: מי, למה, מה קרה, ומה יצא מזה. כל נושא מוסבר דרך דוגמה, השוואה לחיי היומיום של תלמיד, או מקרה מעניין. 3) הדוברים מגיבים זה לזה ("רגע, באמת?", "וואו, לא ידעתי", "תסביר לי את זה כאילו אני בכיתה ו'", "אז בעצם..."), ולפעמים נועה מנסה לנחש או מסכמת בשפה פשוטה ודני מתקן או משלים. 4) משפטים קצרים וטבעיים כמו בדיבור אמיתי, בלי נאום ובלי רשימות. 5) לפעמים שאלה לחשיבה למאזין ("תעצרו רגע וחשבו: למה לדעתכם...") ואז התשובה. 6) כל השמות, התאריכים וההסברים מדויקים ומבוססים על החומר. אסור להמציא עובדות. אם החומר הוא רק נושא או כותרת קצרה (למשל "יוון העתיקה"), השתמש בידע כללי נכון ומדויק, וכסה את הדברים החשובים שתלמיד צריך לדעת עליו למבחן (אנשים, אירועים, סיבות ותוצאות, מושגים), לפי סדר הגיוני. 7) התעלם מפרטים על המבחן עצמו (מועד, משך, הוראות, הערות מורה). 8) אל תקריאו את החומר של התלמיד ואל תחזרו עליו מילה במילה. הסבירו אותו כמו מומחים אמיתיים שמספרים, והוסיפו רקע, הקשר, סיפורים ודוגמאות נכונות מעבר למה שכתוב. 9) בסוף: סיכום קצר וקליט של 3 דברים לזכור, ושאלת מבחן אחת למאזין עם התשובה. 10) בלי סימנים מיוחדים, בלי אימוג'י, ובלי כתיבת שם הדובר בתוך הטקסט. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות"). בערך ${k} תורות דיבור, כל תור משפט או שניים קצרים, בלי סימנים מיוחדים ובלי אימוג'י. כתוב מספרים ושברים במילים כדי שיהיה קל להקריא (למשל "שליש", "חמש עשיריות").\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}${pos2}\nהחזר JSON בלבד: {"title":"כותרת קצרה","lines":[{"w":"a","t":"טקסט של נועה"},{"w":"b","t":"טקסט של דני"}]} כש-w הוא a לנועה ו-b לדני.\n\nהחומר:\n${text.slice(0,30000)}`)}catch(e1){err=e1;rr=null}
      if(rr){got=podLines(rr);if(first&&rr.title&&!title)title=String(rr.title)}}
     if(got.length<2)throw err||new Error('empty');
     parts[i]=got;P.prog=Object.keys(parts).length+'/'+N;if(P.loading&&tab==6&&!P.cur)try{podView()}catch(e){}S.podDraft={sub:P.sub,text,n,parts:Object.assign({},parts),title};save();
@@ -2137,7 +2141,7 @@ async function podGen(){
    if(!document.hidden&&(P.auto=(P.auto||0)+1)<=3)setTimeout(()=>{if(window._podPaused&&!P.loading&&!P.cur&&tab==6&&$('pm')&&!document.hidden){window._podAutoCall=true;podGen()}},1500);
    return}
   if(lines.length<4&&!aiOk){r=localPod(text,subjName,n);if(r){lines=podLines(r);title=title||String(r.title||'');toast('ה-AI לא ענה, אז נוצר פודקאסט קצר מהחומר שכתבת')}}
-  r={title:title||subjName,lines};
+  r={title:title||(plan&&plan.title)||subjName,lines};
   if(lines.length<4)throw new Error('empty');
   const dsub=dsubAI,pod={id:Date.now(),sub:dsub,title:String(r.title||subjName),lines};
   S.pods=S.pods||[];S.pods.unshift(pod);podTrim();delete S.podDraft;window._podPaused=false;save();
