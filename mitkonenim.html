@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.73.1 | קוד עדכון V-D9TR-2KQE -->
+<!-- מתכוננים | גרסה 3.73.2 | קוד עדכון V-M3XB-7GVA -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-D9TR-2KQE";   /* קוד העדכון של גרסה 3.73.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.73.1";
+window.UPDATE_CODE = "V-M3XB-7GVA";   /* קוד העדכון של גרסה 3.73.2. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.73.2";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1284,6 +1284,7 @@ async function gen(){
  if(n+no>MAXQ){T.err='המקסימום הוא '+MAXQ+' שאלות בסך הכל (אמריקאיות + פתוחות). כרגע בחרת '+(n+no)+'. הקטן את המספר.';render();return}
  T.loading=true;T.err='';render();window._genSubj=SUBJ;
  try{if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().then(p=>{if(p==='granted')toast('אפשר לצאת מהאפליקציה, אשלח התראה כשהמבחן מוכן')}).catch(()=>{})}}catch(e){}
+ keepOn();
  const total=n+no;
  if(appOn()){await genViaApp(text,n,no);return}
  try{
@@ -1306,7 +1307,18 @@ async function gen(){
  T.prog='';
  T.loading=false;render();testPing();
 }
-function testPing(){try{if(document.hidden&&Notification.permission==='granted'){showNote(T.qs&&T.qs.length?'המבחן מוכן ✅':'לא הצלחתי ליצור מבחן',{body:T.qs&&T.qs.length?'נוצרו '+T.qs.length+' שאלות. לחץ כדי להתחיל.':'חזור לאפליקציה ונסה שוב.',tag:'test-ready',icon:'icon-192.png'}).catch(()=>{})}}catch(e){}}
+/* משאיר את האפליקציה "חיה" ברקע בזמן יצירת מבחן: שמע שקט + הודעת מדיה */
+let _kA=null,_kI=null;
+function keepOn(){try{
+ if(!_kA){const n=8000,h=new ArrayBuffer(44+n*2),d=new DataView(h),w=(o,t)=>{for(let i=0;i<t.length;i++)d.setUint8(o+i,t.charCodeAt(i))};
+  w(0,'RIFF');d.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,8000,true);d.setUint32(28,16000,true);d.setUint16(32,2,true);d.setUint16(34,16,true);w(36,'data');d.setUint32(40,n*2,true);
+  _kA=new Audio(URL.createObjectURL(new Blob([h],{type:'audio/wav'})));_kA.loop=true;_kA.volume=0.01}
+ const pr=_kA.play();if(pr&&pr.catch)pr.catch(()=>{});
+ try{if(navigator.mediaSession){navigator.mediaSession.metadata=new MediaMetadata({title:'יוצר מבחן…',artist:'מתכוננים'})}}catch(e){}
+ clearInterval(_kI);_kI=setInterval(()=>{if(!T.loading)keepOff()},2000);
+}catch(e){}}
+function keepOff(){try{clearInterval(_kI);if(_kA)_kA.pause();if(navigator.mediaSession)navigator.mediaSession.metadata=null}catch(e){}}
+function testPing(){keepOff();try{if(document.hidden&&Notification.permission==='granted'){showNote(T.qs&&T.qs.length?'המבחן מוכן ✅':'לא הצלחתי ליצור מבחן',{body:T.qs&&T.qs.length?'נוצרו '+T.qs.length+' שאלות. לחץ כדי להתחיל.':'חזור לאפליקציה ונסה שוב.',tag:'test-ready',icon:'icon-192.png'}).catch(()=>{})}}catch(e){}}
 function useLocal(text,n,no,e){
  if(window._cG){T.err=aiErr(e);T.loading=false;render();return}
  if(e&&!e.detail&&window.LASTRAW)e.detail='תשובת AI: '+window.LASTRAW;
