@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.72.3 | קוד עדכון V-N7HK-4RPD -->
+<!-- מתכוננים | גרסה 3.73.1 | קוד עדכון V-D9TR-2KQE -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-N7HK-4RPD";   /* קוד העדכון של גרסה 3.72.3. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.72.3";
+window.UPDATE_CODE = "V-D9TR-2KQE";   /* קוד העדכון של גרסה 3.73.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.73.1";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -801,7 +801,7 @@ function enGens(text){
 }
 function exGens(text,sub){
  const has=w=>text.includes(w),g=[];let tp='';const P=fn=>{fn.tp=tp;g.push(fn)};
- const math=sub=='מתמטיקה'||/שבר|עשרוני|כפל|חילוק|אחוז|חיבור|חיסור/.test(text);
+ const math=sub=='מתמטיקה'||(!(S.subjects||[]).includes(sub)&&/שבר|עשרוני|כפל|חילוק|אחוז|חיבור|חיסור/.test(text));
  if(!math)return g;
  const F=has('שבר'),D=has('עשרוני');
  const dn=[2,3,4,5,6,8,10,12];
@@ -1283,6 +1283,7 @@ async function gen(){
  if(n+no<1){T.err='בחר לפחות שאלה אחת.';render();return}
  if(n+no>MAXQ){T.err='המקסימום הוא '+MAXQ+' שאלות בסך הכל (אמריקאיות + פתוחות). כרגע בחרת '+(n+no)+'. הקטן את המספר.';render();return}
  T.loading=true;T.err='';render();window._genSubj=SUBJ;
+ try{if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().then(p=>{if(p==='granted')toast('אפשר לצאת מהאפליקציה, אשלח התראה כשהמבחן מוכן')}).catch(()=>{})}}catch(e){}
  const total=n+no;
  if(appOn()){await genViaApp(text,n,no);return}
  try{
@@ -1303,8 +1304,9 @@ async function gen(){
   useLocal(text,n,no,e);return
  }
  T.prog='';
- T.loading=false;render();
+ T.loading=false;render();testPing();
 }
+function testPing(){try{if(document.hidden&&Notification.permission==='granted'){showNote(T.qs&&T.qs.length?'המבחן מוכן ✅':'לא הצלחתי ליצור מבחן',{body:T.qs&&T.qs.length?'נוצרו '+T.qs.length+' שאלות. לחץ כדי להתחיל.':'חזור לאפליקציה ונסה שוב.',tag:'test-ready',icon:'icon-192.png'}).catch(()=>{})}}catch(e){}}
 function useLocal(text,n,no,e){
  if(window._cG){T.err=aiErr(e);T.loading=false;render();return}
  if(e&&!e.detail&&window.LASTRAW)e.detail='תשובת AI: '+window.LASTRAW;
@@ -1317,7 +1319,7 @@ function useLocal(text,n,no,e){
   else T.err=!hasAI()?'לא הצלחתי להשתמש ב-AI החינמי (אין אינטרנט, או שהשירות עסוק). נסה שוב, או כתוב כמה משפטים על החומר (לא רק שם הנושא).':aiErr(e)
 
  }catch(x){T.err='לא הצלחתי ליצור מבחן. נסה שוב.'}
- T.loading=false;render();
+ T.loading=false;render();testPing();
 }
 const THEMES=[['סגול-ורוד','linear-gradient(160deg,#1e3a8a 0%,#6d28d9 55%,#db2777 100%)','linear-gradient(135deg,#2a6df4,#6b9bff)'],['ים','linear-gradient(160deg,#0f4c81 0%,#0891b2 60%,#34d399 100%)','linear-gradient(135deg,#0891b2,#38bdf8)'],['ירוק','linear-gradient(160deg,#064e3b 0%,#10a37f 60%,#a3e635 100%)','linear-gradient(135deg,#10a37f,#34d399)'],['שקיעה','linear-gradient(160deg,#9a3412 0%,#f97316 55%,#fbbf24 100%)','linear-gradient(135deg,#ea580c,#fb923c)'],['לילה','linear-gradient(160deg,#0b1020 0%,#1e1b4b 60%,#312e81 100%)','linear-gradient(135deg,#4338ca,#818cf8)']];
 const CFS=[['🎉 מסיבה',['🎉','⭐','✨']],['⭐ כוכבים',['⭐','🌟','✨']],['💎 יהלומים',['💎','💠','✨']],['🎈 בלונים',['🎈','🎈','🎉']]];
