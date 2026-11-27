@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.73.2 | קוד עדכון V-M3XB-7GVA -->
+<!-- מתכוננים | גרסה 3.74.0 | קוד עדכון V-P6ZL-3NDU -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-M3XB-7GVA";   /* קוד העדכון של גרסה 3.73.2. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.73.2";
+window.UPDATE_CODE = "V-P6ZL-3NDU";   /* קוד העדכון של גרסה 3.74.0. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.74.0";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1318,7 +1318,7 @@ function keepOn(){try{
  clearInterval(_kI);_kI=setInterval(()=>{if(!T.loading)keepOff()},2000);
 }catch(e){}}
 function keepOff(){try{clearInterval(_kI);if(_kA)_kA.pause();if(navigator.mediaSession)navigator.mediaSession.metadata=null}catch(e){}}
-function testPing(){keepOff();try{if(document.hidden&&Notification.permission==='granted'){showNote(T.qs&&T.qs.length?'המבחן מוכן ✅':'לא הצלחתי ליצור מבחן',{body:T.qs&&T.qs.length?'נוצרו '+T.qs.length+' שאלות. לחץ כדי להתחיל.':'חזור לאפליקציה ונסה שוב.',tag:'test-ready',icon:'icon-192.png'}).catch(()=>{})}}catch(e){}}
+function testPing(){keepOff();try{if(document.hidden&&Notification.permission==='granted'){showNote(T.qs&&T.qs.length?'המבחן מוכן ✅':'לא הצלחתי ליצור מבחן',{body:T.qs&&T.qs.length?'נוצרו '+T.qs.length+' שאלות. לחץ כדי להתחיל.':'חזור לאפליקציה ונסה שוב.',tag:'test-ready',icon:'icon-192.png'}).catch(e=>bugAdd('התראת מבחן לא נשלחה: '+((e&&e.message)||'?')))}}catch(e){}}
 function useLocal(text,n,no,e){
  if(window._cG){T.err=aiErr(e);T.loading=false;render();return}
  if(e&&!e.detail&&window.LASTRAW)e.detail='תשובת AI: '+window.LASTRAW;
@@ -1663,12 +1663,17 @@ function settingsView(){
  <div class="ks" style="margin-top:12px;text-align:center;opacity:.85">בלי מפתח: שירות AI חינמי של Pollinations (החומר נשלח אליהם)</div>
  <div class="kmsg" id="akm">${getKey()?'מפתח שמור ✓':''}</div></div>
 ${themeCard()}${voiceCard()}
+<div class="card"><p style="font-weight:600;margin-top:0">🐞 בעיות באפליקציה (${bugList().length})</p>
+ <p class="mute" style="margin:0 0 8px">התראות: <b>${('Notification' in window)?({granted:'מאושרות ✓',denied:'חסומות ✗',default:'עוד לא אושרו'})[Notification.permission]:'לא נתמכות'}</b> · שירות התראות: <b id="swst">בודק…</b></p>
+ ${bugList().length?'<div style="max-height:200px;overflow:auto;font-size:14px;text-align:right;direction:rtl">'+bugList().slice(0,10).map(b=>'<div style="padding:6px 0;border-top:1px solid #0002"><span class="mute">'+esc(b.t)+'</span><br>'+esc(b.m)+'</div>').join('')+'</div><div class="row" style="margin-top:8px"><button class="btn sec" id="bgcp">העתק</button><button class="btn sec" id="bgclr">נקה</button></div>':'<p class="mute" style="margin:0">אין בעיות 🎉</p>'}</div>
 <div class="card"><p style="font-weight:600;margin-top:0">🛠 בדיקת תמונות</p><p class="mute" style="margin-top:-6px">אם התמונות לא מופיעות</p><button class="btn sec" id="imgdiag">בדוק למה אין תמונות</button><button class="btn sec" id="imgfix" style="margin-top:8px">נקה מטמון ורענן</button><pre id="imgrep" dir="auto" style="white-space:pre-wrap;font-size:13px;margin:10px 0 0"></pre></div>
  <button class="btn sec" id="sb">חזרה</button>`;
  v.querySelectorAll('[data-vn]').forEach(sel=>sel.onchange=()=>{S.vn=S.vn||{};S.vn[sel.dataset.vn]=sel.value||undefined;save();speak(sel.dataset.vn=='he'?(S.words.find(w=>!isEn(w))||'שלום'):'Hello')});
  v.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.voice=b.dataset.v;save();render()});
  if($('rc'))$('rc').onclick=recordVoice;
  if($('hz')){$('hz').oninput=e=>{S.hz=+e.target.value;S.voice='mine';$('hzl').textContent=S.hz+' הרץ'};$('hz').onchange=()=>{save();speak(S.words[0]||'Hello')}}
+ try{navigator.serviceWorker.getRegistration().then(r=>{const e=$('swst');if(e)e.textContent=r&&r.active?'פעיל ✓':'לא פעיל ✗'}).catch(()=>{})}catch(e){const x=$('swst');if(x)x.textContent='לא נתמך'}
+ if($('bgcp'))$('bgcp').onclick=async()=>{const ok=await copyTxt(JSON.stringify(bugList(),null,1));toast(ok?'הועתק ✓':'לא הצלחתי להעתיק')};if($('bgclr'))$('bgclr').onclick=()=>{try{localStorage.removeItem('bugs')}catch(e){}render()};
  $('imgdiag').onclick=async()=>{$('imgrep').textContent='בודק...';$('imgrep').textContent=await window.imgDiag()};$('imgfix').onclick=()=>window.imgFix();
  $('demo').onclick=()=>speak(S.words[0]||'Hello');
  if($('rpcopy'))$('rpcopy').onclick=async()=>{const ok=await copyTxt(JSON.stringify((S.reports||[]).slice(0,30),null,1));toast(ok?'הדיווחים הועתקו ✓':'לא הצלחתי להעתיק')};if($('rpclr'))$('rpclr').onclick=()=>{if(!confirm('למחוק את כל הדיווחים?'))return;S.reports=[];save();render()};
@@ -1712,6 +1717,11 @@ async function exGet(id){const db=await exDB();return new Promise(res=>{const q=
 async function exDel(id){try{const db=await exDB();db.transaction('photos','readwrite').objectStore('photos').delete(id)}catch(e){}}
 function exShrink(file,mx){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=mx||1100,s=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('img'))};im.src=u})}
 /* תזכורת: מופיעה בבית ובמסך הלוח, ואם אושרו התראות גם כהתראה של המכשיר (כשהאפליקציה נפתחת) */
+/* יומן בעיות: נשמר בנפרד, מוצג בהגדרות */
+function bugAdd(m){try{const a=JSON.parse(localStorage.getItem('bugs')||'[]');a.unshift({t:new Date().toLocaleString('he-IL'),m:String(m).slice(0,300)});localStorage.setItem('bugs',JSON.stringify(a.slice(0,30)))}catch(e){}}
+function bugList(){try{return JSON.parse(localStorage.getItem('bugs')||'[]')}catch(e){return[]}}
+addEventListener('error',e=>bugAdd('שגיאה: '+(e.message||'?')+(e.lineno?' (שורה '+e.lineno+')':'')));
+addEventListener('unhandledrejection',e=>bugAdd('הבטחה נכשלה: '+((e.reason&&e.reason.message)||e.reason||'?')));
 const NB={};
 async function showNote(t,o){
  if(!('Notification' in window))throw new Error('הדפדפן לא תומך בהתראות');
@@ -1719,7 +1729,7 @@ async function showNote(t,o){
  let reg=null;
  if('serviceWorker' in navigator){try{reg=await Promise.race([navigator.serviceWorker.ready,new Promise(r=>setTimeout(()=>r(null),4000))])}catch(e){}}
  if(reg&&reg.showNotification){await reg.showNotification(t,o);return}
- new Notification(t,o);
+ try{new Notification(t,o)}catch(e){bugAdd('התראה נכשלה: אין שירות התראות (02_sw.js) – '+e.message);throw e}
 }
 function exNotify(){
  try{
