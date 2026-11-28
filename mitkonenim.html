@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.75.1 | קוד עדכון V-Q4YA-9MKF -->
+<!-- מתכוננים | גרסה 3.75.2 | קוד עדכון V-W2LD-6HGS -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-Q4YA-9MKF";   /* קוד העדכון של גרסה 3.75.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.75.1";
+window.UPDATE_CODE = "V-W2LD-6HGS";   /* קוד העדכון של גרסה 3.75.2. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.75.2";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -388,8 +388,11 @@ function pickVoice(lang,g){
  const fem=v=>/female|zira|samantha|karen|victoria|susan|hazel|tessa|moira|fiona|carmit|helena|aria|jenny|google us english/i.test(v.name);
  return vs.find(g=='male'?male:fem)||null;
 }
+const LW={a:'apple',b:'ball',c:'cat',d:'dog',e:'egg',f:'fish',g:'goat',h:'hat',i:'igloo',j:'jam',k:'kite',l:'lion',m:'moon',n:'nest',o:'orange',p:'pig',q:'queen',r:'rabbit',s:'sun',t:'tiger',u:'umbrella',v:'van',w:'water',x:'x-ray',y:'yo-yo',z:'zebra'};
 function speak(t,o){
  o=o||{};
+ /* אות באנגלית: אומרים גם מילה לדוגמה, כדי שלא יתבלבלו בין P, C, K, B, T... */
+ {const l=String(t).trim().toLowerCase();if(/^[a-z]$/.test(l)&&LW[l]){t=l.toUpperCase()+'. '+l.toUpperCase()+' as in '+LW[l]}}
  try{
   if(!('speechSynthesis' in window)){toast('הדפדפן הזה לא תומך בהקראה');return}
   const lang=isEn(t)?'en-US':'he-IL',u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=o.rate||.85;u.volume=1;
