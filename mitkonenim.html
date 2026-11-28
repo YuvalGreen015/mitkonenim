@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- מתכוננים | גרסה 3.74.0 | קוד עדכון V-P6ZL-3NDU -->
+<!-- מתכוננים | גרסה 3.75.1 | קוד עדכון V-Q4YA-9MKF -->
 <html lang="he" dir="rtl">
 <head>
 <meta name="referrer" content="no-referrer">
@@ -217,8 +217,8 @@ select option{color:#14213d;background:#fff}
 window.AI_URL = "";   /* >>> כאן כתובת שרת ה-AI (ai-worker.js). אני אעשה את זה איתך <<< */
 window.FB_CONFIG = null;   /* >>> כאן מדביקים את ההגדרה מ-Firebase (אני אעשה את זה איתך) <<< */
 window.APP_ID = "mitkonenim";
-window.UPDATE_CODE = "V-P6ZL-3NDU";   /* קוד העדכון של גרסה 3.74.0. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
-window.APP_VER = "3.74.0";
+window.UPDATE_CODE = "V-Q4YA-9MKF";   /* קוד העדכון של גרסה 3.75.1. בכל גרסה חדשה משנים כאן ובכללים של Firebase */
+window.APP_VER = "3.75.1";
 window.ANALYTICS_URL = "";
 (function () {
   var UK = "an_user", MK = "an_doc", ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -381,16 +381,18 @@ function cardsView(){
 function pickVoice(lang,g){
  const k=lang.slice(0,2),ok=l=>l.startsWith(k)||(k=='he'&&l.startsWith('iw'));
  const vs=(window.speechSynthesis?speechSynthesis.getVoices():[]).filter(v=>ok(v.lang.replace('_','-').toLowerCase()));
- vs.sort((a,b)=>(b.localService?1:0)-(a.localService?1:0));
+ const q=v=>(/neural|natural|enhanced|premium|wavenet|google/i.test(v.name)?2:0)+(v.localService?1:0);
+ vs.sort((a,b)=>q(b)-q(a));
  if(!g)return vs[0]||null;
  const male=v=>/\bmale\b|daniel|alex|david|mark|fred|george|james|asaf|arthur|guy|ryan|rishi/i.test(v.name)&&!/female/i.test(v.name);
  const fem=v=>/female|zira|samantha|karen|victoria|susan|hazel|tessa|moira|fiona|carmit|helena|aria|jenny|google us english/i.test(v.name);
  return vs.find(g=='male'?male:fem)||null;
 }
-function speak(t){
+function speak(t,o){
+ o=o||{};
  try{
   if(!('speechSynthesis' in window)){toast('הדפדפן הזה לא תומך בהקראה');return}
-  const lang=isEn(t)?'en-US':'he-IL',u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=.85;u.volume=1;
+  const lang=isEn(t)?'en-US':'he-IL',u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=o.rate||.85;u.volume=1;
   let g='',pt=1;
   if(S.voice=='male'){g='male';pt=.5}else if(S.voice=='female'){g='female';pt=1.6}
   else if(S.voice=='mine'&&S.hz){g=S.hz>=165?'female':'male';pt=Math.max(.5,Math.min(2,S.hz/(g=='female'?210:120)))}
@@ -401,6 +403,7 @@ function speak(t){
   u.onerror=e=>{if(e.error&&e.error!='canceled'&&e.error!='interrupted')toast('ההקראה נכשלה: '+e.error+'. בדוק שהווליום של המדיה למעלה.')};
   if(speechSynthesis.getVoices().length&&!pickVoice(lang,''))toast(lang=='he-IL'?'אין קול בעברית במכשיר. בהגדרות הטלפון: ניהול כללי ← המרת טקסט לדיבור ← הורד עברית.':'אין קול באנגלית במכשיר.');
   speechSynthesis.cancel();
+  if(o.twice){u.onend=()=>{setTimeout(()=>{try{const u2=new SpeechSynthesisUtterance(t);u2.lang=u.lang;u2.rate=Math.max(.4,(o.rate||.85)-.2);u2.volume=1;if(u.voice)u2.voice=u.voice;u2.pitch=u.pitch;speechSynthesis.speak(u2)}catch(e){}},900)}}
   setTimeout(()=>{speechSynthesis.resume();speechSynthesis.speak(u)},120);
  }catch(err){toast('ההקראה נכשלה')}
 }
@@ -411,12 +414,12 @@ function wordsView(){
   if(!queue.length){if(!stat.saved){stat.saved=1;rec('dict',stat.ok,stat.ok+stat.bad)}v.innerHTML=`<div class="card"><div class="big">סיימת הכתבה! 🎉</div><div class="msg">נכון: ${stat.ok} · טעויות: ${stat.bad}</div><div class="bar"><i style="width:${Math.round(100*stat.ok/Math.max(1,stat.ok+stat.bad))}%"></i></div><button class="btn" id="back">חזרה</button></div>`;$('back').onclick=()=>{mode='list';render()};return}
   cur=queue[0];
   const tot=Math.max(1,S.words.length),doneN=Math.min(tot,tot-queue.length);
-  v.innerHTML=`<div class="dpb"><i style="width:${Math.round(100*doneN/tot)}%"></i></div><div class="card"><div class="mute" style="text-align:center">נשארו ${queue.length} מילים</div>${done?`<div class="dword">${esc(cur)}</div>`:`<button class="spk" id="rep" aria-label="שמע שוב">🔊</button>`}
+  v.innerHTML=`<div class="dpb"><i style="width:${Math.round(100*doneN/tot)}%"></i></div><div class="card"><div class="mute" style="text-align:center">נשארו ${queue.length} מילים</div>${done?`<div class="dword">${esc(cur)}</div>`:`<button class="spk" id="rep" aria-label="שמע שוב">🔊</button><button class="btn sec" id="rep2" style="display:block;margin:0 auto 10px">🐢 לאט יותר</button>`}
   ${done?'<button class="btn sec" id="rep">שמע שוב</button>':''}<div style="height:8px"></div>
   <input id="ans" dir="${isEn(cur)?'ltr':'rtl'}" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="כתוב את המילה"><div class="msg" id="m"></div>
   <button class="btn" id="chk">בדוק</button></div>
   <button class="btn sec" id="back">סיום</button>`;
-  $('rep').onclick=()=>speak(cur);$('back').onclick=()=>{mode='list';render()};
+  $('rep').onclick=()=>speak(cur,{rate:.7});if($('rep2'))$('rep2').onclick=()=>speak(cur,{rate:.45});$('back').onclick=()=>{mode='list';render()};
   let locked=false;/* מונע לחיצה כפולה (או Enter כפול) שסופרת את אותה מילה פעמיים ודולגת על מילה */
   const check=()=>{
    if(locked)return;
@@ -427,7 +430,7 @@ function wordsView(){
    else{stat.bad++;done=true;$('m').style.color='var(--bad)';$('m').textContent='לא מדויק. כך כותבים:';$('chk').textContent='הבנתי, הבא';{const sp=$('rep');if(sp&&sp.classList.contains('spk')){const dw=document.createElement('div');dw.className='dword';dw.textContent=cur;sp.insertAdjacentElement('beforebegin',dw)}}}
   };
   $('chk').onclick=check;$('ans').onkeydown=e=>{if(e.key=='Enter')check()};
-  if(!done)setTimeout(()=>speak(cur),50);
+  if(!done)setTimeout(()=>speak(cur,{rate:.7,twice:true}),50);
   return}
  v.innerHTML=`<div class="card"><textarea id="w" rows="4" placeholder="מילים להכתבה, מילה בכל שורה (או מופרדות בפסיק)"></textarea><button class="btn" id="add">הוסף מילים</button></div>
  ${S.words.length?`<button class="btn" id="go">התחל הכתבה (${S.words.length} מילים)</button>`:`<p class="mute" style="text-align:center">הוסף את מילות ההכתבה והאפליקציה תקריא אותן</p>`}
@@ -2369,14 +2372,14 @@ function gradesView(){
  const n=GS,g=S.grades[n]||[],a=avg(g),nt=S.nt[n]||0,t=sc.filter(x=>x.k=='test'&&x.sub==n),ta=t.length?Math.round(t.reduce((m,x)=>m+pc(x),0)/t.length):null;
  v.innerHTML=`<div class="gh" style="background:${gr(n)}"><img src="${IM[n]||''}" alt=""><div style="flex:1"><div style="font-size:22px;font-weight:800">${esc(n)}</div><div style="opacity:.95">ממוצע</div></div><div class="gavg">${a===null?'—':a}</div></div>
  <div class="card"><label class="mute" for="nt">כמות מבחנים</label><input id="nt" type="number" inputmode="numeric" min="0" max="50" value="${nt||''}" placeholder="כמה מבחנים היו?">
- <label class="mute" for="gi">ציון (אחד בכל פעם)</label><input id="gi" type="number" inputmode="numeric" min="0" max="100" placeholder="לדוגמה 90">
+ <label class="mute" for="gi">ציון (אחד בכל פעם)</label><input id="gi" type="number" inputmode="numeric" min="0" max="110" placeholder="לדוגמה 90">
  <button class="btn" id="ga" style="background:${gr(n)}">הוסף ציון</button>
  <div style="margin-top:12px">${g.map((x,j)=>`<span class="chip" style="border-color:${col(x)}">${x}<b data-gd="${j}">✕</b></span>`).join('')||'<span class="mute">עוד לא הוספת ציונים</span>'}</div>
  <div class="mute" style="margin-top:8px">הוזנו ${g.length}${nt?' מתוך '+nt:''} מבחנים</div>
  ${nt?`<div class="bar"><i style="width:${Math.min(100,Math.round(100*g.length/nt))}%;background:${(GC[n]||GC['מתמטיקה'])[0]}"></i></div>`:''}
  ${ta!==null?`<div class="mute" style="margin-top:8px">תרגול במבחנים באפליקציה: ${ta}% (${t.length})</div>`:''}</div>`;
  $('nt').onchange=()=>{S.nt[n]=Math.max(0,Math.min(50,parseInt($('nt').value)||0));save();render()};
- $('ga').onclick=()=>{const x=parseFloat($('gi').value);if(isNaN(x)||x<0||x>100)return;S.grades[n]=(S.grades[n]||[]).concat(x);save();render()};
+ $('ga').onclick=()=>{const x=parseFloat($('gi').value);if(isNaN(x)||x<0||x>110)return;S.grades[n]=(S.grades[n]||[]).concat(x);save();render()};
  v.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{S.grades[n].splice(+b.dataset.gd,1);save();render()});
 }
 render();exNotify();exSync();exPeriodic();aiProbe();addEventListener('online',()=>{if(AIST==='app')aiProbe(true)});
